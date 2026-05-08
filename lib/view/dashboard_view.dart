@@ -21,7 +21,7 @@ class DashboardView extends StatelessWidget {
       ),
       body: const Center(
         child: Text(
-          "Hello 👋",
+          "Hello from dashboard 👋",
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
