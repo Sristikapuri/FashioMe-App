@@ -8,6 +8,7 @@ class DashboardView extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xffF8F5F2),
 
+      // ================= APP BAR =================
       appBar: AppBar(
         backgroundColor: const Color(0xffF8F5F2),
         elevation: 0,
@@ -29,6 +30,7 @@ class DashboardView extends StatelessWidget {
         ),
       ),
 
+      // ================= BODY =================
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -64,7 +66,7 @@ class DashboardView extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              /// MAIN BANNER
+              /// ================= MAIN BANNER =================
               Container(
                 height: 220,
                 width: double.infinity,
@@ -138,16 +140,16 @@ class DashboardView extends StatelessWidget {
                 ),
               ),
 
-              /// ================= SEASONAL PALETTE =================
+              // ================= SEASONAL PALETTE =================
               const SizedBox(height: 35),
 
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       "Your Seasonal Palette",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Color(0xff2A2323),
@@ -200,14 +202,82 @@ class DashboardView extends StatelessWidget {
                   ),
                 ),
               ),
+
+              // ================= HAIRSTYLES =================
+              const SizedBox(height: 35),
+
+              const Text(
+                "Personalized Hairstyles",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xff2A2323),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _styleCard(
+                      image:
+                          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1',
+                      title: "TEXTURED PIXIE",
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: _styleCard(
+                      image:
+                          'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f',
+                      title: "SOFT LAYERS",
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 100),
             ],
           ),
         ),
       ),
     );
   }
+
+  // ================= HAIRSTYLE CARD =================
+  Widget _styleCard({
+    required String image,
+    required String title,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            image: DecorationImage(
+              image: NetworkImage(image),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
+// ================= PALETTE COLOR =================
 class PaletteColor extends StatelessWidget {
   final Color color;
 
