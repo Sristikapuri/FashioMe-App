@@ -13,19 +13,47 @@ class DashboardView extends StatelessWidget {
         backgroundColor: const Color(0xffF8F5F2),
         elevation: 0,
         automaticallyImplyLeading: false,
+        titleSpacing: 16,
+
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            Icon(Icons.menu, color: Color(0xff6B0000)),
-            Text(
+          mainAxisAlignment:
+              MainAxisAlignment.spaceBetween,
+          children: [
+
+            /// MENU
+            const Icon(
+              Icons.menu,
+              color: Color(0xff6B0000),
+            ),
+
+            /// LOGO
+            const Text(
               "FashioMe",
               style: TextStyle(
                 color: Color(0xff6B0000),
-                fontWeight: FontWeight.bold,
                 fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            Icon(Icons.person_outline, size: 22, color: Color(0xff6B0000)),
+
+            /// PROFILE
+            Container(
+              padding: const EdgeInsets.all(4),
+
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+
+                border: Border.all(
+                  color: const Color(0xff6B0000),
+                ),
+              ),
+
+              child: const Icon(
+                Icons.person_outline,
+                size: 18,
+                color: Color(0xff6B0000),
+              ),
+            ),
           ],
         ),
       ),
@@ -33,17 +61,25 @@ class DashboardView extends StatelessWidget {
       // ================= BODY =================
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 18,
+          ),
+
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+
             children: [
 
+              // ================= TODAY CURATION =================
               const SizedBox(height: 10),
 
-              // ================= SECTION TITLE =================
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
+
                 children: const [
+
                   Text(
                     "Today's Curation",
                     style: TextStyle(
@@ -52,6 +88,7 @@ class DashboardView extends StatelessWidget {
                       color: Color(0xff2A2323),
                     ),
                   ),
+
                   Text(
                     "VIEW ALL",
                     style: TextStyle(
@@ -66,12 +103,15 @@ class DashboardView extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ================= HERO BANNER =================
+              // ================= MAIN BANNER =================
               Container(
                 height: 220,
                 width: double.infinity,
+
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius:
+                      BorderRadius.circular(22),
+
                   image: const DecorationImage(
                     image: NetworkImage(
                       'https://images.unsplash.com/photo-1529139574466-a303027c1d8b',
@@ -79,10 +119,14 @@ class DashboardView extends StatelessWidget {
                     fit: BoxFit.cover,
                   ),
                 ),
+
                 child: Container(
                   padding: const EdgeInsets.all(18),
+
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius:
+                        BorderRadius.circular(22),
+
                     gradient: LinearGradient(
                       colors: [
                         Colors.black.withOpacity(0.75),
@@ -92,22 +136,35 @@ class DashboardView extends StatelessWidget {
                       end: Alignment.topRight,
                     ),
                   ),
+
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+
                     children: [
+
+                      /// TAG
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding:
+                            const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 6,
                         ),
+
                         decoration: BoxDecoration(
-                          color: const Color(0xffD8C15B),
-                          borderRadius: BorderRadius.circular(20),
+                          color:
+                              const Color(0xffD8C15B),
+
+                          borderRadius:
+                              BorderRadius.circular(
+                                  20),
                         ),
+
                         child: const Text(
                           "Fusion Edit",
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
+                            fontWeight:
+                                FontWeight.bold,
                             fontSize: 12,
                           ),
                         ),
@@ -115,11 +172,13 @@ class DashboardView extends StatelessWidget {
 
                       const Spacer(),
 
+                      /// TITLE
                       const Text(
                         "Velvet Heritage\nMeets Urban Edge",
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                          fontWeight:
+                              FontWeight.bold,
                           fontSize: 28,
                           height: 1.1,
                         ),
@@ -127,6 +186,7 @@ class DashboardView extends StatelessWidget {
 
                       const SizedBox(height: 10),
 
+                      /// SUBTITLE
                       const Text(
                         "Combining classical embroidery\nwith modern silhouettes",
                         style: TextStyle(
@@ -144,24 +204,32 @@ class DashboardView extends StatelessWidget {
               const SizedBox(height: 35),
 
               Row(
-                children: const [
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+
+                children: [
+
                   Expanded(
                     child: Text(
                       "Your Seasonal Palette",
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Color(0xff2A2323),
                       ),
                     ),
                   ),
-                  Padding(
+
+                  const SizedBox(width: 10),
+
+                  const Padding(
                     padding: EdgeInsets.only(top: 6),
                     child: Text(
                       "DEEP AUTUMN",
                       style: TextStyle(
                         color: Color(0xffA7831A),
-                        fontWeight: FontWeight.bold,
+                        fontWeight:
+                            FontWeight.bold,
                         fontSize: 13,
                       ),
                     ),
@@ -172,27 +240,63 @@ class DashboardView extends StatelessWidget {
               const SizedBox(height: 18),
 
               Container(
-                padding: const EdgeInsets.all(14),
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.grey),
+
+                  borderRadius:
+                      BorderRadius.circular(18),
+
+                  border: Border.all(
+                    color: Colors.grey.shade300,
+                  ),
                 ),
+
                 child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
+                  scrollDirection:
+                      Axis.horizontal,
+
                   child: Row(
                     children: const [
-                      PaletteColor(color: Color(0xff7B0000)),
+
+                      PaletteColor(
+                        color: Color(0xff7B0000),
+                      ),
+
                       SizedBox(width: 12),
-                      PaletteColor(color: Color(0xff8B6B00)),
+
+                      PaletteColor(
+                        color: Color(0xff8B6B00),
+                      ),
+
                       SizedBox(width: 12),
-                      PaletteColor(color: Color(0xffF8F2F0)),
+
+                      PaletteColor(
+                        color: Color(0xffF8F2F0),
+                      ),
+
                       SizedBox(width: 12),
-                      PaletteColor(color: Color(0xffDFC1B8)),
+
+                      PaletteColor(
+                        color: Color(0xffDFC1B8),
+                      ),
+
                       SizedBox(width: 12),
-                      PaletteColor(color: Color(0xff3F4630)),
+
+                      PaletteColor(
+                        color: Color(0xff3F4630),
+                      ),
+
                       SizedBox(width: 12),
-                      PaletteColor(color: Color(0xffF1D0C8)),
+
+                      PaletteColor(
+                        color: Color(0xffF1D0C8),
+                      ),
                     ],
                   ),
                 ),
@@ -214,19 +318,22 @@ class DashboardView extends StatelessWidget {
 
               Row(
                 children: [
+
                   Expanded(
-                    child: _styleCard(
+                    child: hairstyleCard(
                       image:
-                          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1',
-                      title: "TEXTURED PIXIE",
+                          'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
+                      title: 'TEXTURED PIXIE',
                     ),
                   ),
+
                   const SizedBox(width: 14),
+
                   Expanded(
-                    child: _styleCard(
+                    child: hairstyleCard(
                       image:
-                          'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f',
-                      title: "SOFT LAYERS",
+                          'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df',
+                      title: 'SOFT LAYERS',
                     ),
                   ),
                 ],
@@ -248,50 +355,33 @@ class DashboardView extends StatelessWidget {
 
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
+
                 child: Row(
                   children: [
-                    _occasionCard(
+
+                    occasionCard(
                       image:
                           'https://images.unsplash.com/photo-1519741497674-611481863552',
-                      title: "WEDDING",
+                      title: 'WEDDING',
                     ),
+
                     const SizedBox(width: 14),
-                    _occasionCard(
+
+                    occasionCard(
                       image:
                           'https://images.unsplash.com/photo-1507679799987-c73779587ccf',
-                      title: "OFFICE",
+                      title: 'OFFICE',
                     ),
+
                     const SizedBox(width: 14),
-                    _occasionCard(
+
+                    occasionCard(
                       image:
                           'https://images.unsplash.com/photo-1514525253161-7a46d19cd819',
-                      title: "PARTY",
+                      title: 'PARTY',
                     ),
                   ],
                 ),
-              ),
-
-              // ================= QUICK ACTIONS =================
-              const SizedBox(height: 35),
-
-              const Text(
-                "Quick Actions",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xff2A2323),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _actionCard(Icons.auto_awesome, "AI Sync"),
-                  _actionCard(Icons.checkroom, "Closet"),
-                  _actionCard(Icons.face_retouching_natural, "Advisor"),
-                ],
               ),
 
               const SizedBox(height: 100),
@@ -299,34 +389,99 @@ class DashboardView extends StatelessWidget {
           ),
         ),
       ),
+
+      // ================= BOTTOM NAVIGATION =================
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+
+        selectedItemColor:
+            const Color(0xff6B0000),
+
+        unselectedItemColor:
+            Colors.brown.shade300,
+
+        backgroundColor:
+            const Color(0xffF8F5F2),
+
+        elevation: 0,
+
+        type: BottomNavigationBarType.fixed,
+
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 11,
+        ),
+
+        items: const [
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            label: "Home",
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.auto_awesome_outlined,
+            ),
+            label: "AI Sync",
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.check),
+            label: "Closet",
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.face_retouching_natural_outlined,
+            ),
+            label: "Advisor",
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: "Me",
+          ),
+        ],
+      ),
     );
   }
 
-  // ================= STYLE CARD =================
-  Widget _styleCard({
+  // ================= HAIRSTYLE CARD =================
+  Widget hairstyleCard({
     required String image,
     required String title,
   }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+
         Container(
-          height: 200,
+          height: 230,
+
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius:
+                BorderRadius.circular(18),
+
             image: DecorationImage(
               image: NetworkImage(image),
               fit: BoxFit.cover,
             ),
           ),
         ),
+
         const SizedBox(height: 10),
+
         Text(
           title,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 12,
-            letterSpacing: 1.2,
+            letterSpacing: 1.5,
+            fontSize: 11,
           ),
         ),
       ],
@@ -334,56 +489,36 @@ class DashboardView extends StatelessWidget {
   }
 
   // ================= OCCASION CARD =================
-  Widget _occasionCard({
+  Widget occasionCard({
     required String image,
     required String title,
   }) {
     return Column(
       children: [
+
         Container(
           width: 95,
           height: 95,
+
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius:
+                BorderRadius.circular(18),
+
             image: DecorationImage(
               image: NetworkImage(image),
               fit: BoxFit.cover,
             ),
           ),
         ),
+
         const SizedBox(height: 10),
+
         Text(
           title,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 10,
             letterSpacing: 2,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ================= ACTION CARD =================
-  Widget _actionCard(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.grey),
-          ),
-          child: Icon(icon, color: const Color(0xff6B0000)),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
+            fontSize: 10,
           ),
         ),
       ],
@@ -395,17 +530,24 @@ class DashboardView extends StatelessWidget {
 class PaletteColor extends StatelessWidget {
   final Color color;
 
-  const PaletteColor({super.key, required this.color});
+  const PaletteColor({
+    super.key,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 42,
       height: 42,
+
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.grey.shade300),
+
+        border: Border.all(
+          color: Colors.grey.shade300,
+        ),
       ),
     );
   }
