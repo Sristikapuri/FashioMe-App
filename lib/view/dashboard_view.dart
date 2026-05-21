@@ -40,7 +40,7 @@ class DashboardView extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              /// SECTION TITLE
+              // ================= SECTION TITLE =================
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
@@ -66,7 +66,7 @@ class DashboardView extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              /// ================= MAIN BANNER =================
+              // ================= HERO BANNER =================
               Container(
                 height: 220,
                 width: double.infinity,
@@ -140,13 +140,12 @@ class DashboardView extends StatelessWidget {
                 ),
               ),
 
-              // ================= SEASONAL PALETTE =================
+              // ================= PALETTE =================
               const SizedBox(height: 35),
 
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Expanded(
+                children: const [
+                  Expanded(
                     child: Text(
                       "Your Seasonal Palette",
                       style: TextStyle(
@@ -156,8 +155,7 @@ class DashboardView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 6),
                     child: Text(
                       "DEEP AUTUMN",
@@ -174,10 +172,7 @@ class DashboardView extends StatelessWidget {
               const SizedBox(height: 18),
 
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
@@ -237,6 +232,68 @@ class DashboardView extends StatelessWidget {
                 ],
               ),
 
+              // ================= OCCASIONS =================
+              const SizedBox(height: 35),
+
+              const Text(
+                "Explore Occasions",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xff2A2323),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _occasionCard(
+                      image:
+                          'https://images.unsplash.com/photo-1519741497674-611481863552',
+                      title: "WEDDING",
+                    ),
+                    const SizedBox(width: 14),
+                    _occasionCard(
+                      image:
+                          'https://images.unsplash.com/photo-1507679799987-c73779587ccf',
+                      title: "OFFICE",
+                    ),
+                    const SizedBox(width: 14),
+                    _occasionCard(
+                      image:
+                          'https://images.unsplash.com/photo-1514525253161-7a46d19cd819',
+                      title: "PARTY",
+                    ),
+                  ],
+                ),
+              ),
+
+              // ================= QUICK ACTIONS =================
+              const SizedBox(height: 35),
+
+              const Text(
+                "Quick Actions",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xff2A2323),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _actionCard(Icons.auto_awesome, "AI Sync"),
+                  _actionCard(Icons.checkroom, "Closet"),
+                  _actionCard(Icons.face_retouching_natural, "Advisor"),
+                ],
+              ),
+
               const SizedBox(height: 100),
             ],
           ),
@@ -245,7 +302,7 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  // ================= HAIRSTYLE CARD =================
+  // ================= STYLE CARD =================
   Widget _styleCard({
     required String image,
     required String title,
@@ -270,6 +327,63 @@ class DashboardView extends StatelessWidget {
             fontWeight: FontWeight.bold,
             fontSize: 12,
             letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================= OCCASION CARD =================
+  Widget _occasionCard({
+    required String image,
+    required String title,
+  }) {
+    return Column(
+      children: [
+        Container(
+          width: 95,
+          height: 95,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            image: DecorationImage(
+              image: NetworkImage(image),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 10,
+            letterSpacing: 2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================= ACTION CARD =================
+  Widget _actionCard(IconData icon, String label) {
+    return Column(
+      children: [
+        Container(
+          width: 70,
+          height: 70,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.grey),
+          ),
+          child: Icon(icon, color: const Color(0xff6B0000)),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
