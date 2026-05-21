@@ -6,26 +6,16 @@ class DashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF7A0000),
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          "FashioMe",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: const Center(
-        child: Text(
-          "Hello from dashboard 👋",
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF7A0000),
+      backgroundColor: const Color(0xffF8F5F2),
+
+      body: SafeArea(
+        child: Center(
+          child: Text(
+            "Dashboard",
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),
