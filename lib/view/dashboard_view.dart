@@ -8,7 +8,6 @@ class DashboardView extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xffF8F5F2),
 
-      // ================= APP BAR =================
       appBar: AppBar(
         backgroundColor: const Color(0xffF8F5F2),
         elevation: 0,
@@ -16,11 +15,7 @@ class DashboardView extends StatelessWidget {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: const [
-            Icon(
-              Icons.menu,
-              color: Color(0xff6B0000),
-            ),
-
+            Icon(Icons.menu, color: Color(0xff6B0000)),
             Text(
               "FashioMe",
               style: TextStyle(
@@ -29,23 +24,18 @@ class DashboardView extends StatelessWidget {
                 fontSize: 24,
               ),
             ),
-
-            Icon(
-              Icons.person_outline,
-              size: 22,
-              color: Color(0xff6B0000),
-            ),
+            Icon(Icons.person_outline, size: 22, color: Color(0xff6B0000)),
           ],
         ),
       ),
 
-      // ================= BODY =================
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
               const SizedBox(height: 10),
 
               /// SECTION TITLE
@@ -87,7 +77,6 @@ class DashboardView extends StatelessWidget {
                     fit: BoxFit.cover,
                   ),
                 ),
-
                 child: Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
@@ -101,7 +90,6 @@ class DashboardView extends StatelessWidget {
                       end: Alignment.topRight,
                     ),
                   ),
-
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -149,9 +137,91 @@ class DashboardView extends StatelessWidget {
                   ),
                 ),
               ),
+
+              /// ================= SEASONAL PALETTE =================
+              const SizedBox(height: 35),
+
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Your Seasonal Palette",
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xff2A2323),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: Text(
+                      "DEEP AUTUMN",
+                      style: TextStyle(
+                        color: Color(0xffA7831A),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
+
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.grey),
+                ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: const [
+                      PaletteColor(color: Color(0xff7B0000)),
+                      SizedBox(width: 12),
+                      PaletteColor(color: Color(0xff8B6B00)),
+                      SizedBox(width: 12),
+                      PaletteColor(color: Color(0xffF8F2F0)),
+                      SizedBox(width: 12),
+                      PaletteColor(color: Color(0xffDFC1B8)),
+                      SizedBox(width: 12),
+                      PaletteColor(color: Color(0xff3F4630)),
+                      SizedBox(width: 12),
+                      PaletteColor(color: Color(0xffF1D0C8)),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class PaletteColor extends StatelessWidget {
+  final Color color;
+
+  const PaletteColor({super.key, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.grey.shade300),
       ),
     );
   }
