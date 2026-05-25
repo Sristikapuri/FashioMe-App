@@ -125,7 +125,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                                   boxShadow: [
                                     BoxShadow(
                                       color:
-                                          Colors.black.withOpacity(0.15),
+                                          Colors.black.withValues(alpha: 0.15),
                                       blurRadius: 20,
                                       offset: const Offset(0, 10),
                                     ),
@@ -143,7 +143,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                                     end: Alignment.bottomCenter,
                                     colors: [
                                       Colors.transparent,
-                                      Colors.black.withOpacity(0.35),
+                                      Colors.black.withValues(alpha: 0.35),
                                     ],
                                   ),
                                 ),

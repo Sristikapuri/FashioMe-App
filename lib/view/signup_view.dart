@@ -70,8 +70,8 @@ class _SignupViewState extends State<SignupView> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.15),
-                        Colors.black.withOpacity(0.45),
+                        Colors.black.withValues(alpha: 0.15),
+                        Colors.black.withValues(alpha: 0.45),
                       ],
                     ),
                   ),
@@ -197,79 +197,6 @@ class _SignupViewState extends State<SignupView> {
                       color: Colors.white,
                     ),
                   ),
-                ),
-              ),
-
-              const SizedBox(height: 26),
-
-              /// divider
-              Row(
-                children: [
-                  Expanded(
-                    child: Divider(
-                      color: Colors.grey.shade300,
-                    ),
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                    ),
-
-                    child: Text(
-                      'OR CONTINUE WITH',
-                      style: TextStyle(
-                        fontSize: 11,
-                        letterSpacing: 2,
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-
-                  Expanded(
-                    child: Divider(
-                      color: Colors.grey.shade300,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 28),
-
-              /// google button
-              Container(
-                height: 58,
-                width: double.infinity,
-
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-
-                  border: Border.all(
-                    color: Colors.grey.shade200,
-                  ),
-                ),
-
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(
-                      Icons.g_mobiledata,
-                      size: 34,
-                      color: Colors.red,
-                    ),
-
-                    SizedBox(width: 8),
-
-                    Text(
-                      'Continue with Google',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
                 ),
               ),
 
