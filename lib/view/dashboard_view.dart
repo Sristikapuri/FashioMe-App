@@ -39,6 +39,7 @@ class _DashboardViewState extends State<DashboardView> {
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: AppColors.primaryDark,
                     fontSize: 24,
+                    fontFamily: AppFonts.bold,
                   ),
             ),
             const Icon(

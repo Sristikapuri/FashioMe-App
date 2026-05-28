@@ -13,12 +13,19 @@ abstract final class AppColors {
   static const textSecondary = Color(0xFF2A2323);
 }
 
-/// Theme — font setup matches [flutter-classwork4] (`Montserrat Bold` family).
+/// Montserrat font family names (see pubspec.yaml).
+abstract final class AppFonts {
+  static const regular = 'Montserrat Regular';
+  static const bold = 'Montserrat Bold';
+  static const italic = 'Montserrat Italic';
+  static const extraBold = 'Montserrat Extra Bold';
+}
+
 ThemeData buildAppTheme() {
   return ThemeData(
     primarySwatch: Colors.amber,
     scaffoldBackgroundColor: AppColors.background,
-    fontFamily: 'Montserrat Bold',
+    fontFamily: AppFonts.regular,
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.background,
       elevation: 0,
@@ -28,6 +35,7 @@ ThemeData buildAppTheme() {
         color: AppColors.primaryDark,
         fontSize: 22,
         fontWeight: FontWeight.w500,
+        fontFamily: AppFonts.bold,
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -36,6 +44,7 @@ ThemeData buildAppTheme() {
           fontSize: 18,
           color: Colors.white,
           fontWeight: FontWeight.w500,
+          fontFamily: AppFonts.bold,
         ),
         backgroundColor: Colors.orange,
         shape: RoundedRectangleBorder(
@@ -48,29 +57,35 @@ ThemeData buildAppTheme() {
         fontSize: 32,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
+        fontFamily: AppFonts.bold,
       ),
       headlineMedium: TextStyle(
         fontSize: 26,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
+        fontFamily: AppFonts.bold,
       ),
       titleLarge: TextStyle(
         fontSize: 22,
         fontWeight: FontWeight.w500,
         color: AppColors.textSecondary,
+        fontFamily: AppFonts.bold,
       ),
       bodyLarge: TextStyle(
         fontSize: 16,
         color: Color(0xFF444444),
+        fontFamily: AppFonts.regular,
       ),
       bodyMedium: TextStyle(
         fontSize: 14,
         color: Color(0xFF666666),
+        fontFamily: AppFonts.regular,
       ),
       labelSmall: TextStyle(
         fontSize: 11,
         letterSpacing: 2,
         fontWeight: FontWeight.w500,
+        fontFamily: AppFonts.regular,
       ),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -83,10 +98,12 @@ ThemeData buildAppTheme() {
         fontWeight: FontWeight.w500,
         fontSize: 10,
         letterSpacing: 0.5,
+        fontFamily: AppFonts.regular,
       ),
       unselectedLabelStyle: TextStyle(
         fontSize: 10,
         letterSpacing: 0.5,
+        fontFamily: AppFonts.regular,
       ),
     ),
   );

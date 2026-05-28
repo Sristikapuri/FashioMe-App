@@ -71,12 +71,12 @@ flutter:
     - family: Montserrat Bold
       fonts:
         - asset: assets/fonts/Montserrat-Bold.ttf
-    - family: Montserrat Bold
-      fonts:
-        - asset: assets/fonts/Montserrat-ExtraBold.ttf
-    - family: Montserrat Bold
+    - family: Montserrat Italic
       fonts:
         - asset: assets/fonts/Montserrat-Italic.ttf
-    - family: Montserrat Bold
+    - family: Montserrat Extra Bold
+      fonts:
+        - asset: assets/fonts/Montserrat-ExtraBold.ttf
+    - family: Montserrat Regular
       fonts:
         - asset: assets/fonts/Montserrat-Regular.ttf
