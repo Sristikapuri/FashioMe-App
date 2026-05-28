@@ -12,6 +12,56 @@ class DashboardView extends StatefulWidget {
 class _DashboardViewState extends State<DashboardView> {
   int _currentIndex = 0;
 
+  static const _imageParams = 'auto=format&fit=crop&w=400&q=80';
+
+  static const _occasions = [
+    (
+      'https://images.unsplash.com/photo-1519741497674-611481863552?$_imageParams',
+      'WEDDING',
+    ),
+    (
+      'https://images.unsplash.com/photo-1507679799987-c73779587ccf?$_imageParams',
+      'OFFICE',
+    ),
+    (
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?$_imageParams',
+      'PARTY',
+    ),
+    (
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?$_imageParams',
+      'DATE NIGHT',
+    ),
+    (
+      'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?$_imageParams',
+      'BRUNCH',
+    ),
+    (
+      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?$_imageParams',
+      'FESTIVAL',
+    ),
+    (
+      'https://images.unsplash.com/photo-1596783438789-94786a309b84?$_imageParams',
+      'COCKTAIL',
+    ),
+    (
+      'https://images.unsplash.com/photo-1488085068365-99befe983387?$_imageParams',
+      'TRAVEL',
+    ),
+    (
+      'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?$_imageParams',
+      'CASUAL',
+    ),
+  ];
+
+  static const _paletteColors = [
+    Color(0xFF7B0000),
+    Color(0xFF8B6B00),
+    Color(0xFFF8F2F0),
+    Color(0xFFDFC1B8),
+    Color(0xFF3F4630),
+    Color(0xFFF1D0C8),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final screens = [
@@ -27,28 +77,29 @@ class _DashboardViewState extends State<DashboardView> {
       appBar: AppBar(
         backgroundColor: AppColors.dashboardBackground,
         elevation: 0,
-        automaticallyImplyLeading: false,
         centerTitle: true,
-        titleSpacing: 16,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Icon(Icons.menu, color: AppColors.primaryDark),
-            Text(
-              'FashioMe',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.primaryDark,
-                    fontSize: 24,
-                    fontFamily: AppFonts.bold,
-                  ),
-            ),
-            const Icon(
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: AppColors.primaryDark),
+          onPressed: () {},
+        ),
+        title: Text(
+          'FashioMe',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: AppColors.primaryDark,
+                fontSize: 24,
+                fontFamily: AppFonts.bold,
+              ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(
               Icons.person_outline,
-              size: 18,
+              size: 22,
               color: AppColors.primaryDark,
             ),
-          ],
-        ),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
@@ -95,11 +146,12 @@ class _DashboardViewState extends State<DashboardView> {
         children: [
           const SizedBox(height: 10),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Today's Curation",
-                style: Theme.of(context).textTheme.titleLarge,
+              Expanded(
+                child: Text(
+                  "Today's Curation",
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
               ),
               Text(
                 'VIEW ALL',
@@ -138,32 +190,7 @@ class _DashboardViewState extends State<DashboardView> {
             ],
           ),
           const SizedBox(height: 18),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: const [
-                  PaletteColor(color: Color(0xff7B0000)),
-                  SizedBox(width: 12),
-                  PaletteColor(color: Color(0xff8B6B00)),
-                  SizedBox(width: 12),
-                  PaletteColor(color: Color(0xffF8F2F0)),
-                  SizedBox(width: 12),
-                  PaletteColor(color: Color(0xffDFC1B8)),
-                  SizedBox(width: 12),
-                  PaletteColor(color: Color(0xff3F4630)),
-                  SizedBox(width: 12),
-                  PaletteColor(color: Color(0xffF1D0C8)),
-                ],
-              ),
-            ),
-          ),
+          _seasonalPaletteCard(),
           const SizedBox(height: 35),
           Text(
             'Personalized Hairstyles',
@@ -174,14 +201,14 @@ class _DashboardViewState extends State<DashboardView> {
             children: [
               Expanded(
                 child: _imageCard(
-                  'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
+                  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?$_imageParams',
                   'TEXTURED PIXIE',
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: _imageCard(
-                  'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df',
+                  'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?$_imageParams',
                   'SOFT LAYERS',
                 ),
               ),
@@ -195,32 +222,26 @@ class _DashboardViewState extends State<DashboardView> {
           const SizedBox(height: 18),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.hardEdge,
             child: Row(
               children: [
-                _circleCard(
-                  'https://images.unsplash.com/photo-1519741497674-611481863552',
-                  'WEDDING',
-                ),
-                const SizedBox(width: 14),
-                _circleCard(
-                  'https://images.unsplash.com/photo-1507679799987-c73779587ccf',
-                  'OFFICE',
-                ),
-                const SizedBox(width: 14),
-                _circleCard(
-                  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819',
-                  'PARTY',
-                ),
+                for (var i = 0; i < _occasions.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 14),
+                  _circleCard(_occasions[i].$1, _occasions[i].$2),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 40),
-          Text(
-            'Discover your AI fashion recommendations daily ✨',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey.shade600,
-                  fontSize: 12,
-                ),
+          Center(
+            child: Text(
+              'Discover your AI fashion recommendations daily ✨',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+            ),
           ),
           const SizedBox(height: 24),
         ],
@@ -229,7 +250,9 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _banner() {
-    return Container(
+    return SizedBox(
+      width: double.infinity,
+      child: Container(
       height: 220,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
@@ -240,9 +263,9 @@ class _DashboardViewState extends State<DashboardView> {
             offset: const Offset(0, 6),
           ),
         ],
-        image: const DecorationImage(
+        image: DecorationImage(
           image: NetworkImage(
-            'https://images.unsplash.com/photo-1529139574466-a303027c1d8b',
+            'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?$_imageParams',
           ),
           fit: BoxFit.cover,
         ),
@@ -298,21 +321,117 @@ class _DashboardViewState extends State<DashboardView> {
           ],
         ),
       ),
+    ),
+    );
+  }
+
+  Widget _seasonalPaletteCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            AppColors.accent.withValues(alpha: 0.06),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE8E0D8)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryDark.withValues(alpha: 0.07),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.hardEdge,
+            child: Row(
+              children: [
+                for (var i = 0; i < _paletteColors.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 18),
+                  PaletteColor(color: _paletteColors[i], index: i),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            height: 4,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              gradient: LinearGradient(
+                colors: _paletteColors,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _networkImage({
+    required String url,
+    required double width,
+    required double height,
+    required double radius,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Image.network(
+        url,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Container(
+            width: width,
+            height: height,
+            color: Colors.grey.shade200,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primary.withValues(alpha: 0.6),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (_, _, _) => Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(radius),
+          ),
+          child: Icon(
+            Icons.broken_image_outlined,
+            color: Colors.grey.shade500,
+            size: 28,
+          ),
+        ),
+      ),
     );
   }
 
   Widget _imageCard(String image, String title) {
     return Column(
       children: [
-        Container(
+        _networkImage(
+          url: image,
+          width: double.infinity,
           height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            image: DecorationImage(
-              image: NetworkImage(image),
-              fit: BoxFit.cover,
-            ),
-          ),
+          radius: 18,
         ),
         const SizedBox(height: 8),
         Text(
@@ -328,29 +447,31 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _circleCard(String image, String title) {
-    return Column(
-      children: [
-        Container(
-          width: 90,
-          height: 90,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            image: DecorationImage(
-              image: NetworkImage(image),
-              fit: BoxFit.cover,
-            ),
+    return SizedBox(
+      width: 96,
+      child: Column(
+        children: [
+          _networkImage(
+            url: image,
+            width: 96,
+            height: 96,
+            radius: 20,
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 11,
-                letterSpacing: 1,
-              ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                  letterSpacing: 0.8,
+                  height: 1.2,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -374,19 +495,58 @@ class _PlaceholderTab extends StatelessWidget {
 }
 
 class PaletteColor extends StatelessWidget {
-  const PaletteColor({super.key, required this.color});
+  const PaletteColor({
+    super.key,
+    required this.color,
+    this.index = 0,
+  });
 
   final Color color;
+  final int index;
+
+  bool get _isLight => color.computeLuminance() > 0.82;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+            border: Border.all(
+              color: _isLight
+                  ? const Color(0xFFD4C4BC)
+                  : Colors.white.withValues(alpha: 0.35),
+              width: 2.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.5),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: index == 0 ? AppColors.primaryDark : Colors.transparent,
+          ),
+        ),
+      ],
     );
   }
 }
