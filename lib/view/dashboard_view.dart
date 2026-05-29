@@ -40,14 +40,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
       'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?$_imageParams',
       'FESTIVAL',
     ),
-    (
-      'https://images.unsplash.com/photo-1596783438789-94786a309b84?$_imageParams',
-      'COCKTAIL',
-    ),
-    (
-      'https://images.unsplash.com/photo-1488085068365-99befe983387?$_imageParams',
-      'TRAVEL',
-    ),
+    
     (
       'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?$_imageParams',
       'CASUAL',
