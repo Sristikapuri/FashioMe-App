@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../theme/app_theme.dart';
+import '../view_models/dashboard_view_model.dart';
 
-class DashboardView extends StatefulWidget {
+class DashboardView extends ConsumerStatefulWidget {
   const DashboardView({super.key});
 
   @override
-  State<DashboardView> createState() => _DashboardViewState();
+  ConsumerState<DashboardView> createState() => _DashboardViewState();
 }
 
-class _DashboardViewState extends State<DashboardView> {
-  int _currentIndex = 0;
+class _DashboardViewState extends ConsumerState<DashboardView> {
 
   static const _imageParams = 'auto=format&fit=crop&w=400&q=80';
 
@@ -64,6 +65,7 @@ class _DashboardViewState extends State<DashboardView> {
 
   @override
   Widget build(BuildContext context) {
+    final dashboardState = ref.watch(dashboardViewModelProvider);
     final screens = [
       _homeTab(),
       const _PlaceholderTab(label: 'AI Sync'),
@@ -101,10 +103,11 @@ class _DashboardViewState extends State<DashboardView> {
           ),
         ],
       ),
-      body: screens[_currentIndex],
+      body: screens[dashboardState.currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: dashboardState.currentIndex,
+        onTap: (index) =>
+            ref.read(dashboardViewModelProvider.notifier).setIndex(index),
         type: BottomNavigationBarType.fixed,
         backgroundColor: AppColors.navBarBackground,
         selectedItemColor: AppColors.primaryDark,

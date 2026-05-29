@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class OnboardingView extends StatefulWidget {
+import '../view_models/onboarding_view_model.dart';
+
+class OnboardingView extends ConsumerStatefulWidget {
   const OnboardingView({super.key});
 
   @override
-  State<OnboardingView> createState() => _OnboardingViewState();
+  ConsumerState<OnboardingView> createState() => _OnboardingViewState();
 }
 
-class _OnboardingViewState extends State<OnboardingView> {
+class _OnboardingViewState extends ConsumerState<OnboardingView> {
   final PageController _pageController = PageController();
-
-  int currentIndex = 0;
 
   final List<Map<String, String>> onboardingData = [
     {
@@ -37,7 +38,8 @@ class _OnboardingViewState extends State<OnboardingView> {
   ];
 
   void nextPage() {
-    if (currentIndex < onboardingData.length - 1) {
+    final onboardingState = ref.read(onboardingViewModelProvider);
+    if (onboardingState.currentIndex < onboardingData.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -52,6 +54,8 @@ class _OnboardingViewState extends State<OnboardingView> {
 
   @override
   Widget build(BuildContext context) {
+    final onboardingState = ref.watch(onboardingViewModelProvider);
+    final currentIndex = onboardingState.currentIndex;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6F5),
       body: SafeArea(
@@ -83,9 +87,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                 controller: _pageController,
                 itemCount: onboardingData.length,
                 onPageChanged: (index) {
-                  setState(() {
-                    currentIndex = index;
-                  });
+                  ref.read(onboardingViewModelProvider.notifier).setIndex(index);
                 },
                 itemBuilder: (context, index) {
                   final data = onboardingData[index];

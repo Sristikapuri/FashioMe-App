@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LoginView extends StatefulWidget {
+import '../view_models/login_view_model.dart';
+
+class LoginView extends ConsumerStatefulWidget {
   const LoginView({super.key});
 
   @override
-  State<LoginView> createState() => _LoginViewState();
+  ConsumerState<LoginView> createState() => _LoginViewState();
 }
 
-class _LoginViewState extends State<LoginView> {
-  bool obscurePassword = true;
-
+class _LoginViewState extends ConsumerState<LoginView> {
   final TextEditingController emailController =
       TextEditingController();
 
@@ -25,6 +26,7 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final loginState = ref.watch(loginViewModelProvider);
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF8F6F5),
@@ -127,7 +129,7 @@ class _LoginViewState extends State<LoginView> {
               const SizedBox(height: 22),
 
               /// password field
-              buildPasswordField(),
+              buildPasswordField(loginState.obscurePassword),
 
               const SizedBox(height: 14),
 
@@ -290,7 +292,7 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget buildPasswordField() {
+  Widget buildPasswordField(bool obscurePassword) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -321,9 +323,9 @@ class _LoginViewState extends State<LoginView> {
 
             suffixIcon: IconButton(
               onPressed: () {
-                setState(() {
-                  obscurePassword = !obscurePassword;
-                });
+                ref
+                    .read(loginViewModelProvider.notifier)
+                    .togglePasswordVisibility();
               },
 
               icon: Icon(

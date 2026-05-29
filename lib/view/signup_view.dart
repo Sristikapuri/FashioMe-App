@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SignupView extends StatefulWidget {
+import '../view_models/signup_view_model.dart';
+
+class SignupView extends ConsumerStatefulWidget {
   const SignupView({super.key});
 
   @override
-  State<SignupView> createState() => _SignupViewState();
+  ConsumerState<SignupView> createState() => _SignupViewState();
 }
 
-class _SignupViewState extends State<SignupView> {
-  bool obscurePassword = true;
-  bool obscureConfirmPassword = true;
-
+class _SignupViewState extends ConsumerState<SignupView> {
   final TextEditingController fullNameController =
       TextEditingController();
 
@@ -34,6 +34,7 @@ class _SignupViewState extends State<SignupView> {
 
   @override
   Widget build(BuildContext context) {
+    final signupState = ref.watch(signupViewModelProvider);
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF8F6F5),
@@ -143,11 +144,11 @@ class _SignupViewState extends State<SignupView> {
               buildPasswordField(
                 label: 'Password',
                 controller: passwordController,
-                obscureText: obscurePassword,
+                obscureText: signupState.obscurePassword,
                 onTap: () {
-                  setState(() {
-                    obscurePassword = !obscurePassword;
-                  });
+                  ref
+                      .read(signupViewModelProvider.notifier)
+                      .togglePasswordVisibility();
                 },
               ),
 
@@ -157,12 +158,11 @@ class _SignupViewState extends State<SignupView> {
               buildPasswordField(
                 label: 'Confirm Password',
                 controller: confirmPasswordController,
-                obscureText: obscureConfirmPassword,
+                obscureText: signupState.obscureConfirmPassword,
                 onTap: () {
-                  setState(() {
-                    obscureConfirmPassword =
-                        !obscureConfirmPassword;
-                  });
+                  ref
+                      .read(signupViewModelProvider.notifier)
+                      .toggleConfirmPasswordVisibility();
                 },
               ),
 
