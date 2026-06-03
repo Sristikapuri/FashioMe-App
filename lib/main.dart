@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fashio_me/app/app.dart';
+import 'package:fashio_me/core/providers/storage_provider.dart';
 import 'package:fashio_me/core/services/hive/hive_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,11 +19,18 @@ void main() async {
     ),
   );
 
+  // Initialize Hive
   await HiveService().init();
 
+  // Initialize SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const MyApp(),
     ),
   );
 }

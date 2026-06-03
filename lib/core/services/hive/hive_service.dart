@@ -28,8 +28,6 @@ class HiveService {
   // Open Boxes
   Future<void> openBoxes() async {
     await Hive.openBox<AuthHiveModel>(HiveTableConstant.authTable);
-    await Hive.openBox<String>(HiveTableConstant.sessionTable);
-    await Hive.openBox<bool>(HiveTableConstant.onboardingTable);
   }
 
   // Close Boxes
@@ -70,39 +68,5 @@ class HiveService {
   bool isEmailExist(String email) {
     final auths = _authBox.values.where((auth) => auth.email == email);
     return auths.isNotEmpty;
-  }
-
-  // Session management
-  Box<String> get _sessionBox => Hive.box<String>(HiveTableConstant.sessionTable);
-
-  Future<void> saveSession(String authId) async {
-    await _sessionBox.put('currentAuthId', authId);
-  }
-
-  String? getCurrentSession() {
-    return _sessionBox.get('currentAuthId');
-  }
-
-  Future<void> clearSession() async {
-    await _sessionBox.delete('currentAuthId');
-  }
-
-  bool isLoggedIn() {
-    return _sessionBox.get('currentAuthId') != null;
-  }
-
-  // Onboarding management
-  Box<bool> get _onboardingBox => Hive.box<bool>(HiveTableConstant.onboardingTable);
-
-  Future<void> completeOnboarding() async {
-    await _onboardingBox.put('completed', true);
-  }
-
-  bool hasCompletedOnboarding() {
-    return _onboardingBox.get('completed') ?? false;
-  }
-
-  Future<void> clearOnboarding() async {
-    await _onboardingBox.delete('completed');
   }
 }
