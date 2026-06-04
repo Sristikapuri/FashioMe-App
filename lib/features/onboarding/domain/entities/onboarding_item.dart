@@ -1,37 +1,29 @@
-import 'package:equatable/equatable.dart';
-
-class OnboardingItem extends Equatable {
+class OnboardingItem {
   final String title;
   final String subtitle;
   final String imageUrl;
 
-  const OnboardingItem({
+  OnboardingItem({
     required this.title,
     required this.subtitle,
     required this.imageUrl,
   });
-
-  @override
-  List<Object?> get props => [title, subtitle, imageUrl];
 }
 
-const kOnboardingItems = [
+final List<OnboardingItem> kOnboardingItems = [
   OnboardingItem(
-    title: 'Your AI Stylist,\nReimagined.',
-    subtitle:
-        'Merging the heritage of the Saree with the edge of modern tailoring.',
-    imageUrl: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c',
+    title: 'Welcome to FashioMe',
+    subtitle: 'Discover the latest fashion trends and styles',
+    imageUrl: 'assets/images/onboarding1.png',
   ),
   OnboardingItem(
-    title: 'Luxury Meets\nTechnology.',
-    subtitle:
-        'Discover premium fashion recommendations powered by AI intelligence.',
-    imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b',
+    title: 'Shop Your Style',
+    subtitle: 'Find clothes that match your personality',
+    imageUrl: 'assets/images/onboarding2.png',
   ),
   OnboardingItem(
-    title: 'Create Your\nOwn Identity.',
-    subtitle:
-        'Fashion curated uniquely for your personality and culture.',
-    imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f',
+    title: 'Get Started',
+    subtitle: 'Create an account and start shopping today',
+    imageUrl: 'assets/images/onboarding3.png',
   ),
 ];
