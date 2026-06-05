@@ -12,18 +12,18 @@ class OnboardingItem {
 
 final List<OnboardingItem> kOnboardingItems = [
   OnboardingItem(
-    title: 'Welcome to FashioMe',
-    subtitle: 'Discover the latest fashion trends and styles',
-    imageUrl: 'assets/images/onboarding1.png',
+    title: 'Your AI Stylist,\nReimagined.',
+    subtitle: 'Merging the heritage of the Saree with the edge of modern tailoring.',
+    imageUrl: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c',
   ),
   OnboardingItem(
-    title: 'Shop Your Style',
-    subtitle: 'Find clothes that match your personality',
-    imageUrl: 'assets/images/onboarding2.png',
+    title: 'Luxury Meets\nTechnology.',
+    subtitle: 'Discover premium fashion recommendations powered by AI intelligence.',
+    imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b',
   ),
   OnboardingItem(
-    title: 'Get Started',
-    subtitle: 'Create an account and start shopping today',
-    imageUrl: 'assets/images/onboarding3.png',
+    title: 'Create Your\nOwn Identity.',
+    subtitle: 'Fashion curated uniquely for your personality and culture.',
+    imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f',
   ),
 ];

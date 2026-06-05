@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fashio_me/app/routes/app_routes.dart';
+import 'package:fashio_me/core/providers/storage_provider.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/features/auth/presentation/pages/signup_page.dart';
 import 'package:fashio_me/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -25,6 +26,12 @@ class _SplashPageState extends ConsumerState<SplashPage>
   @override
   void initState() {
     super.initState();
+
+    // Debug: Clear onboarding status to always show onboarding
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final storageService = ref.read(storageServiceProvider);
+      await storageService.remove('onboarding_completed');
+    });
 
     /// animation controller
     _animationController = AnimationController(
