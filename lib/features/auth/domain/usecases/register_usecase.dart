@@ -16,15 +16,19 @@ class RegisterUsecaseParams extends Equatable {
   final String fullName;
   final String email;
   final String password;
+  final String? gender;
+  final String? age;
 
   const RegisterUsecaseParams({
     required this.fullName,
     required this.email,
     required this.password,
+    this.gender,
+    this.age,
   });
 
   @override
-  List<Object?> get props => [fullName, email, password];
+  List<Object?> get props => [fullName, email, password, gender, age];
 }
 
 class RegisterUsecase
@@ -41,6 +45,8 @@ class RegisterUsecase
         fullName: params.fullName,
         email: params.email,
         password: params.password,
+        gender: params.gender,
+        age: params.age,
       ),
     );
   }

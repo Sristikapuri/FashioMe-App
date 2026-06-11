@@ -26,6 +26,8 @@ class SignupViewModel extends Notifier<SignupState> {
     required String email,
     required String password,
     required String confirmPassword,
+    String? gender,
+    String? age,
   }) async {
     final trimmedName = fullName.trim();
     final trimmedEmail = email.trim();
@@ -68,6 +70,16 @@ class SignupViewModel extends Notifier<SignupState> {
       return false;
     }
 
+    if (gender == null || gender.isEmpty) {
+      state = state.copyWith(errorMessage: 'Gender is required.');
+      return false;
+    }
+
+    if (age == null || age.isEmpty) {
+      state = state.copyWith(errorMessage: 'Age is required.');
+      return false;
+    }
+
     state = state.copyWith(isLoading: true, clearError: true);
 
     final result = await _registerUsecase(
@@ -75,6 +87,8 @@ class SignupViewModel extends Notifier<SignupState> {
         fullName: trimmedName,
         email: trimmedEmail,
         password: trimmedPassword,
+        gender: gender,
+        age: age,
       ),
     );
 
