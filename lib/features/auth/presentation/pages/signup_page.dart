@@ -25,11 +25,11 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
+  final TextEditingController ageController = TextEditingController();
+
   String? _selectedGender;
-  String? _selectedAge;
 
   final List<String> _genderOptions = ['Male', 'Female', 'Other'];
-  final List<String> _ageOptions = List.generate(100, (index) => '${index + 1}');
 
   @override
   void initState() {
@@ -43,6 +43,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+    ageController.dispose();
     super.dispose();
   }
 
@@ -193,23 +194,24 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
                 const SizedBox(height: 22),
 
-                /// age dropdown
-                buildDropdownField(
-                  label: 'Age',
-                  hint: 'Select Age',
-                  value: _selectedAge,
-                  options: _ageOptions,
+                /// age
+                buildTextField(
+                  label: 'Enter your age',
+                  hint: 'Enter your age',
+                  controller: ageController,
                   icon: Icons.cake_outlined,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Age is required.';
                     }
+                    final age = int.tryParse(value.trim());
+                    if (age == null) {
+                      return 'Please enter a valid age.';
+                    }
+                    if (age < 1 || age > 120) {
+                      return 'Please enter a valid age (1-120).';
+                    }
                     return null;
-                  },
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedAge = value;
-                    });
                   },
                 ),
 
@@ -362,7 +364,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
           password: passwordController.text,
           confirmPassword: confirmPasswordController.text,
           gender: _selectedGender,
-          age: _selectedAge,
+          age: ageController.text,
         );
     if (!mounted) return;
     if (success) {
