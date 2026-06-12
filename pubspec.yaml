@@ -35,6 +35,10 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
+  dio: ^5.9.0
+  dio_smart_retry: ^7.0.1
+  flutter_secure_storage: ^9.2.4
+  pretty_dio_logger: ^1.4.0
 
   # Local storage
   shared_preferences: ^2.3.2
