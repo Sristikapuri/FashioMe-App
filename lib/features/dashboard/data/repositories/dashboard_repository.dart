@@ -8,19 +8,17 @@ import 'package:fashio_me/features/dashboard/domain/repositories/dashboard_repos
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final dashboardRepositoryProvider = Provider<IDashboardRepository>((ref) {
-  final remoteDataSource = DashboardRemoteDataSource();
-  final localDataSource = DashboardLocalDataSource();
-  return DashboardRepositoryImpl(
-    remoteDataSource: remoteDataSource,
-    localDataSource: localDataSource,
+  return DashboardRepository(
+    remoteDataSource: ref.read(dashboardRemoteDataSourceProvider),
+    localDataSource: ref.read(dashboardLocalDataSourceProvider),
   );
 });
 
-class DashboardRepositoryImpl implements IDashboardRepository {
+class DashboardRepository implements IDashboardRepository {
   final IDashboardDataSource _remoteDataSource;
   final IDashboardDataSource _localDataSource;
 
-  DashboardRepositoryImpl({
+  DashboardRepository({
     required IDashboardDataSource remoteDataSource,
     required IDashboardDataSource localDataSource,
   })  : _remoteDataSource = remoteDataSource,
@@ -29,11 +27,11 @@ class DashboardRepositoryImpl implements IDashboardRepository {
   @override
   Future<Either<Failure, DashboardEntity>> getDashboardData() async {
     try {
-      // Try remote first, fall back to local
+      // Try remote first, fall back to local.
       try {
         final dashboardModel = _remoteDataSource.getDashboardData();
         return Right(dashboardModel.toEntity());
-      } catch (e) {
+      } catch (_) {
         final dashboardModel = _localDataSource.getDashboardData();
         return Right(dashboardModel.toEntity());
       }
@@ -42,3 +40,4 @@ class DashboardRepositoryImpl implements IDashboardRepository {
     }
   }
 }
+
