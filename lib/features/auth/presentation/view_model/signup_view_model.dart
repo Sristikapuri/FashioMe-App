@@ -22,24 +22,46 @@ class SignupViewModel extends Notifier<SignupState> {
   }
 
   Future<bool> register({
-    required String fullName,
+    required String firstName,
+    required String lastName,
+    required String username,
     required String email,
     required String password,
     required String confirmPassword,
     String? gender,
     String? age,
   }) async {
-    final trimmedName = fullName.trim();
+    final trimmedFirstName = firstName.trim();
+    final trimmedLastName = lastName.trim();
+    final trimmedUsername = username.trim();
     final trimmedEmail = email.trim();
     final trimmedPassword = password.trim();
-    final trimmedConfirm = confirmPassword.trim();
+    final trimmedConfirmPassword = confirmPassword.trim();
 
-    if (trimmedName.isEmpty) {
-      state = state.copyWith(errorMessage: 'Full name is required.');
+    if (trimmedFirstName.isEmpty) {
+      state = state.copyWith(errorMessage: 'First name is required.');
       return false;
     }
-    if (trimmedName.length < 3) {
-      state = state.copyWith(errorMessage: 'Full name must be at least 3 characters.');
+    if (trimmedFirstName.length < 2) {
+      state = state.copyWith(errorMessage: 'First name must be at least 2 characters.');
+      return false;
+    }
+
+    if (trimmedLastName.isEmpty) {
+      state = state.copyWith(errorMessage: 'Last name is required.');
+      return false;
+    }
+    if (trimmedLastName.length < 2) {
+      state = state.copyWith(errorMessage: 'Last name must be at least 2 characters.');
+      return false;
+    }
+
+    if (trimmedUsername.isEmpty) {
+      state = state.copyWith(errorMessage: 'Username is required.');
+      return false;
+    }
+    if (trimmedUsername.length < 3) {
+      state = state.copyWith(errorMessage: 'Username must be at least 3 characters.');
       return false;
     }
 
@@ -60,12 +82,15 @@ class SignupViewModel extends Notifier<SignupState> {
       state = state.copyWith(errorMessage: 'Password must be at least 6 characters.');
       return false;
     }
-
-    if (trimmedConfirm.isEmpty) {
+    if (trimmedConfirmPassword.isEmpty) {
       state = state.copyWith(errorMessage: 'Confirm password is required.');
       return false;
     }
-    if (trimmedPassword != trimmedConfirm) {
+    if (trimmedConfirmPassword.length < 6) {
+      state = state.copyWith(errorMessage: 'Confirm password must be at least 6 characters.');
+      return false;
+    }
+    if (trimmedPassword != trimmedConfirmPassword) {
       state = state.copyWith(errorMessage: 'Passwords do not match.');
       return false;
     }
@@ -79,12 +104,19 @@ class SignupViewModel extends Notifier<SignupState> {
       state = state.copyWith(errorMessage: 'Age is required.');
       return false;
     }
+    final parsedAge = int.tryParse(age.trim());
+    if (parsedAge == null || parsedAge < 1 || parsedAge > 100) {
+      state = state.copyWith(errorMessage: 'Please enter a valid age (1-100).');
+      return false;
+    }
 
     state = state.copyWith(isLoading: true, clearError: true);
 
     final result = await _registerUsecase(
       RegisterUsecaseParams(
-        fullName: trimmedName,
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        username: trimmedUsername,
         email: trimmedEmail,
         password: trimmedPassword,
         gender: gender,

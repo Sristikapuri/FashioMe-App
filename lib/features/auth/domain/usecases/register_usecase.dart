@@ -2,25 +2,31 @@ import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/core/usecases/app_usecase.dart';
-import 'package:fashio_me/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:fashio_me/features/auth/data/repositories/auth_repository.dart'
+    as auth_repo;
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
 import 'package:fashio_me/features/auth/domain/repositories/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final registerUsecaseProvider = Provider<RegisterUsecase>((ref) {
-  final authRepository = ref.read(authRepositoryProvider);
-  return RegisterUsecase(authRepository: authRepository);
+  return RegisterUsecase(
+    authRepository: ref.read(auth_repo.authRepositoryProvider),
+  );
 });
 
 class RegisterUsecaseParams extends Equatable {
-  final String fullName;
+  final String firstName;
+  final String lastName;
+  final String username;
   final String email;
   final String password;
   final String? gender;
   final String? age;
 
   const RegisterUsecaseParams({
-    required this.fullName,
+    required this.firstName,
+    required this.lastName,
+    required this.username,
     required this.email,
     required this.password,
     this.gender,
@@ -28,7 +34,7 @@ class RegisterUsecaseParams extends Equatable {
   });
 
   @override
-  List<Object?> get props => [fullName, email, password, gender, age];
+  List<Object?> get props => [firstName, lastName, username, email, password, gender, age];
 }
 
 class RegisterUsecase
@@ -42,7 +48,9 @@ class RegisterUsecase
   Future<Either<Failure, AuthEntity>> call(RegisterUsecaseParams params) {
     return _authRepository.register(
       AuthEntity(
-        fullName: params.fullName,
+        firstName: params.firstName,
+        lastName: params.lastName,
+        username: params.username,
         email: params.email,
         password: params.password,
         gender: params.gender,

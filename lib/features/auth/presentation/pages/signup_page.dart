@@ -16,12 +16,15 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _formKey = GlobalKey<FormState>();
   bool _autoValidate = false;
 
-  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController firstNameController = TextEditingController();
+
+  final TextEditingController lastNameController = TextEditingController();
+
+  final TextEditingController usernameController = TextEditingController();
 
   final TextEditingController emailController = TextEditingController();
 
   final TextEditingController passwordController = TextEditingController();
-
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
@@ -39,7 +42,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
   @override
   void dispose() {
-    fullNameController.dispose();
+    firstNameController.dispose();
+    lastNameController.dispose();
+    usernameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
@@ -134,18 +139,56 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
                 const SizedBox(height: 34),
 
-                /// full name
+                /// first name
                 buildTextField(
-                  label: 'Full Name',
-                  hint: 'Aria Chen',
-                  controller: fullNameController,
+                  label: 'First Name',
+                  hint: 'Aria',
+                  controller: firstNameController,
                   icon: Icons.person_outline,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Full name is required.';
+                      return 'First name is required.';
+                    }
+                    if (value.trim().length < 2) {
+                      return 'First name must be at least 2 characters.';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 22),
+
+                /// last name
+                buildTextField(
+                  label: 'Last Name',
+                  hint: 'Chen',
+                  controller: lastNameController,
+                  icon: Icons.person_outline,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Last name is required.';
+                    }
+                    if (value.trim().length < 2) {
+                      return 'Last name must be at least 2 characters.';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 22),
+
+                /// username
+                buildTextField(
+                  label: 'Username',
+                  hint: 'ariachen',
+                  controller: usernameController,
+                  icon: Icons.alternate_email,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Username is required.';
                     }
                     if (value.trim().length < 3) {
-                      return 'Full name must be at least 3 characters.';
+                      return 'Username must be at least 3 characters.';
                     }
                     return null;
                   },
@@ -208,8 +251,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     if (age == null) {
                       return 'Please enter a valid age.';
                     }
-                    if (age < 1 || age > 120) {
-                      return 'Please enter a valid age (1-120).';
+                    if (age < 1 || age > 100) {
+                      return 'Please enter a valid age (1-100).';
                     }
                     return null;
                   },
@@ -241,7 +284,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
                 const SizedBox(height: 22),
 
-                /// confirm password
                 buildPasswordField(
                   label: 'Confirm Password',
                   controller: confirmPasswordController,
@@ -255,7 +297,11 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Confirm password is required.';
                     }
-                    if (passwordController.text.trim() != value.trim()) {
+                    final trimmed = value.trim();
+                    if (trimmed.length < 6) {
+                      return 'Confirm password must be at least 6 characters.';
+                    }
+                    if (trimmed != passwordController.text.trim()) {
                       return 'Passwords do not match.';
                     }
                     return null;
@@ -359,7 +405,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     final success = await ref
         .read(signupViewModelProvider.notifier)
         .register(
-          fullName: fullNameController.text,
+          firstName: firstNameController.text,
+          lastName: lastNameController.text,
+          username: usernameController.text,
           email: emailController.text,
           password: passwordController.text,
           confirmPassword: confirmPasswordController.text,
@@ -540,7 +588,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         ),
         const SizedBox(height: 10),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,

@@ -1,4 +1,3 @@
-import 'package:fashio_me/core/providers/storage_provider.dart';
 import 'package:fashio_me/core/services/hive/hive_service.dart';
 import 'package:fashio_me/core/services/storage/user_session_service.dart';
 import 'package:fashio_me/features/auth/data/datasources/auth_datasource.dart';
@@ -6,12 +5,10 @@ import 'package:fashio_me/features/auth/data/models/auth_model.dart';
 import 'package:fashio_me/features/auth/data/models/auth_hive_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final authLocalDataSourceProvider = Provider<IAuthDataSource>((ref) {
-  final hiveService = ref.read(hiveServiceProvider);
-  final userSessionService = ref.read(userSessionServiceProvider);
+final authLocalDatasourceProvider = Provider<IAuthDataSource>((ref) {
   return AuthLocalDataSource(
-    hiveService: hiveService,
-    userSessionService: userSessionService,
+    hiveService: ref.read(hiveServiceProvider),
+    userSessionService: ref.read(userSessionServiceProvider),
   );
 });
 
@@ -48,12 +45,12 @@ class AuthLocalDataSource implements IAuthDataSource {
     // Save session after successful login
     await saveSession(authHiveModel.authId);
     
-    return AuthModel(
-      authId: authHiveModel.authId,
-      fullName: authHiveModel.fullName,
-      email: authHiveModel.email,
-      password: authHiveModel.password,
-    );
+    return AuthModel.fromJson({
+      'authId': authHiveModel.authId,
+      'fullName': authHiveModel.fullName,
+      'email': authHiveModel.email,
+      'password': authHiveModel.password,
+    });
   }
 
   @override
@@ -64,12 +61,12 @@ class AuthLocalDataSource implements IAuthDataSource {
     final authHiveModel = _hiveService.getCurrentUser(authId);
     if (authHiveModel == null) return null;
     
-    return AuthModel(
-      authId: authHiveModel.authId,
-      fullName: authHiveModel.fullName,
-      email: authHiveModel.email,
-      password: authHiveModel.password,
-    );
+    return AuthModel.fromJson({
+      'authId': authHiveModel.authId,
+      'fullName': authHiveModel.fullName,
+      'email': authHiveModel.email,
+      'password': authHiveModel.password,
+    });
   }
 
   @override
