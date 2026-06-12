@@ -1,18 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+export 'package:fashio_me/core/providers/shared_prefs_provider.dart';
 import 'package:fashio_me/core/services/storage/storage_service.dart';
-import 'package:fashio_me/core/services/storage/user_session_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError('SharedPreferences must be initialized in main.dart');
-});
+import 'package:fashio_me/core/services/storage/token_service.dart';
+import 'package:fashio_me/core/providers/shared_prefs_provider.dart';
 
 final storageServiceProvider = Provider<StorageService>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return StorageService(prefs: prefs);
 });
 
-final userSessionServiceProvider = Provider<UserSessionService>((ref) {
-  final storageService = ref.watch(storageServiceProvider);
-  return UserSessionService(storageService: storageService);
+final tokenServiceProvider = Provider<TokenService>((ref) {
+  return TokenService();
 });
