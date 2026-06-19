@@ -106,21 +106,34 @@ class WardrobeEntry extends Equatable {
   final bool isFavorite;
   final String entryType;
 
-  WardrobeEntry copyWith({bool? isFavorite, DateTime? savedAt}) {
+  WardrobeEntry copyWith({
+    String? title,
+    String? category,
+    String? tag,
+    String? imageUrl,
+    String? outfit,
+    String? hairstyle,
+    String? explanation,
+    List<int>? palette,
+    List<String>? paletteLabels,
+    bool? isFavorite,
+    DateTime? savedAt,
+    String? entryType,
+  }) {
     return WardrobeEntry(
       id: id,
-      title: title,
-      category: category,
-      tag: tag,
-      imageUrl: imageUrl,
-      outfit: outfit,
-      hairstyle: hairstyle,
-      explanation: explanation,
-      palette: palette,
-      paletteLabels: paletteLabels,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      tag: tag ?? this.tag,
+      imageUrl: imageUrl ?? this.imageUrl,
+      outfit: outfit ?? this.outfit,
+      hairstyle: hairstyle ?? this.hairstyle,
+      explanation: explanation ?? this.explanation,
+      palette: palette ?? this.palette,
+      paletteLabels: paletteLabels ?? this.paletteLabels,
       savedAt: savedAt ?? this.savedAt,
       isFavorite: isFavorite ?? this.isFavorite,
-      entryType: entryType,
+      entryType: entryType ?? this.entryType,
     );
   }
 
@@ -227,6 +240,17 @@ class DiscoverEntry extends Equatable {
   final String imageUrl;
   final String caption;
   final double height;
+
+  factory DiscoverEntry.fromJson(Map<String, dynamic> json) {
+    return DiscoverEntry(
+      id: (json['id'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      category: (json['category'] ?? '').toString(),
+      imageUrl: (json['imageUrl'] ?? '').toString(),
+      caption: (json['caption'] ?? '').toString(),
+      height: (json['height'] as num?)?.toDouble() ?? 200,
+    );
+  }
 
   @override
   List<Object?> get props => [id, title, category, imageUrl, caption, height];
@@ -387,6 +411,7 @@ class DashboardState extends Equatable {
   final List<DiscoverEntry> discoverItems;
   final String wardrobeFilter;
   final String discoverFilter;
+  final String searchQuery;
   final int preferenceScore;
   final Map<String, int> stylePreferenceScores;
   final List<ChatMessage> chatMessages;
@@ -410,6 +435,7 @@ class DashboardState extends Equatable {
     required this.discoverItems,
     this.wardrobeFilter = 'All',
     this.discoverFilter = 'Trending',
+    this.searchQuery = '',
     this.preferenceScore = 0,
     this.stylePreferenceScores = const {},
     this.chatMessages = const [],
@@ -434,6 +460,7 @@ class DashboardState extends Equatable {
     List<DiscoverEntry>? discoverItems,
     String? wardrobeFilter,
     String? discoverFilter,
+    String? searchQuery,
     int? preferenceScore,
     Map<String, int>? stylePreferenceScores,
     List<ChatMessage>? chatMessages,
@@ -468,6 +495,7 @@ class DashboardState extends Equatable {
       discoverItems: discoverItems ?? this.discoverItems,
       wardrobeFilter: wardrobeFilter ?? this.wardrobeFilter,
       discoverFilter: discoverFilter ?? this.discoverFilter,
+      searchQuery: searchQuery ?? this.searchQuery,
       preferenceScore: preferenceScore ?? this.preferenceScore,
       stylePreferenceScores:
           stylePreferenceScores ?? this.stylePreferenceScores,
@@ -495,6 +523,7 @@ class DashboardState extends Equatable {
     discoverItems,
     wardrobeFilter,
     discoverFilter,
+    searchQuery,
     preferenceScore,
     stylePreferenceScores,
     chatMessages,

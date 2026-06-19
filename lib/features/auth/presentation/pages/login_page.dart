@@ -1,4 +1,5 @@
 import 'package:fashio_me/app/routes/app_routes.dart';
+import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/core/utils/snackbar_utils.dart';
 import 'package:fashio_me/features/auth/presentation/pages/signup_page.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart';
@@ -33,13 +34,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final loginState = ref.watch(loginViewModelProvider);
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: const Color(0xFFF8F6F5),
-
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
 
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
 
           child: Form(
             key: _formKey,
@@ -55,7 +55,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   width: double.infinity,
 
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(24),
 
                     image: const DecorationImage(
                       image: NetworkImage(
@@ -67,7 +67,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(24),
 
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -100,7 +100,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                 ),
 
-                const SizedBox(height: 36),
+                const SizedBox(height: 32),
 
                 /// title
                 const Text(
@@ -108,7 +108,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   style: TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F1F1F),
+                    color: AppColors.primaryDark,
                   ),
                 ),
 
@@ -116,10 +116,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                 Text(
                   'Sign in to continue your style journey.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
 
-                const SizedBox(height: 34),
+                const SizedBox(height: 32),
 
                 /// email field
                 buildTextField(
@@ -131,14 +134,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Email is required.';
                     }
-                    if (!RegExp(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$').hasMatch(value.trim())) {
+                    if (!RegExp(
+                      r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
+                    ).hasMatch(value.trim())) {
                       return 'Enter a valid email address.';
                     }
                     return null;
                   },
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
                 /// password field
                 buildPasswordField(loginState.obscurePassword),
@@ -148,7 +153,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Text(
                     loginState.errorMessage!,
                     style: const TextStyle(
-                      color: Color(0xFF7A0000),
+                      color: AppColors.primary,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -167,7 +172,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     child: const Text(
                       'Forgot Password?',
                       style: TextStyle(
-                        color: Color(0xFF7A0000),
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -183,10 +188,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7A0000),
+                      backgroundColor: AppColors.primary,
 
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
 
@@ -222,20 +227,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(
-                        color: Color(0xFF7A0000),
+                        color: AppColors.primary,
                         width: 1.3,
                       ),
 
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
 
                     onPressed: () {
-                      AppRoutes.push(
-                        context,
-                        const SignupPage(),
-                      );
+                      AppRoutes.push(context, const SignupPage());
                     },
 
                     child: const Text(
@@ -243,7 +245,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF7A0000),
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -270,10 +272,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         .login(email: emailController.text, password: passwordController.text);
     if (!mounted) return;
     if (success) {
-      AppRoutes.pushAndRemoveUntil(
-        context,
-        const DashboardPage(),
-      );
+      AppRoutes.pushAndRemoveUntil(context, const DashboardPage());
     } else {
       final message = ref.read(loginViewModelProvider).errorMessage;
       if (message != null) {
@@ -299,7 +298,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             fontSize: 12,
             letterSpacing: 2,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF6B6B6B),
+            color: AppColors.profileAccent,
           ),
         ),
 
@@ -312,10 +311,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           decoration: InputDecoration(
             hintText: hint,
 
-            prefixIcon: Icon(icon, color: const Color(0xFF7A0000)),
+            prefixIcon: Icon(icon, color: AppColors.primary),
 
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.cardBackground,
 
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 18,
@@ -323,16 +322,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ),
 
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
 
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
 
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
 
               borderSide: const BorderSide(
-                color: Color(0xFF7A0000),
+                color: AppColors.primary,
                 width: 1.4,
               ),
             ),
@@ -353,7 +352,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             fontSize: 12,
             letterSpacing: 2,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF6B6B6B),
+            color: AppColors.profileAccent,
           ),
         ),
 
@@ -378,7 +377,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
             prefixIcon: const Icon(
               Icons.lock_outline,
-              color: Color(0xFF7A0000),
+              color: AppColors.primary,
             ),
 
             suffixIcon: IconButton(
@@ -392,12 +391,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 obscurePassword
                     ? Icons.visibility_outlined
                     : Icons.visibility_off_outlined,
-                color: Colors.grey,
+                color: AppColors.textLight,
               ),
             ),
 
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.cardBackground,
 
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 18,
@@ -405,16 +404,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ),
 
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
 
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
 
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
 
               borderSide: const BorderSide(
-                color: Color(0xFF7A0000),
+                color: AppColors.primary,
                 width: 1.4,
               ),
             ),

@@ -6,10 +6,7 @@ class DashboardModel {
   final List<OccasionModel> occasions;
   final List<HairstyleModel> hairstyles;
 
-  DashboardModel({
-    required this.occasions,
-    required this.hairstyles,
-  });
+  DashboardModel({required this.occasions, required this.hairstyles});
 
   DashboardEntity toEntity() {
     return DashboardEntity(
@@ -24,49 +21,49 @@ class DashboardModel {
         OccasionModel(
           id: '1',
           name: 'WEDDING',
-          imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=400&q=80',
+          imageUrl: 'assets/images/wedding.jpg',
         ),
         OccasionModel(
           id: '2',
           name: 'OFFICE',
-          imageUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=400&q=80',
+          imageUrl: 'assets/images/outfit.jpg',
         ),
         OccasionModel(
           id: '3',
           name: 'PARTY',
-          imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=400&q=80',
+          imageUrl: 'assets/images/party.jpg',
         ),
         OccasionModel(
           id: '4',
           name: 'DATE NIGHT',
-          imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+          imageUrl: 'assets/images/ai_wedding_formal.jpg',
         ),
         OccasionModel(
           id: '5',
           name: 'BRUNCH',
-          imageUrl: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=400&q=80',
+          imageUrl: 'assets/images/brunch.jpg',
         ),
         OccasionModel(
           id: '6',
           name: 'FESTIVAL',
-          imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80',
+          imageUrl: 'assets/images/travel.jpg',
         ),
         OccasionModel(
           id: '7',
           name: 'CASUAL',
-          imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=400&q=80',
+          imageUrl: 'assets/images/weekend.jpg',
         ),
       ],
       hairstyles: [
         HairstyleModel(
           id: '1',
           name: 'TEXTURED PIXIE',
-          imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
+          imageUrl: 'assets/images/outfit.jpg',
         ),
         HairstyleModel(
           id: '2',
           name: 'SOFT LAYERS',
-          imageUrl: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=400&q=80',
+          imageUrl: 'assets/images/brunch.jpg',
         ),
       ],
     );
@@ -78,18 +75,10 @@ class OccasionModel {
   final String name;
   final String imageUrl;
 
-  OccasionModel({
-    required this.id,
-    required this.name,
-    required this.imageUrl,
-  });
+  OccasionModel({required this.id, required this.name, required this.imageUrl});
 
   Occasion toEntity() {
-    return Occasion(
-      id: id,
-      name: name,
-      imageUrl: imageUrl,
-    );
+    return Occasion(id: id, name: name, imageUrl: imageUrl);
   }
 }
 
@@ -105,10 +94,6 @@ class HairstyleModel {
   });
 
   Hairstyle toEntity() {
-    return Hairstyle(
-      id: id,
-      name: name,
-      imageUrl: imageUrl,
-    );
+    return Hairstyle(id: id, name: name, imageUrl: imageUrl);
   }
 }

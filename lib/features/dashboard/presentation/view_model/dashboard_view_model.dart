@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:fashio_me/core/services/storage/user_session_service.dart';
+import 'package:fashio_me/features/dashboard/data/datasources/remote/dashboard_home_remote_datasource.dart';
 import 'package:fashio_me/features/silhouette/domain/entities/silhouette_profile.dart';
 import 'package:fashio_me/features/dashboard/presentation/state/dashboard_state.dart';
 import 'package:fashio_me/features/dashboard/domain/usecases/read_dashboard_state_usecase.dart';
@@ -20,6 +21,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
   late final ReadDashboardStateUsecase _readDashboardStateUsecase;
   late final PersistDashboardStateUsecase _persistDashboardStateUsecase;
   late final UploadItemPhotoUsecase _uploadItemPhotoUsecase;
+  late final DashboardHomeRemoteDataSource _dashboardHomeRemoteDataSource;
   final ImagePicker _imagePicker = ImagePicker();
   final Random _random = Random();
   bool _usedPersistedProfileData = false;
@@ -38,6 +40,9 @@ class DashboardViewModel extends Notifier<DashboardState> {
       persistDashboardStateUsecaseProvider,
     );
     _uploadItemPhotoUsecase = ref.read(uploadItemPhotoUsecaseProvider);
+    _dashboardHomeRemoteDataSource = ref.read(
+      dashboardHomeRemoteDataSourceProvider,
+    );
 
     final initial = _buildStateFromCache(const <String, dynamic>{});
     Future.microtask(_initialize);
@@ -59,6 +64,52 @@ class DashboardViewModel extends Notifier<DashboardState> {
     }
 
     await _hydrateFromSilhouetteIfNeeded();
+    await _loadRemoteWardrobeItems();
+    await _loadRemoteDashboardContent();
+  }
+
+  Future<void> _loadRemoteDashboardContent() async {
+    try {
+      final recommendation = await _dashboardHomeRemoteDataSource
+          .generateOutfit(
+            occasion: state.aiStyleOfDay.occasion,
+            profileData: state.profileData,
+            preferenceScores: state.stylePreferenceScores,
+          );
+      final trends = await _dashboardHomeRemoteDataSource.fetchTrends();
+      final refreshedList = [
+        recommendation,
+        ...state.homeRecommendations.where(
+          (item) => item.id != recommendation.id,
+        ),
+      ].take(6).toList();
+
+      state = state.copyWith(
+        aiStyleOfDay: recommendation,
+        currentRecommendation: recommendation,
+        homeRecommendations: refreshedList,
+        discoverItems: trends.isEmpty ? state.discoverItems : trends,
+        uploadMessage: 'Dashboard synced with backend.',
+        uploadSucceeded: true,
+      );
+      await _persistState();
+    } catch (_) {
+      // Keep locally generated content when backend is unavailable.
+    }
+  }
+
+  Future<void> _loadRemoteWardrobeItems() async {
+    try {
+      final remoteItems = await _dashboardHomeRemoteDataSource.fetchWardrobe();
+      if (remoteItems.isEmpty) {
+        return;
+      }
+
+      state = state.copyWith(wardrobeItems: remoteItems);
+      await _persistState();
+    } catch (_) {
+      // Keep local wardrobe if backend sync is unavailable.
+    }
   }
 
   Future<void> _refreshProfileFromSession() async {
@@ -157,6 +208,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
       discoverItems: discoverItems,
       wardrobeFilter: (cachedData['wardrobeFilter'] ?? 'All').toString(),
       discoverFilter: (cachedData['discoverFilter'] ?? 'Trending').toString(),
+      searchQuery: (cachedData['searchQuery'] ?? '').toString(),
       preferenceScore: cachedData['preferenceScore'] as int? ?? 0,
       stylePreferenceScores: preferenceScores,
       chatMessages: chatMessages.isEmpty
@@ -208,6 +260,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
       'chatMessages': state.chatMessages.map((item) => item.toJson()).toList(),
       'wardrobeFilter': state.wardrobeFilter,
       'discoverFilter': state.discoverFilter,
+      'searchQuery': state.searchQuery,
     };
     await _persistDashboardStateUsecase(
       PersistDashboardStateParams(payload: payload),
@@ -388,6 +441,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
   Future<DashboardRecommendation> generateHomeRecommendation({
     String? occasion,
     bool syncCurrentRecommendation = false,
+    String source = 'My Wardrobe',
   }) async {
     if (state.isUploading) {
       return state.aiStyleOfDay;
@@ -400,12 +454,16 @@ class DashboardViewModel extends Notifier<DashboardState> {
       uploadMessage: 'Refreshing today\'s recommendation...',
     );
 
-    await Future.delayed(const Duration(milliseconds: 1800));
-    final recommendation = _generateRecommendation(
-      occasion: occasion ?? state.aiStyleOfDay.occasion,
-      profileData: state.profileData,
-      preferenceScores: state.stylePreferenceScores,
-      excludedCategory: '',
+    final selectedOccasion = occasion ?? state.aiStyleOfDay.occasion;
+    final recommendation = await _generateRecommendationFromBackend(
+      occasion: selectedOccasion,
+      source: source,
+      fallback: () => _generateRecommendation(
+        occasion: selectedOccasion,
+        profileData: state.profileData,
+        preferenceScores: state.stylePreferenceScores,
+        excludedCategory: '',
+      ),
     );
     final refreshedList = [
       recommendation,
@@ -430,7 +488,9 @@ class DashboardViewModel extends Notifier<DashboardState> {
     return recommendation;
   }
 
-  Future<DashboardRecommendation> generateFreshHomeRecommendation() async {
+  Future<DashboardRecommendation> generateFreshHomeRecommendation({
+    String source = 'My Wardrobe',
+  }) async {
     final occasions = ['Wedding', 'Office', 'Party', 'Travel', 'Weekend'];
     final currentOccasion = state.aiStyleOfDay.occasion;
     final availableOccasions = occasions
@@ -451,13 +511,15 @@ class DashboardViewModel extends Notifier<DashboardState> {
       uploadMessage: 'Generating a personalized outfit...',
     );
 
-    await Future.delayed(const Duration(milliseconds: 1400));
-
-    final recommendation = _generateRecommendation(
+    final recommendation = await _generateRecommendationFromBackend(
       occasion: nextOccasion,
-      profileData: state.profileData,
-      preferenceScores: state.stylePreferenceScores,
-      excludedCategory: state.aiStyleOfDay.category,
+      source: source,
+      fallback: () => _generateRecommendation(
+        occasion: nextOccasion,
+        profileData: state.profileData,
+        preferenceScores: state.stylePreferenceScores,
+        excludedCategory: state.aiStyleOfDay.category,
+      ),
     );
     final refreshedList = [
       recommendation,
@@ -495,6 +557,113 @@ class DashboardViewModel extends Notifier<DashboardState> {
     _persistState();
   }
 
+  Future<void> searchDashboard(String query) async {
+    final trimmed = query.trim();
+    state = state.copyWith(searchQuery: trimmed);
+
+    if (trimmed.isEmpty) {
+      await _loadRemoteDashboardContent();
+      await _persistState();
+      return;
+    }
+
+    try {
+      final result = await _dashboardHomeRemoteDataSource.search(
+        query: trimmed,
+        profileData: state.profileData,
+        preferenceScores: state.stylePreferenceScores,
+      );
+
+      final recommendationPayload = result['recommendation'];
+      DashboardRecommendation? recommendation;
+      if (recommendationPayload is Map<String, dynamic>) {
+        recommendation = DashboardRecommendation.fromJson(
+          recommendationPayload,
+        );
+      } else if (recommendationPayload is Map) {
+        recommendation = DashboardRecommendation.fromJson(
+          Map<String, dynamic>.from(recommendationPayload),
+        );
+      }
+
+      final discoverPayload = result['discoverItems'];
+      final discoverItems = discoverPayload is List
+          ? discoverPayload
+                .whereType<Map>()
+                .map(
+                  (item) =>
+                      DiscoverEntry.fromJson(Map<String, dynamic>.from(item)),
+                )
+                .toList(growable: false)
+          : state.discoverItems;
+
+      final wardrobePayload = result['wardrobeItems'];
+      final wardrobeItems = wardrobePayload is List
+          ? wardrobePayload
+                .whereType<Map>()
+                .map(
+                  (item) =>
+                      WardrobeEntry.fromJson(Map<String, dynamic>.from(item)),
+                )
+                .toList(growable: false)
+          : state.wardrobeItems;
+
+      state = state.copyWith(
+        currentIndex: 3,
+        discoverFilter: 'Trending',
+        discoverItems: discoverItems.isEmpty
+            ? state.discoverItems
+            : discoverItems,
+        wardrobeItems: wardrobeItems.isEmpty
+            ? state.wardrobeItems
+            : wardrobeItems,
+        currentRecommendation: recommendation ?? state.currentRecommendation,
+        aiStyleOfDay: recommendation ?? state.aiStyleOfDay,
+        homeRecommendations: recommendation == null
+            ? state.homeRecommendations
+            : [
+                recommendation,
+                ...state.homeRecommendations.where(
+                  (item) => item.id != recommendation!.id,
+                ),
+              ].take(6).toList(),
+        uploadMessage: 'Search results loaded for "$trimmed".',
+        uploadSucceeded: true,
+      );
+    } catch (_) {
+      final lower = trimmed.toLowerCase();
+      final localDiscover = state.discoverItems
+          .where(
+            (item) =>
+                item.title.toLowerCase().contains(lower) ||
+                item.category.toLowerCase().contains(lower) ||
+                item.caption.toLowerCase().contains(lower),
+          )
+          .toList();
+      final localWardrobe = state.wardrobeItems
+          .where(
+            (item) =>
+                item.title.toLowerCase().contains(lower) ||
+                item.category.toLowerCase().contains(lower) ||
+                item.tag.toLowerCase().contains(lower),
+          )
+          .toList();
+
+      state = state.copyWith(
+        currentIndex: localWardrobe.isNotEmpty ? 2 : 3,
+        discoverItems: localDiscover.isEmpty
+            ? state.discoverItems
+            : localDiscover,
+        wardrobeItems: localWardrobe.isEmpty
+            ? state.wardrobeItems
+            : localWardrobe,
+        uploadMessage: 'Showing local search results for "$trimmed".',
+      );
+    }
+
+    await _persistState();
+  }
+
   Future<String?> pickWardrobeItemImage(ImageSource source) async {
     try {
       final pickedFile = await _imagePicker.pickImage(
@@ -526,7 +695,11 @@ class DashboardViewModel extends Notifier<DashboardState> {
     return assetName;
   }
 
-  void addWardrobeItem(String title, String category, {String imagePath = ''}) {
+  Future<bool> addWardrobeItem(
+    String title,
+    String category, {
+    String imagePath = '',
+  }) async {
     final newItem = WardrobeEntry(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
@@ -541,11 +714,30 @@ class DashboardViewModel extends Notifier<DashboardState> {
       savedAt: DateTime.now(),
       entryType: 'clothes',
     );
-    state = state.copyWith(wardrobeItems: [newItem, ...state.wardrobeItems]);
-    _persistState();
+    state = state.copyWith(
+      wardrobeItems: [newItem, ...state.wardrobeItems],
+      uploadMessage: 'Image added to your wardrobe.',
+      uploadSucceeded: true,
+    );
+    await _persistState();
+    try {
+      await _dashboardHomeRemoteDataSource.createWardrobeItem(newItem);
+      state = state.copyWith(
+        uploadMessage: 'Image uploaded and added to your wardrobe.',
+        uploadSucceeded: true,
+      );
+      return true;
+    } catch (_) {
+      await _syncWardrobeWithBackend();
+      state = state.copyWith(
+        uploadMessage: 'Image saved locally. Upload will sync later.',
+        uploadSucceeded: false,
+      );
+      return false;
+    }
   }
 
-  void addCustomOutfit({
+  Future<void> addCustomOutfit({
     required String title,
     required String category,
     required String imagePath,
@@ -553,7 +745,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     String hairstyle = '',
     String explanation = '',
     List<String> paletteLabels = const [],
-  }) {
+  }) async {
     final newItem = WardrobeEntry(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
@@ -571,10 +763,18 @@ class DashboardViewModel extends Notifier<DashboardState> {
       entryType: 'look',
     );
     state = state.copyWith(wardrobeItems: [newItem, ...state.wardrobeItems]);
-    _persistState();
+    await _persistState();
+    try {
+      await _dashboardHomeRemoteDataSource.createWardrobeItem(newItem);
+    } catch (_) {
+      await _syncWardrobeWithBackend();
+    }
   }
 
-  void addLookFromCloset(List<WardrobeEntry> items, {bool favorite = false}) {
+  Future<void> addLookFromCloset(
+    List<WardrobeEntry> items, {
+    bool favorite = false,
+  }) async {
     if (items.isEmpty) {
       return;
     }
@@ -600,25 +800,70 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
 
     state = state.copyWith(wardrobeItems: [newLook, ...state.wardrobeItems]);
-    _persistState();
+    await _persistState();
+    try {
+      await _dashboardHomeRemoteDataSource.createWardrobeItem(newLook);
+    } catch (_) {
+      await _syncWardrobeWithBackend();
+    }
   }
 
-  void toggleWardrobeFavorite(WardrobeEntry item) {
+  Future<void> toggleWardrobeFavorite(WardrobeEntry item) async {
+    final updatedItem = item.copyWith(isFavorite: !item.isFavorite);
     state = state.copyWith(
       wardrobeItems: state.wardrobeItems
-          .map(
-            (e) => e.id == item.id ? e.copyWith(isFavorite: !e.isFavorite) : e,
-          )
+          .map((e) => e.id == item.id ? updatedItem : e)
           .toList(),
     );
-    _persistState();
+    await _persistState();
+    try {
+      await _dashboardHomeRemoteDataSource.updateWardrobeItem(updatedItem);
+    } catch (_) {
+      await _syncWardrobeWithBackend();
+    }
   }
 
-  void removeWardrobeItem(WardrobeEntry item) {
+  Future<void> updateWardrobeItem(
+    WardrobeEntry item, {
+    required String title,
+    required String category,
+    String? imagePath,
+  }) async {
+    final updatedItem = item.copyWith(
+      title: title,
+      category: category,
+      tag: item.tag == item.category ? category : item.tag,
+      imageUrl: imagePath ?? item.imageUrl,
+      savedAt: DateTime.now(),
+    );
+
+    state = state.copyWith(
+      wardrobeItems: state.wardrobeItems
+          .map((entry) => entry.id == item.id ? updatedItem : entry)
+          .toList(),
+      uploadMessage: 'Wardrobe item updated.',
+      uploadSucceeded: true,
+    );
+    await _persistState();
+    try {
+      await _dashboardHomeRemoteDataSource.updateWardrobeItem(updatedItem);
+    } catch (_) {
+      await _syncWardrobeWithBackend();
+    }
+  }
+
+  Future<void> removeWardrobeItem(WardrobeEntry item) async {
     state = state.copyWith(
       wardrobeItems: state.wardrobeItems.where((i) => i.id != item.id).toList(),
+      uploadMessage: 'Wardrobe item deleted.',
+      uploadSucceeded: true,
     );
-    _persistState();
+    await _persistState();
+    try {
+      await _dashboardHomeRemoteDataSource.deleteWardrobeItem(item.id);
+    } catch (_) {
+      await _syncWardrobeWithBackend();
+    }
   }
 
   Future<void> saveDiscoverItem(DiscoverEntry item) async {
@@ -645,9 +890,17 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
     state = state.copyWith(wardrobeItems: [newItem, ...state.wardrobeItems]);
     await _persistState();
+    try {
+      await _dashboardHomeRemoteDataSource.createWardrobeItem(newItem);
+    } catch (_) {
+      await _syncWardrobeWithBackend();
+    }
   }
 
-  Future<bool> uploadSelectedImage() async {
+  Future<bool> uploadSelectedImage({
+    String? occasion,
+    String source = 'Uploaded Reference',
+  }) async {
     final imagePath = state.selectedImagePath;
     if (imagePath == null || imagePath.isEmpty) {
       state = state.copyWith(
@@ -667,6 +920,8 @@ class DashboardViewModel extends Notifier<DashboardState> {
     if (uploadedAssetName == null) {
       return false;
     }
+
+    final selectedOccasion = occasion ?? state.currentRecommendation.occasion;
 
     state = state.copyWith(
       isUploading: true,
@@ -696,21 +951,85 @@ class DashboardViewModel extends Notifier<DashboardState> {
       await Future.delayed(const Duration(milliseconds: 650));
     }
 
-    final recommendation = _generateRecommendation(
-      occasion: state.currentRecommendation.occasion,
-      profileData: state.profileData,
-      preferenceScores: state.stylePreferenceScores,
-    );
+    var analyzedProfile = state.profileData;
+    DashboardRecommendation recommendation;
+    String? analysisSummary;
+
+    try {
+      final analysis = await _dashboardHomeRemoteDataSource.generateProfile(
+        profileData: state.profileData,
+        preferenceScores: state.stylePreferenceScores,
+        imageReference: uploadedAssetName,
+        occasion: selectedOccasion,
+        source: source,
+      );
+
+      final profilePayload = analysis['profileData'];
+      if (profilePayload is Map<String, dynamic>) {
+        analyzedProfile = DashboardProfileData.fromJson(profilePayload);
+      } else if (profilePayload is Map) {
+        analyzedProfile = DashboardProfileData.fromJson(
+          Map<String, dynamic>.from(profilePayload),
+        );
+      }
+
+      final recommendationPayload = analysis['recommendation'];
+      if (recommendationPayload is Map<String, dynamic>) {
+        recommendation = DashboardRecommendation.fromJson(
+          recommendationPayload,
+        );
+      } else if (recommendationPayload is Map) {
+        recommendation = DashboardRecommendation.fromJson(
+          Map<String, dynamic>.from(recommendationPayload),
+        );
+      } else {
+        recommendation = await _generateRecommendationFromBackend(
+          occasion: selectedOccasion,
+          source: source,
+          imageReference: uploadedAssetName,
+          fallback: () => _generateRecommendation(
+            occasion: selectedOccasion,
+            profileData: analyzedProfile,
+            preferenceScores: state.stylePreferenceScores,
+          ),
+        );
+      }
+
+      final summary = analysis['summary'];
+      if (summary is String && summary.trim().isNotEmpty) {
+        analysisSummary = summary.trim();
+      }
+    } catch (_) {
+      recommendation = await _generateRecommendationFromBackend(
+        occasion: selectedOccasion,
+        source: source,
+        imageReference: uploadedAssetName,
+        fallback: () => _generateRecommendation(
+          occasion: selectedOccasion,
+          profileData: state.profileData,
+          preferenceScores: state.stylePreferenceScores,
+        ),
+      );
+    }
+
+    final refreshedList = [
+      recommendation,
+      ...state.homeRecommendations.where(
+        (item) => item.id != recommendation.id,
+      ),
+    ].take(6).toList();
 
     state = state.copyWith(
       isUploading: false,
       uploadProgress: 1.0,
       uploadSucceeded: true,
       hasCompletedStyleAnalysis: true,
+      profileData: analyzedProfile,
       currentRecommendation: recommendation,
       aiStyleOfDay: recommendation,
+      homeRecommendations: refreshedList,
       aiProcessingMessage: 'Recommendation ready.',
-      uploadMessage: 'AI style analysis complete.',
+      uploadMessage: analysisSummary ?? 'AI style analysis complete.',
     );
     await _persistState();
     return true;
@@ -817,6 +1136,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
           'Saved to Wardrobe and tuned future recommendations to ${recommendation.category.toLowerCase()} looks.',
     );
     await _persistState();
+    await _syncWardrobeWithBackend();
   }
 
   Future<void> saveCurrentRecommendation() async {
@@ -836,6 +1156,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
       uploadMessage: 'Saved this recommendation to your Wardrobe.',
     );
     await _persistState();
+    await _syncWardrobeWithBackend();
   }
 
   Future<void> dislikeCurrentRecommendation() async {
@@ -849,13 +1170,15 @@ class DashboardViewModel extends Notifier<DashboardState> {
       aiProcessingMessage: 'Reworking your recommendation...',
       uploadMessage: 'Finding a different direction...',
     );
-    await Future.delayed(const Duration(seconds: 2));
-
-    final recommendation = _generateRecommendation(
+    final recommendation = await _generateRecommendationFromBackend(
       occasion: state.currentRecommendation.occasion,
-      profileData: state.profileData,
-      preferenceScores: state.stylePreferenceScores,
-      excludedCategory: state.currentRecommendation.category,
+      source: 'New Inspiration',
+      fallback: () => _generateRecommendation(
+        occasion: state.currentRecommendation.occasion,
+        profileData: state.profileData,
+        preferenceScores: state.stylePreferenceScores,
+        excludedCategory: state.currentRecommendation.category,
+      ),
     );
     state = state.copyWith(
       isUploading: false,
@@ -869,7 +1192,10 @@ class DashboardViewModel extends Notifier<DashboardState> {
     await _persistState();
   }
 
-  Future<void> sendChatMessage(String message) async {
+  Future<void> sendChatMessage(
+    String message, {
+    String source = 'My Wardrobe',
+  }) async {
     final trimmed = message.trim();
     if (trimmed.isEmpty || state.isChatTyping) {
       return;
@@ -881,13 +1207,59 @@ class DashboardViewModel extends Notifier<DashboardState> {
     ];
     state = state.copyWith(chatMessages: nextMessages, isChatTyping: true);
 
-    await Future.delayed(const Duration(milliseconds: 1200));
-    final reply = _generateChatReply(trimmed);
+    String reply;
+    DashboardRecommendation? suggestedRecommendation;
+
+    try {
+      final response = await _dashboardHomeRemoteDataSource.chatWithAssistant(
+        message: trimmed,
+        profileData: state.profileData,
+        preferenceScores: state.stylePreferenceScores,
+        source: source,
+        currentRecommendation: state.currentRecommendation,
+      );
+      reply =
+          (response['reply'] is String &&
+              (response['reply'] as String).trim().isNotEmpty)
+          ? (response['reply'] as String).trim()
+          : _generateChatReply(trimmed);
+
+      final recommendationPayload = response['recommendation'];
+      if (recommendationPayload is Map<String, dynamic>) {
+        suggestedRecommendation = DashboardRecommendation.fromJson(
+          recommendationPayload,
+        );
+      } else if (recommendationPayload is Map) {
+        suggestedRecommendation = DashboardRecommendation.fromJson(
+          Map<String, dynamic>.from(recommendationPayload),
+        );
+      }
+    } catch (_) {
+      await Future.delayed(const Duration(milliseconds: 800));
+      reply = _generateChatReply(trimmed);
+    }
+
+    final nextRecommendations = suggestedRecommendation == null
+        ? state.homeRecommendations
+        : [
+            suggestedRecommendation,
+            ...state.homeRecommendations.where(
+              (item) => item.id != suggestedRecommendation!.id,
+            ),
+          ].take(6).toList();
+
     state = state.copyWith(
       chatMessages: [
         ...nextMessages,
         ChatMessage(id: _id('chat-ai'), text: reply, isUser: false),
       ],
+      currentRecommendation:
+          suggestedRecommendation ?? state.currentRecommendation,
+      aiStyleOfDay: suggestedRecommendation ?? state.aiStyleOfDay,
+      homeRecommendations: nextRecommendations,
+      uploadMessage: suggestedRecommendation == null
+          ? state.uploadMessage
+          : 'AI assistant suggested a new ${suggestedRecommendation.category.toLowerCase()} look.',
       isChatTyping: false,
     );
     await _persistState();
@@ -1038,6 +1410,26 @@ class DashboardViewModel extends Notifier<DashboardState> {
     };
   }
 
+  Future<DashboardRecommendation> _generateRecommendationFromBackend({
+    required String occasion,
+    required DashboardRecommendation Function() fallback,
+    String source = 'My Wardrobe',
+    String? imageReference,
+  }) async {
+    try {
+      return await _dashboardHomeRemoteDataSource.generateOutfit(
+        occasion: occasion,
+        profileData: state.profileData,
+        preferenceScores: state.stylePreferenceScores,
+        source: source,
+        imageReference: imageReference,
+      );
+    } catch (_) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      return fallback();
+    }
+  }
+
   DashboardRecommendation _generateRecommendation({
     required String occasion,
     required DashboardProfileData profileData,
@@ -1186,16 +1578,11 @@ class DashboardViewModel extends Notifier<DashboardState> {
   String _imageFor(String occasion, String category) {
     final key = '$occasion-$category';
     return switch (key) {
-      'Wedding-Formal' =>
-        'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=80',
-      'Office-Formal' =>
-        'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=900&q=80',
-      'Party-Party' =>
-        'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=900&q=80',
-      'Travel-Casual' =>
-        'https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=900&q=80',
-      _ =>
-        'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=900&q=80',
+      'Wedding-Formal' => 'assets/images/ai_wedding_formal.jpg',
+      'Office-Formal' => 'assets/images/outfit.jpg',
+      'Party-Party' => 'assets/images/party.jpg',
+      'Travel-Casual' => 'assets/images/travel.jpg',
+      _ => 'assets/images/weekend.jpg',
     };
   }
 
@@ -1205,8 +1592,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-1',
         title: 'Soft Tailoring',
         category: 'Trending',
-        imageUrl:
-            'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/ai_wedding_formal.jpg',
         caption: 'Fluid neutrals with a polished silhouette.',
         height: 252,
       ),
@@ -1214,8 +1600,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-2',
         title: 'Cafe Casual',
         category: 'Casual',
-        imageUrl:
-            'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/brunch.jpg',
         caption: 'Easy layers and warm everyday tones.',
         height: 188,
       ),
@@ -1223,8 +1608,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-3',
         title: 'Modern Evening',
         category: 'Formal',
-        imageUrl:
-            'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/wedding.jpg',
         caption: 'Minimal glamour with clean lines.',
         height: 226,
       ),
@@ -1232,8 +1616,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-4',
         title: 'After Dark',
         category: 'Party',
-        imageUrl:
-            'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/party.jpg',
         caption: 'Berry accents and sleek structure.',
         height: 210,
       ),
@@ -1241,8 +1624,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-5',
         title: 'Weekend Layers',
         category: 'Casual',
-        imageUrl:
-            'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/weekend.jpg',
         caption: 'Relaxed pieces that still feel editorial.',
         height: 244,
       ),
@@ -1250,8 +1632,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-6',
         title: 'Editorial Neutrals',
         category: 'Trending',
-        imageUrl:
-            'https://images.unsplash.com/photo-1551232864-3f0890e580d9?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/outfit.jpg',
         caption: 'Soft pinks, stone, and cocoa tones.',
         height: 196,
       ),
@@ -1259,8 +1640,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-7',
         title: 'Street Essentials',
         category: 'Streetwear',
-        imageUrl:
-            'https://images.unsplash.com/photo-1520975958225-7a20f1b2d6c2?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/travel.jpg',
         caption: 'Relaxed silhouettes with an elevated edge.',
         height: 212,
       ),
@@ -1268,8 +1648,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-8',
         title: 'Sport Luxe',
         category: 'Athleisure',
-        imageUrl:
-            'https://images.unsplash.com/photo-1526401485004-2aa7f3b14dd6?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/weekend.jpg',
         caption: 'Performance textures styled for the city.',
         height: 238,
       ),
@@ -1277,8 +1656,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-9',
         title: 'Vintage Denim',
         category: 'Vintage',
-        imageUrl:
-            'https://images.unsplash.com/photo-1520975661595-6453be3f7070?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/outfit.jpg',
         caption: 'Classic washes and timeless layering.',
         height: 192,
       ),
@@ -1286,8 +1664,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-10',
         title: 'Monochrome Minimal',
         category: 'Minimal',
-        imageUrl:
-            'https://images.unsplash.com/photo-1520975682071-ae4f62bb3f7a?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/ai_wedding_formal.jpg',
         caption: 'Clean lines, quiet texture, sharp finish.',
         height: 224,
       ),
@@ -1295,8 +1672,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-11',
         title: 'Night Street',
         category: 'Streetwear',
-        imageUrl:
-            'https://images.unsplash.com/photo-1520975911319-6d9c0dce2740?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/party.jpg',
         caption: 'Dark layers and confident proportions.',
         height: 206,
       ),
@@ -1304,8 +1680,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-12',
         title: 'Off-Duty Set',
         category: 'Athleisure',
-        imageUrl:
-            'https://images.unsplash.com/photo-1526401485002-2c5bf7c51240?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/travel.jpg',
         caption: 'Matching sets that look intentional.',
         height: 200,
       ),
@@ -1313,8 +1688,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-13',
         title: 'Retro Knit',
         category: 'Vintage',
-        imageUrl:
-            'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/brunch.jpg',
         caption: 'Warm tones with a throwback mood.',
         height: 236,
       ),
@@ -1322,8 +1696,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-14',
         title: 'Soft Structure',
         category: 'Minimal',
-        imageUrl:
-            'https://images.unsplash.com/photo-1520975867549-4b7d2b2d2e86?auto=format&fit=crop&w=900&q=80',
+        imageUrl: 'assets/images/wedding.jpg',
         caption: 'Neutral palette with tailored restraint.',
         height: 188,
       ),
@@ -1545,5 +1918,13 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
   String _id(String prefix) {
     return '$prefix-${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(9999)}';
+  }
+
+  Future<void> _syncWardrobeWithBackend() async {
+    try {
+      await _dashboardHomeRemoteDataSource.syncWardrobe(state.wardrobeItems);
+    } catch (_) {
+      // Keep local state when backend sync is unavailable.
+    }
   }
 }

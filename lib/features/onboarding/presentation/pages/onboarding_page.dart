@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/features/onboarding/domain/entities/onboarding_item.dart';
@@ -30,8 +31,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       );
     } else {
       // Complete onboarding and navigate to login
-      final completed =
-          await ref.read(onboardingViewModelProvider.notifier).completeOnboarding();
+      final completed = await ref
+          .read(onboardingViewModelProvider.notifier)
+          .completeOnboarding();
       if (!mounted || !completed) return;
       AppRoutes.pushReplacement(context, const LoginPage());
     }
@@ -42,7 +44,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     final onboardingState = ref.watch(onboardingViewModelProvider);
     final currentIndex = onboardingState.currentIndex;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F6F5),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -50,7 +52,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
             /// logo
             const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 26),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -58,7 +60,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   style: TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF5B0000),
+                    color: AppColors.primaryDark,
                   ),
                 ),
               ),
@@ -72,13 +74,15 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 controller: _pageController,
                 itemCount: kOnboardingItems.length,
                 onPageChanged: (index) {
-                  ref.read(onboardingViewModelProvider.notifier).setIndex(index);
+                  ref
+                      .read(onboardingViewModelProvider.notifier)
+                      .setIndex(index);
                 },
                 itemBuilder: (context, index) {
                   final data = kOnboardingItems[index];
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 26),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
                       children: [
                         const SizedBox(height: 10),
@@ -93,8 +97,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                               Container(
                                 width: double.infinity,
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(32),
-                                  color: const Color(0xFFEFE7E4),
+                                  borderRadius: BorderRadius.circular(24),
+                                  color: AppColors.cardBackground,
                                 ),
                               ),
 
@@ -102,17 +106,16 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                               Container(
                                 margin: const EdgeInsets.all(18),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(28),
+                                  borderRadius: BorderRadius.circular(24),
                                   image: DecorationImage(
-                                    image: NetworkImage(
-                                      data.imageUrl,
-                                    ),
+                                    image: NetworkImage(data.imageUrl),
                                     fit: BoxFit.cover,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.15),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.15,
+                                      ),
                                       blurRadius: 20,
                                       offset: const Offset(0, 10),
                                     ),
@@ -124,7 +127,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                               Container(
                                 margin: const EdgeInsets.all(18),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(28),
+                                  borderRadius: BorderRadius.circular(24),
                                   gradient: LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
@@ -139,7 +142,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           ),
                         ),
 
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 32),
 
                         /// tag
                         Container(
@@ -148,7 +151,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF3E8D5),
+                            color: AppColors.cardBackground,
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: const Text(
@@ -157,22 +160,22 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                               fontSize: 11,
                               letterSpacing: 2,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF9B7A00),
+                              color: AppColors.primary,
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 24),
 
                         /// title
                         Text(
                           data.title,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 40,
+                            fontSize: 34,
                             fontWeight: FontWeight.bold,
                             height: 1.1,
-                            color: Color(0xFF1F1F1F),
+                            color: AppColors.textPrimary,
                           ),
                         ),
 
@@ -180,15 +183,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
                         /// subtitle
                         Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
                             data.subtitle,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 17,
                               height: 1.6,
-                              color: Colors.grey.shade700,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -201,20 +203,15 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           children: List.generate(
                             kOnboardingItems.length,
                             (index) => AnimatedContainer(
-                              duration:
-                                  const Duration(milliseconds: 300),
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              width:
-                                  currentIndex == index ? 26 : 8,
+                              duration: const Duration(milliseconds: 300),
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: currentIndex == index ? 26 : 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                borderRadius:
-                                    BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(20),
                                 color: currentIndex == index
-                                    ? const Color(0xFF7A0000)
-                                    : Colors.grey.shade300,
+                                    ? AppColors.primary
+                                    : AppColors.divider,
                               ),
                             ),
                           ),
@@ -228,11 +225,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           height: 58,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  const Color(0xFF7A0000),
+                              backgroundColor: AppColors.primary,
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                             ),
                             onPressed: onboardingState.isCompleting
@@ -248,20 +243,19 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                     ),
                                   )
                                 : Text(
-                              currentIndex ==
-                                      kOnboardingItems.length - 1
-                                  ? 'Continue'
-                                  : 'Next',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                                    currentIndex == kOnboardingItems.length - 1
+                                        ? 'Continue'
+                                        : 'Next',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
 
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 24),
                       ],
                     ),
                   );

@@ -1,3 +1,4 @@
+import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 void showAppSnackBar(
@@ -8,7 +9,7 @@ void showAppSnackBar(
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
-      backgroundColor: isError ? Colors.red : null,
+      backgroundColor: isError ? AppColors.error : null,
     ),
   );
 }

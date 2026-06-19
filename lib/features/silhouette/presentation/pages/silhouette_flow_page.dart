@@ -57,7 +57,7 @@ class SilhouetteFlowPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF9F5F1),
+        backgroundColor: AppColors.background,
         automaticallyImplyLeading: false,
         title: const Text(
           'FashioMe',
@@ -199,8 +199,8 @@ class _ProgressHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      color: const Color(0xFFF9F5F1),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      color: AppColors.background,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -212,7 +212,7 @@ class _ProgressHeader extends StatelessWidget {
                   height: 3,
                   margin: EdgeInsets.only(right: index == 2 ? 0 : 6),
                   decoration: BoxDecoration(
-                    color: isActive ? AppColors.primary : const Color(0xFFD9D3CF),
+                    color: isActive ? AppColors.primary : AppColors.divider,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -240,7 +240,7 @@ class _ProgressHeader extends StatelessWidget {
                 ? 'Our AI uses this to curate high-end fashion suggestions that complement your natural radiance.'
                 : 'Step 3 of 3: Select your face shape or upload a portrait for AI-powered personalization.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF7E6F69),
+              color: AppColors.textSecondary,
               height: 1.4,
             ),
           ),
@@ -271,7 +271,7 @@ class _StepOneView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       children: [
         _SectionLabel(title: 'SELECT GENDER'),
         const SizedBox(height: 10),
@@ -323,7 +323,7 @@ class _StepOneView extends StatelessWidget {
                   TextSpan(
                     text: ' cm',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF7E6F69),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -334,7 +334,7 @@ class _StepOneView extends StatelessWidget {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: AppColors.primary,
-            inactiveTrackColor: const Color(0xFFD7D0CB),
+            inactiveTrackColor: AppColors.divider,
             thumbColor: AppColors.primary,
             overlayColor: AppColors.primary.withValues(alpha: 0.15),
           ),
@@ -349,16 +349,16 @@ class _StepOneView extends StatelessWidget {
           children: [
             Text(
               '140cm',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF9A8D87),
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textLight),
             ),
             const Spacer(),
             Text(
               '210cm',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF9A8D87),
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textLight),
             ),
           ],
         ),
@@ -368,8 +368,8 @@ class _StepOneView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFFF0EBE8),
-            borderRadius: BorderRadius.circular(22),
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,7 +377,7 @@ class _StepOneView extends StatelessWidget {
               Text(
                 'CURRENT WEIGHT',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: const Color(0xFF8F847D),
+                  color: AppColors.textSecondary,
                   letterSpacing: 1.3,
                 ),
               ),
@@ -387,15 +387,13 @@ class _StepOneView extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: '${state.weightKg}',
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontSize: 28,
-                        color: AppColors.primary,
-                      ),
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(fontSize: 28, color: AppColors.primary),
                     ),
                     TextSpan(
                       text: ' Kilograms',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF6F625C),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -405,7 +403,7 @@ class _StepOneView extends StatelessWidget {
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   activeTrackColor: AppColors.accent,
-                  inactiveTrackColor: const Color(0xFFD7D0CB),
+                  inactiveTrackColor: AppColors.divider,
                   thumbColor: AppColors.primary,
                 ),
                 child: Slider(
@@ -469,7 +467,11 @@ class _StepOneView extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             gradient: const LinearGradient(
-              colors: [Color(0xFF8B6B56), Color(0xFFC6A07D), Color(0xFF6A4338)],
+              colors: [
+                AppColors.primaryDark,
+                AppColors.primary,
+                AppColors.primaryLight,
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -521,7 +523,7 @@ class _StepTwoView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       children: [
         SizedBox(
           height: 260,
@@ -538,7 +540,7 @@ class _StepTwoView extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: selected ? AppColors.accent : const Color(0xFFE4DDD8),
+                      color: selected ? AppColors.accent : AppColors.divider,
                       width: selected ? 2 : 1,
                     ),
                     gradient: LinearGradient(
@@ -555,18 +557,17 @@ class _StepTwoView extends StatelessWidget {
                       children: [
                         Text(
                           tone.title,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
-                            letterSpacing: 1.2,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           tone.label,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: Colors.white,
-                            fontSize: 24,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(color: Colors.white, fontSize: 24),
                         ),
                       ],
                     ),
@@ -585,9 +586,9 @@ class _StepTwoView extends StatelessWidget {
             const Spacer(),
             Text(
               'GUIDE',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppColors.accent,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: AppColors.accent),
             ),
           ],
         ),
@@ -642,15 +643,15 @@ class _StepThreeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       children: [
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFFF4EEEB),
-            borderRadius: BorderRadius.circular(22),
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: const Color(0xFFE2BEB4),
+              color: AppColors.divider,
               style: BorderStyle.solid,
             ),
           ),
@@ -659,7 +660,7 @@ class _StepThreeView extends StatelessWidget {
               if (state.portraitPath == null) ...[
                 CircleAvatar(
                   radius: 26,
-                  backgroundColor: Colors.white,
+                  backgroundColor: AppColors.cardBackground,
                   child: Icon(
                     Icons.photo_camera_outlined,
                     color: AppColors.primaryDark.withValues(alpha: 0.8),
@@ -677,7 +678,7 @@ class _StepThreeView extends StatelessWidget {
                 Text(
                   'AI analysis for best results',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: const Color(0xFF7E6F69),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ] else ...[
@@ -690,9 +691,12 @@ class _StepThreeView extends StatelessWidget {
                       state.portraitPath!,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => Container(
-                        color: const Color(0xFFE6DEDA),
+                        color: AppColors.background,
                         alignment: Alignment.center,
-                        child: const Icon(Icons.broken_image_outlined, size: 36),
+                        child: const Icon(
+                          Icons.broken_image_outlined,
+                          size: 36,
+                        ),
                       ),
                     ),
                   ),
@@ -786,10 +790,10 @@ class _StepThreeView extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
+                  color: AppColors.cardBackground,
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: selected ? AppColors.accent : const Color(0xFFE4DDD8),
+                    color: selected ? AppColors.accent : AppColors.divider,
                     width: selected ? 2 : 1,
                   ),
                 ),
@@ -800,7 +804,10 @@ class _StepThreeView extends StatelessWidget {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
                           gradient: const LinearGradient(
-                            colors: [Color(0xFFD9C6B9), Color(0xFF896450)],
+                            colors: [
+                              AppColors.cardBackground,
+                              AppColors.primaryLight,
+                            ],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                           ),
@@ -857,10 +864,10 @@ class _BottomActionBar extends StatelessWidget {
         : 'ANALYZE MY STYLE';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
+      padding: const EdgeInsets.fromLTRB(24, 10, 24, 18),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE9E2DE))),
+        color: AppColors.cardBackground,
+        border: Border(top: BorderSide(color: AppColors.divider)),
       ),
       child: Row(
         children: [
@@ -871,7 +878,7 @@ class _BottomActionBar extends StatelessWidget {
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textPrimary,
-                side: const BorderSide(color: Color(0xFFE1DAD5)),
+                side: const BorderSide(color: AppColors.divider),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -952,7 +959,7 @@ class _ChoiceCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : const Color(0xFFF0EBE8),
+          color: selected ? AppColors.primary : AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? AppColors.accent : Colors.transparent,
@@ -996,22 +1003,26 @@ class _ChoicePill extends StatelessWidget {
         width: 98,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0EBE8),
+          color: selected ? AppColors.primary : AppColors.cardBackground,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected ? AppColors.accent : Colors.transparent,
+            color: selected ? AppColors.primary : AppColors.divider,
             width: 1.5,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 18, color: AppColors.primaryDark),
+            Icon(
+              icon,
+              size: 18,
+              color: selected ? Colors.white : AppColors.primaryDark,
+            ),
             const SizedBox(height: 8),
             Text(
               label,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppColors.textPrimary,
+                color: selected ? Colors.white : AppColors.textPrimary,
                 fontSize: 9,
                 letterSpacing: 0.8,
               ),

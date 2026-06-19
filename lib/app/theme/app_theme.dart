@@ -8,20 +8,37 @@ abstract final class AppTheme {
 
 ThemeData _buildTheme() {
   return ThemeData(
-    primarySwatch: Colors.amber,
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      primary: AppColors.primary,
+      secondary: AppColors.accent,
+      onPrimary: Colors.white,
+      onSecondary: AppColors.textPrimary,
+      surface: AppColors.cardBackground,
+      onSurface: AppColors.textPrimary,
+      error: AppColors.error,
+      brightness: Brightness.light,
+    ),
     scaffoldBackgroundColor: AppColors.background,
     fontFamily: AppFonts.regular,
+    splashColor: AppColors.primary.withValues(alpha: 0.08),
+    highlightColor: AppColors.primary.withValues(alpha: 0.06),
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.background,
       elevation: 0,
       centerTitle: true,
-      foregroundColor: AppColors.primaryDark,
+      foregroundColor: AppColors.textPrimary,
       titleTextStyle: TextStyle(
-        color: AppColors.primaryDark,
+        color: AppColors.textPrimary,
         fontSize: 22,
         fontWeight: FontWeight.w500,
         fontFamily: AppFonts.bold,
       ),
+    ),
+    cardTheme: const CardThemeData(
+      color: AppColors.cardBackground,
+      surfaceTintColor: Colors.transparent,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -31,10 +48,41 @@ ThemeData _buildTheme() {
           fontWeight: FontWeight.w500,
           fontFamily: AppFonts.bold,
         ),
-        backgroundColor: Colors.orange,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(5),
-        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.primary,
+        side: const BorderSide(color: AppColors.divider),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.cardBackground,
+      hintStyle: const TextStyle(color: AppColors.textSecondary),
+      labelStyle: const TextStyle(color: AppColors.textSecondary),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.divider),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.error, width: 1.4),
       ),
     ),
     textTheme: const TextTheme(
@@ -58,12 +106,12 @@ ThemeData _buildTheme() {
       ),
       bodyLarge: TextStyle(
         fontSize: 16,
-        color: Color(0xFF444444),
+        color: AppColors.textPrimary,
         fontFamily: AppFonts.regular,
       ),
       bodyMedium: TextStyle(
         fontSize: 14,
-        color: Color(0xFF666666),
+        color: AppColors.textSecondary,
         fontFamily: AppFonts.regular,
       ),
       labelSmall: TextStyle(
@@ -77,7 +125,7 @@ ThemeData _buildTheme() {
       backgroundColor: AppColors.navBarBackground,
       selectedItemColor: AppColors.primaryDark,
       unselectedItemColor: AppColors.navUnselected,
-      elevation: 0,
+      elevation: 8,
       type: BottomNavigationBarType.fixed,
       selectedLabelStyle: TextStyle(
         fontWeight: FontWeight.w500,

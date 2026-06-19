@@ -1,4 +1,5 @@
 import 'package:fashio_me/app/routes/app_routes.dart';
+import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/core/utils/snackbar_utils.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart';
@@ -57,12 +58,11 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     final signupState = ref.watch(signupViewModelProvider);
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: const Color(0xFFF8F6F5),
-
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
 
           child: Form(
             key: _formKey,
@@ -77,7 +77,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   height: 220,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(24),
                     image: const DecorationImage(
                       image: NetworkImage(
                         'https://images.unsplash.com/photo-1496747611176-843222e1e57c',
@@ -88,7 +88,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(24),
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -118,7 +118,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   ),
                 ),
 
-                const SizedBox(height: 36),
+                const SizedBox(height: 32),
 
                 /// title
                 const Text(
@@ -126,7 +126,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   style: TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F1F1F),
+                    color: AppColors.primaryDark,
                   ),
                 ),
 
@@ -134,10 +134,13 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
                 Text(
                   'Join the luxury fashion experience.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
 
-                const SizedBox(height: 34),
+                const SizedBox(height: 32),
 
                 /// first name
                 buildTextField(
@@ -156,7 +159,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   },
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
                 /// last name
                 buildTextField(
@@ -175,7 +178,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   },
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
                 /// username
                 buildTextField(
@@ -194,7 +197,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   },
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
                 /// email
                 buildTextField(
@@ -206,14 +209,16 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Email is required.';
                     }
-                    if (!RegExp(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$').hasMatch(value.trim())) {
+                    if (!RegExp(
+                      r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
+                    ).hasMatch(value.trim())) {
                       return 'Enter a valid email address.';
                     }
                     return null;
                   },
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
                 /// gender dropdown
                 buildDropdownField(
@@ -235,7 +240,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   },
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
                 /// age
                 buildTextField(
@@ -258,7 +263,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   },
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
                 /// password
                 buildPasswordField(
@@ -282,7 +287,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   },
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
                 buildPasswordField(
                   label: 'Confirm Password',
@@ -313,14 +318,14 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   Text(
                     signupState.errorMessage!,
                     style: const TextStyle(
-                      color: Color(0xFF7A0000),
+                      color: AppColors.primary,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
 
-                const SizedBox(height: 34),
+                const SizedBox(height: 32),
 
                 /// create account button
                 SizedBox(
@@ -329,10 +334,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7A0000),
+                      backgroundColor: AppColors.primary,
 
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
 
@@ -370,13 +375,16 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     child: RichText(
                       text: const TextSpan(
                         text: 'Already have an account? ',
-                        style: TextStyle(color: Colors.black54, fontSize: 16),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 16,
+                        ),
 
                         children: [
                           TextSpan(
                             text: 'Sign In',
                             style: TextStyle(
-                              color: Color(0xFF7A0000),
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -416,11 +424,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         );
     if (!mounted) return;
     if (success) {
-      showAppSnackBar(
-        context,
-        'Account created successfully!',
-        isError: false,
-      );
+      showAppSnackBar(context, 'Account created successfully!', isError: false);
       AppRoutes.pushAndRemoveUntil(context, const LoginPage());
     } else {
       final message = ref.read(signupViewModelProvider).errorMessage;
@@ -447,7 +451,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             fontSize: 12,
             letterSpacing: 2,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF6B6B6B),
+            color: AppColors.profileAccent,
           ),
         ),
 
@@ -460,10 +464,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
           decoration: InputDecoration(
             hintText: hint,
 
-            prefixIcon: Icon(icon, color: const Color(0xFF7A0000)),
+            prefixIcon: Icon(icon, color: AppColors.primary),
 
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.cardBackground,
 
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 18,
@@ -471,16 +475,16 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             ),
 
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
 
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
 
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
 
               borderSide: const BorderSide(
-                color: Color(0xFF7A0000),
+                color: AppColors.primary,
                 width: 1.4,
               ),
             ),
@@ -507,7 +511,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             fontSize: 12,
             letterSpacing: 2,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF6B6B6B),
+            color: AppColors.profileAccent,
           ),
         ),
 
@@ -523,7 +527,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
             prefixIcon: const Icon(
               Icons.lock_outline,
-              color: Color(0xFF7A0000),
+              color: AppColors.primary,
             ),
 
             suffixIcon: IconButton(
@@ -533,12 +537,12 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 obscureText
                     ? Icons.visibility_outlined
                     : Icons.visibility_off_outlined,
-                color: Colors.grey,
+                color: AppColors.textLight,
               ),
             ),
 
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.cardBackground,
 
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 18,
@@ -546,16 +550,16 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             ),
 
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
 
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
 
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
 
               borderSide: const BorderSide(
-                color: Color(0xFF7A0000),
+                color: AppColors.primary,
                 width: 1.4,
               ),
             ),
@@ -583,7 +587,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             fontSize: 12,
             letterSpacing: 2,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF6B6B6B),
+            color: AppColors.profileAccent,
           ),
         ),
         const SizedBox(height: 10),
@@ -592,30 +596,27 @@ class _SignupPageState extends ConsumerState<SignupPage> {
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(icon, color: const Color(0xFF7A0000)),
+            prefixIcon: Icon(icon, color: AppColors.primary),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.cardBackground,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 18,
               vertical: 20,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(
-                color: Color(0xFF7A0000),
+                color: AppColors.primary,
                 width: 1.4,
               ),
             ),
           ),
           items: options.map((String option) {
-            return DropdownMenuItem<String>(
-              value: option,
-              child: Text(option),
-            );
+            return DropdownMenuItem<String>(value: option, child: Text(option));
           }).toList(),
           onChanged: onChanged,
         ),

@@ -54,5 +54,36 @@ class ApiEndpoints {
   // =========== Silhouette Endpoints ===========
   static const String silhouetteProfile = '/silhouette/profile';
 
+  // =========== Home AI Endpoints ===========
+  static const String homeDashboard = '/home/dashboard';
+  static const String homeTrends = '/home/trends';
+  static const String homeGenerateOutfit = '/home/generate-outfit';
+  static const String homeAssistantChat = '/home/assistant-chat';
+  static const String homeWardrobe = '/home/wardrobe';
+  static const String homeWardrobeSync = '/home/wardrobe/sync';
+  static const String homeGenerateProfile = '/home/generate-profile';
+  static const String homeSearch = '/home/search';
+  static String homeWardrobeItem(String id) => '/home/wardrobe/$id';
 
+  static String get origin {
+    final uri = Uri.parse(baseUrl);
+    final port = uri.hasPort ? ':${uri.port}' : '';
+    return '${uri.scheme}://${uri.host}$port';
+  }
+
+  static String resolveAssetUrl(String value) {
+    if (value.isEmpty) {
+      return value;
+    }
+
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+
+    if (value.startsWith('/')) {
+      return '$origin$value';
+    }
+
+    return value;
+  }
 }
