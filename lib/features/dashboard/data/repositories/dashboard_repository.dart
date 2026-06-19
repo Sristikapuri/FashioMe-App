@@ -27,7 +27,7 @@ class DashboardRepository implements IDashboardRepository {
   @override
   Future<Either<Failure, DashboardEntity>> getDashboardData() async {
     try {
-      // Try remote first, fall back to local.
+      
       try {
         final dashboardModel = _remoteDataSource.getDashboardData();
         return Right(dashboardModel.toEntity());
