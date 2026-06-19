@@ -1,63 +1,58 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
   ApiEndpoints._();
 
   // Base URL helpers for local backend development.
-  // For Android Emulator use: 'http://10.0.2.2:8089/api/v1'
-  // For iOS Simulator use: 'http://localhost:8089/api/v1'
-  // For Physical Device use your computer's IP: 'http://192.168.x.x:8089/api/v1'
-
-  static const bool isPhysicalDevice = false;
-  static const String compIpAddress = '192.168.1.1'; // replace with PC IP
+  // Recommended for physical device:
+  // flutter run --dart-define=API_BASE_URL=http://192.168.x.x:8089/api/v1
+  static const String configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: '',
+  );
 
   static String get baseUrl {
-    if (isPhysicalDevice) {
-      return 'http://$compIpAddress:8089/api/v1';
+    if (configuredBaseUrl.isNotEmpty) {
+      return configuredBaseUrl;
     }
-    //  if android
+
     if (kIsWeb) {
       return 'http://localhost:8089/api/v1';
-    } else if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8089/api/v1';
-    } else if (Platform.isIOS) {
-      return 'http://localhost:8089/api/v1';
-    } else {
-      return 'http://localhost:8089/api/v1';
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'http://10.0.2.2:8089/api/v1';
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+      case TargetPlatform.fuchsia:
+        return 'http://localhost:8089/api/v1';
     }
   }
 
   static const Duration connectionTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
 
-  // =========== Batch Endpoints ===========
-  static const String batches = '/batches';
-  static String batchById(String id) => '/batches/$id';
-
-  // =========== Category Endpoints ===========
-  static const String categories = '/categories';
-  static String categoryById(String id) => '/categories/$id';
+  // =========== Auth Endpoints ===========
+  static const String authRegister = '/auth/register';
+  static const String authLogin = '/auth/login';
 
   // =========== User Endpoints ===========
   static const String users = '/users';
-  static const String authRegister = '/auth/register';
-  static const String authLogin = '/auth/login';
   static String userById(String id) => '/users/$id';
-  static String userPhoto(String id) => '/users/$id/photo';
 
-  // =========== Item Endpoints ===========
-  static const String items = '/items';
-  static String itemById(String id) => '/items/$id';
-  static String itemClaim(String id) => '/items/$id/claim';
+  // =========== Upload Endpoints ===========
+  static const String itemUploadPhoto = '/upload/upload-photo';
+  static const String itemUploadVideo = '/upload/upload-video';
 
-  static String itemUploadPhoto = '/items/upload-photo';
-  static String itemUploadVideo = '/items/upload-video';
+  // =========== Onboarding Endpoints ===========
+  static const String onboardingStatus = '/onboarding/status';
+  static const String onboardingComplete = '/onboarding/complete';
 
-  // =========== Comment Endpoints ===========
-  static const String comments = '/comments';
-  static String commentById(String id) => '/comments/$id';
-  static String commentsByItem(String itemId) => '/comments/item/$itemId';
-  static String commentLike(String id) => '/comments/$id/like';
+  // =========== Silhouette Endpoints ===========
+  static const String silhouetteProfile = '/silhouette/profile';
+
+
 }
