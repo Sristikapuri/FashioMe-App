@@ -23,6 +23,7 @@ dependencies:
   uuid: ^4.5.3
   equatable: ^2.0.8
   dartz: ^0.10.1
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -46,6 +47,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/app_icon/
 
   fonts:
     - family: Montserrat Bold
