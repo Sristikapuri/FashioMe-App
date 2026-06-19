@@ -1,6 +1,7 @@
 import 'package:fashio_me/features/auth/domain/usecases/login_usecase.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_session_providers.dart';
 import 'package:fashio_me/features/auth/presentation/state/login_state.dart';
+import 'package:fashio_me/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class LoginViewModel extends Notifier<LoginState> {
@@ -51,6 +52,10 @@ class LoginViewModel extends Notifier<LoginState> {
       (entity) {
         ref.read(authSessionViewModelProvider.notifier).setUser(entity);
         state = state.copyWith(isLoading: false);
+       
+        Future.microtask(() {
+          ref.read(dashboardViewModelProvider.notifier).clearCacheAndRefresh();
+        });
         return true;
       },
     );

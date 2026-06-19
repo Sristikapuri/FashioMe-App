@@ -43,7 +43,7 @@ class AuthRepository implements IAuthRepository {
         );
       }
 
-      // Account saved successfully — session starts after login, not signup.
+
       return Right(model.toEntity());
     } catch (e) {
       return Left(ApiFailure(message: e.toString()));
@@ -142,19 +142,24 @@ class AuthRepository implements IAuthRepository {
   @override
   Future<Either<Failure, String>> getInitialRoute() async {
     try {
-      // Check if user is logged in
+
       if (_authDataSource.isLoggedIn()) {
-        return const Right('dashboard');
+        final currentUser = await _authDataSource.getCurrentUser();
+        if (currentUser != null) {
+          return const Right('dashboard');
+        }
+
+        await _authDataSource.logout();
       }
-      // Check if onboarding is completed
+
+
       if (_authDataSource.hasCompletedOnboarding()) {
         return const Right('login');
       }
-      // Show onboarding first
+  
       return const Right('onboarding');
     } catch (e) {
       return Left(ApiFailure(message: e.toString()));
     }
   }
 }
-

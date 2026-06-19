@@ -135,20 +135,25 @@ class AuthModel {
   factory AuthModel.fromJson(Map<String, dynamic> json) {
     final fallbackName = _splitFullName(_stringValue(json['fullName']));
     final email = _stringValue(json['email']);
+    
+    // Handle nested responseData structure
+    Map<String, dynamic> userData = json;
+    if (json['responseData'] is Map<String, dynamic>) {
+      userData = json['responseData'] as Map<String, dynamic>;
+    }
 
     return AuthModel(
-      authId: _nullableStringValue(json['authId'] ?? json['_id'] ?? json['id']),
+      authId: _nullableStringValue(userData['authId'] ?? userData['_id'] ?? userData['id'] ?? json['authId'] ?? json['_id'] ?? json['id']),
       firstName:
-          _nullableStringValue(json['firstName']) ?? fallbackName.firstName,
-      lastName: _nullableStringValue(json['lastName']) ?? fallbackName.lastName,
+          _nullableStringValue(userData['firstName'] ?? json['firstName']) ?? fallbackName.firstName,
+      lastName: _nullableStringValue(userData['lastName'] ?? json['lastName']) ?? fallbackName.lastName,
       username:
-          _nullableStringValue(json['username']) ??
-          _nullableStringValue(json['userName']) ??
+          _nullableStringValue(userData['username'] ?? userData['userName'] ?? json['username'] ?? json['userName']) ??
           (email.contains('@') ? email.split('@').first : ''),
-      email: email,
-      gender: _nullableStringValue(json['gender']),
-      age: _nullableStringValue(json['age']),
-      password: _nullableStringValue(json['password']),
+      email: _stringValue(userData['email'] ?? json['email']),
+      gender: _nullableStringValue(userData['gender'] ?? json['gender']),
+      age: _nullableStringValue(userData['age'] ?? json['age']),
+      password: _nullableStringValue(userData['password'] ?? json['password']),
     );
   }
 }
