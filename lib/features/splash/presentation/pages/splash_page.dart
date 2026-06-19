@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:fashio_me/app/routes/app_routes.dart';
-import 'package:fashio_me/core/providers/storage_provider.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/features/auth/presentation/pages/signup_page.dart';
 import 'package:fashio_me/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:fashio_me/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:fashio_me/features/silhouette/presentation/pages/silhouette_flow_page.dart';
+import 'package:fashio_me/features/silhouette/domain/usecases/has_completed_silhouette_profile_usecase.dart';
 import 'package:fashio_me/features/splash/presentation/providers/splash_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,19 +28,13 @@ class _SplashPageState extends ConsumerState<SplashPage>
   void initState() {
     super.initState();
 
-    // Debug: Clear onboarding status to always show onboarding
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final storageService = ref.read(storageServiceProvider);
-      await storageService.remove('onboarding_completed');
-    });
 
-    /// animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     );
 
-    /// fade animation
+
     _fadeAnimation = Tween<double>(
       begin: 0,
       end: 1,
@@ -50,7 +45,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
       ),
     );
 
-    /// scale animation
+
     _scaleAnimation = Tween<double>(
       begin: 0.8,
       end: 1,
@@ -74,16 +69,21 @@ class _SplashPageState extends ConsumerState<SplashPage>
     
     if (!mounted) return;
     
-    // Give state a moment to update
+   
     await Future.delayed(const Duration(milliseconds: 100));
     
     if (!mounted) return;
     
-    // Read the resolved route from state
+  
     final state = ref.read(splashViewModelProvider);
     final route = state.targetRoute;
     
     if (route != null && mounted) {
+      final hasCompletedResult =
+          await ref.read(hasCompletedSilhouetteProfileUsecaseProvider)();
+      if (!mounted) return;
+      final hasCompletedSilhouette =
+          hasCompletedResult.fold((_) => false, (value) => value);
       Widget targetPage;
       switch (route) {
         case 'onboarding':
@@ -96,7 +96,9 @@ class _SplashPageState extends ConsumerState<SplashPage>
           targetPage = const SignupPage();
           break;
         case 'dashboard':
-          targetPage = const DashboardPage();
+          targetPage = hasCompletedSilhouette
+              ? const DashboardPage()
+              : const SilhouetteFlowPage();
           break;
         default:
           targetPage = const OnboardingPage();
@@ -159,43 +161,43 @@ class _SplashPageState extends ConsumerState<SplashPage>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      /// logo circle
+
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        width: 100,
+                        height: 100,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFFFFD27D),
+                            color: Colors.white,
                             width: 1.2,
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.auto_awesome,
-                          color: Color(0xFFFFD27D),
-                          size: 36,
+                          image: const DecorationImage(
+                            image: AssetImage('assets/app_icon/fashiome_app_icon.jpg'),
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
 
                       const SizedBox(height: 28),
 
-                      /// app name
+                  
                       const Text(
                         'FashioMe',
                         style: TextStyle(
                           fontSize: 42,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFFFD27D),
+                          color: Colors.white,
                           letterSpacing: -1,
                         ),
                       ),
 
                       const SizedBox(height: 10),
 
-                      /// subtitle
+
                       const Text(
                         'YOUR DIGITAL STYLE CONCIERGE',
                         style: TextStyle(
-                          color: Color(0xFFFFD27D),
+                          color: Colors.white70,
                           fontSize: 12,
                           letterSpacing: 2.5,
                           fontWeight: FontWeight.w500,
@@ -204,7 +206,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
                       const SizedBox(height: 220),
 
-                      /// loading line
+           
                       SizedBox(
                         width: 120,
                         child: ClipRRect(
@@ -213,7 +215,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
                             minHeight: 3,
                             backgroundColor: Colors.white24,
                             valueColor: AlwaysStoppedAnimation(
-                              Color(0xFFFFD27D),
+                              Colors.white70,
                             ),
                           ),
                         ),
@@ -221,7 +223,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
                       const SizedBox(height: 16),
 
-                      /// loading text
+
                       const Text(
                         'INITIALIZING AI INSIGHT ENGINE',
                         style: TextStyle(
@@ -242,7 +244,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
   }
 }
 
-/// background grid painter
+
 class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -250,14 +252,14 @@ class GridPainter extends CustomPainter {
       ..color = Colors.white.withValues(alpha: 0.03)
       ..strokeWidth = 1;
 
-    /// vertical line
+
     canvas.drawLine(
       Offset(size.width / 2, 0),
       Offset(size.width / 2, size.height),
       paint,
     );
 
-    /// horizontal line
+
     canvas.drawLine(
       Offset(0, size.height / 2),
       Offset(size.width, size.height / 2),
