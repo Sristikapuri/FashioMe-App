@@ -7,8 +7,11 @@ import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/core/widgets/selected_image.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_session_providers.dart';
+import 'package:fashio_me/features/dashboard/presentation/pages/profile_update_page.dart';
 import 'package:fashio_me/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:fashio_me/features/dashboard/presentation/state/dashboard_state.dart';
+import 'package:fashio_me/features/shop/presentation/pages/shop_page.dart';
+import 'package:fashio_me/features/shop/presentation/pages/order_history_page.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -36,6 +39,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     'Home',
     'AI Stylist',
     'My Wardrobe',
+    'Shop',
     'Discover',
     'Profile',
   ];
@@ -66,6 +70,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         onSourceChanged: (value) => setState(() => _selectedSource = value),
       ),
       _WardrobeTab(state: state, onAddItem: () => _showAddItemSheet(context)),
+      const ShopPage(),
       _DiscoverTab(state: state),
       _ProfileTab(state: state),
     ];
@@ -83,10 +88,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     title: _titles[state.currentIndex],
                     onLeadingTap: () => _showSnack('Menu coming soon'),
                     onSearchTap: () => _showSearchSheet(),
-                    onTrailingTap: () => state.currentIndex == 4
+                    onTrailingTap: () => state.currentIndex == 5
                         ? _showSnack('Notifications coming soon')
-                        : notifier.setIndex(4),
-                    trailingIcon: state.currentIndex == 4
+                        : notifier.setIndex(5),
+                    trailingIcon: state.currentIndex == 5
                         ? Icons.notifications_none_rounded
                         : Icons.tune_rounded,
                   ),
@@ -329,7 +334,7 @@ class _HomeTab extends ConsumerWidget {
         _SectionTitle(
           title: 'AI Recommended For You',
           actionLabel: 'View All',
-          onAction: () => notifier.setIndex(3),
+          onAction: () => notifier.setIndex(4),
         ),
         SizedBox(
           height: 176,
@@ -636,7 +641,7 @@ class _AiStylistTabState extends ConsumerState<_AiStylistTab> {
         _SectionTitle(
           title: 'Recent AI Looks',
           actionLabel: 'View All',
-          onAction: () => notifier.setIndex(3),
+          onAction: () => notifier.setIndex(4),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -1259,6 +1264,8 @@ class _ProfileTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final profileCompletion = _calculateProfileCompletion(state);
+    
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 140),
@@ -1309,6 +1316,23 @@ class _ProfileTab extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 24),
+        _ProfileCompletionCard(completion: profileCompletion),
+        const SizedBox(height: 24),
+        _StatsRow(state: state),
+        const SizedBox(height: 24),
+        _StylePreferencesCard(state: state),
+        const SizedBox(height: 24),
+        _ProfileMenu(
+          title: 'Edit Profile',
+          subtitle: 'Update your personal information and photo',
+          icon: Icons.edit_outlined,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileUpdatePage()),
+            );
+          },
+        ),
         _ProfileMenu(
           title: 'My Silhouette',
           subtitle:
@@ -1330,10 +1354,11 @@ class _ProfileTab extends ConsumerWidget {
           subtitle: '${state.profileData.skinTone} tone and body stats',
           icon: Icons.straighten_outlined,
         ),
-        const _ProfileMenu(
+        _ProfileMenu(
           title: 'My Orders',
           subtitle: 'Your saved custom items',
           icon: Icons.receipt_long_outlined,
+          onTap: () => AppRoutes.push(context, const OrderHistoryPage()),
         ),
         const _ProfileMenu(
           title: 'Closet',
@@ -1385,6 +1410,20 @@ class _ProfileTab extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  double _calculateProfileCompletion(DashboardState state) {
+    int completedFields = 0;
+    int totalFields = 6;
+    
+    if (state.profileData.displayName.isNotEmpty) completedFields++;
+    if (state.profileData.email.isNotEmpty) completedFields++;
+    if (state.profileData.bodyType.isNotEmpty) completedFields++;
+    if (state.profileData.skinTone.isNotEmpty) completedFields++;
+    if (state.profileData.stylePreferences.isNotEmpty) completedFields++;
+    if (state.profileData.faceShape.isNotEmpty) completedFields++;
+    
+    return completedFields / totalFields;
   }
 }
 
@@ -2561,50 +2600,54 @@ class _ProfileMenu extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.icon,
+    this.onTap,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.divider),
-          boxShadow: AppColors.softShadow,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _DashboardPalette.gold.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.divider),
+            boxShadow: AppColors.softShadow,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _DashboardPalette.gold.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: _DashboardPalette.gold, size: 20),
               ),
-              child: Icon(icon, color: _DashboardPalette.gold, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      fontFamily: AppFonts.bold,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontFamily: AppFonts.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
+                    const SizedBox(height: 3),
+                    Text(
                     subtitle,
                     style: const TextStyle(
                       color: AppColors.textSecondary,
@@ -2614,14 +2657,16 @@ class _ProfileMenu extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: _DashboardPalette.mutedText,
-            ),
+            if (onTap != null)
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: _DashboardPalette.mutedText,
+              ),
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
 
@@ -2637,6 +2682,7 @@ class _BottomNavBar extends StatelessWidget {
       (Icons.home_filled, 'Home'),
       (Icons.auto_awesome_rounded, 'AI Stylist'),
       (Icons.checkroom_rounded, 'Wardrobe'),
+      (Icons.storefront_rounded, 'Shop'),
       (Icons.travel_explore_rounded, 'Discover'),
       (Icons.person_rounded, 'Profile'),
     ];
@@ -2890,6 +2936,229 @@ class _DataPill extends StatelessWidget {
       child: Text(
         '$label  $value',
         style: const TextStyle(color: Colors.white, fontSize: 11),
+      ),
+    );
+  }
+}
+
+class _ProfileCompletionCard extends StatelessWidget {
+  const _ProfileCompletionCard({required this.completion});
+
+  final double completion;
+
+  @override
+  Widget build(BuildContext context) {
+    final percentage = (completion * 100).toInt();
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Profile Completion',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: AppFonts.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                '$percentage%',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontFamily: AppFonts.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: completion,
+              backgroundColor: AppColors.cardBackground,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            completion < 0.5 
+                ? 'Complete your profile for better recommendations'
+                : completion < 1.0
+                    ? 'Almost there! Add more details'
+                    : 'Profile complete! Great job!',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({required this.state});
+
+  final DashboardState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _StatCard(
+            label: 'Saved Looks',
+            value: '${state.homeRecommendations.length}',
+            icon: Icons.favorite_outline,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _StatCard(
+            label: 'Style Score',
+            value: '88%',
+            icon: Icons.star_outline,
+            color: Colors.orange,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _StatCard(
+            label: 'Wardrobe',
+            value: '${state.wardrobeItems.length}',
+            icon: Icons.checkroom_outlined,
+            color: Colors.purple,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.cardBackground.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontFamily: AppFonts.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StylePreferencesCard extends StatelessWidget {
+  const _StylePreferencesCard({required this.state});
+
+  final DashboardState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBackground.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.tune_outlined, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Style Preferences',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: AppFonts.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (state.profileData.stylePreferences.isEmpty)
+            Text(
+              'No style preferences set yet',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: state.profileData.stylePreferences.map((preference) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    preference,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primary,
+                      fontFamily: AppFonts.bold,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+        ],
       ),
     );
   }
