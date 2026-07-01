@@ -88,9 +88,9 @@ class _CartPageState extends ConsumerState<CartPage> {
     });
 
     try {
-      await ref.read(shopRemoteDataSourceProvider).placeOrder(
-            shippingAddress: shippingAddress,
-          );
+      await ref
+          .read(shopRemoteDataSourceProvider)
+          .placeOrder(shippingAddress: shippingAddress);
       await _persistCart({});
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -160,7 +160,10 @@ class _CartPageState extends ConsumerState<CartPage> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 children: [
                   if (_error.isNotEmpty) ...[
-                    Text(_error, style: const TextStyle(color: Colors.redAccent)),
+                    Text(
+                      _error,
+                      style: const TextStyle(color: Colors.redAccent),
+                    ),
                     const SizedBox(height: 12),
                   ],
                   TextField(
@@ -186,8 +189,10 @@ class _CartPageState extends ConsumerState<CartPage> {
                         child: _CartCard(
                           item: item,
                           quantity: entry.value,
-                          onIncrease: () => _changeQty(item.id, entry.value + 1),
-                          onDecrease: () => _changeQty(item.id, entry.value - 1),
+                          onIncrease: () =>
+                              _changeQty(item.id, entry.value + 1),
+                          onDecrease: () =>
+                              _changeQty(item.id, entry.value - 1),
                           onRemove: () => _removeItem(item.id),
                           onTap: () => AppRoutes.push(
                             context,
@@ -208,30 +213,51 @@ class _CartPageState extends ConsumerState<CartPage> {
                       children: [
                         Row(
                           children: [
-                            const Text('Subtotal', style: TextStyle(fontWeight: FontWeight.w800)),
+                            const Text(
+                              'Subtotal',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
                             const Spacer(),
-                            Text('\$${_subtotal.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900)),
+                            Text(
+                              '\$${_subtotal.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            Text('Tax', style: TextStyle(color: Colors.grey.shade700)),
+                            Text(
+                              'Tax',
+                              style: TextStyle(color: Colors.grey.shade700),
+                            ),
                             const Spacer(),
-                            Text('\$${_tax.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey.shade700)),
+                            Text(
+                              '\$${_tax.toStringAsFixed(2)}',
+                              style: TextStyle(color: Colors.grey.shade700),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: entries.isEmpty || _placingOrder ? null : _placeOrder,
-                            child: Text(_placingOrder ? 'Placing order...' : 'Place order'),
+                            onPressed: entries.isEmpty || _placingOrder
+                                ? null
+                                : _placeOrder,
+                            child: Text(
+                              _placingOrder
+                                  ? 'Placing order...'
+                                  : 'Place order',
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
                         TextButton(
-                          onPressed: () => AppRoutes.push(context, const OrderHistoryPage()),
+                          onPressed: () =>
+                              AppRoutes.push(context, const OrderHistoryPage()),
                           child: const Text('View order history'),
                         ),
                       ],
@@ -295,7 +321,10 @@ class _CartCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  Text(
+                    item.name,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     '${item.category} • ${item.color}',
@@ -307,33 +336,81 @@ class _CartCard extends StatelessWidget {
                     style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: onDecrease,
-                        icon: const Icon(Icons.remove_circle_outline),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      Text('$quantity', style: const TextStyle(fontWeight: FontWeight.w800)),
-                      IconButton(
-                        onPressed: onIncrease,
-                        icon: const Icon(Icons.add_circle_outline),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: onRemove,
-                        child: const Text('Remove'),
-                      ),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 170;
+                      return Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: [
+                          IconButton(
+                            onPressed: onDecrease,
+                            icon: const Icon(Icons.remove_circle_outline),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints.tightFor(
+                              width: 32,
+                              height: 32,
+                            ),
+                          ),
+                          Text(
+                            '$quantity',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          IconButton(
+                            onPressed: onIncrease,
+                            icon: const Icon(Icons.add_circle_outline),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints.tightFor(
+                              width: 32,
+                              height: 32,
+                            ),
+                          ),
+                          if (compact)
+                            TextButton(
+                              onPressed: onRemove,
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text('Remove'),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.only(left: 6),
+                              child: TextButton(
+                                onPressed: onRemove,
+                                style: TextButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text('Remove'),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              '\$${(item.salePrice * quantity).toStringAsFixed(2)}',
-              style: const TextStyle(fontWeight: FontWeight.w900),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 72),
+              child: Text(
+                '\$${(item.salePrice * quantity).toStringAsFixed(2)}',
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
             ),
           ],
         ),

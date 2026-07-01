@@ -21,7 +21,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
   final _ageController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   String? _gender;
   File? _profileImage;
   bool _isLoading = false;
@@ -37,7 +37,9 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
   }
 
   Future<void> _loadUserData() async {
-    final userResult = await ref.read(authSessionViewModelProvider.notifier).getCurrentUser();
+    final userResult = await ref
+        .read(authSessionViewModelProvider.notifier)
+        .getCurrentUser();
     userResult.fold(
       (failure) => setState(() => _errorMessage = failure.message),
       (user) {
@@ -73,14 +75,18 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
       _successMessage = null;
     });
 
-    final result = await ref.read(authSessionViewModelProvider.notifier).updateProfile(
-      firstName: _firstNameController.text.trim(),
-      lastName: _lastNameController.text.trim(),
-      username: _usernameController.text.trim(),
-      gender: _gender,
-      age: _ageController.text.isNotEmpty ? int.tryParse(_ageController.text) : null,
-      profileImage: _profileImage,
-    );
+    final result = await ref
+        .read(authSessionViewModelProvider.notifier)
+        .updateProfile(
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          username: _usernameController.text.trim(),
+          gender: _gender,
+          age: _ageController.text.isNotEmpty
+              ? int.tryParse(_ageController.text)
+              : null,
+          profileImage: _profileImage,
+        );
 
     setState(() {
       _isLoading = false;
@@ -88,12 +94,14 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
 
     result.fold(
       (failure) => setState(() => _errorMessage = failure),
-      (user) => setState(() => _successMessage = 'Profile updated successfully'),
+      (user) =>
+          setState(() => _successMessage = 'Profile updated successfully'),
     );
   }
 
   Future<void> _updatePassword() async {
-    if (_passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
+    if (_passwordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty) {
       setState(() => _errorMessage = 'Please fill in both password fields');
       return;
     }
@@ -114,9 +122,9 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
       _successMessage = null;
     });
 
-    final result = await ref.read(authSessionViewModelProvider.notifier).updateProfile(
-      password: _passwordController.text,
-    );
+    final result = await ref
+        .read(authSessionViewModelProvider.notifier)
+        .updateProfile(password: _passwordController.text);
 
     setState(() {
       _isLoading = false;
@@ -126,7 +134,8 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
 
     result.fold(
       (failure) => setState(() => _errorMessage = failure),
-      (user) => setState(() => _successMessage = 'Password updated successfully'),
+      (user) =>
+          setState(() => _successMessage = 'Password updated successfully'),
     );
   }
 
@@ -144,10 +153,13 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
   @override
   Widget build(BuildContext context) {
     final formProgress = _calculateFormProgress();
-    
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile', style: TextStyle(fontFamily: AppFonts.bold)),
+        title: const Text(
+          'Edit Profile',
+          style: TextStyle(fontFamily: AppFonts.bold),
+        ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -173,12 +185,19 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                        Icon(
+                          Icons.error_outline,
+                          color: Colors.red.shade700,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _errorMessage!,
-                            style: TextStyle(color: Colors.red.shade700, fontSize: 14),
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
@@ -195,12 +214,19 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.check_circle_outline, color: Colors.green.shade700, size: 20),
+                        Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.green.shade700,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _successMessage!,
-                            style: TextStyle(color: Colors.green.shade700, fontSize: 14),
+                            style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
@@ -349,7 +375,10 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Update Profile',
-                            style: TextStyle(fontFamily: AppFonts.bold, fontSize: 16),
+                            style: TextStyle(
+                              fontFamily: AppFonts.bold,
+                              fontSize: 16,
+                            ),
                           ),
                   ),
                 ),
@@ -373,7 +402,11 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
                       onPressed: () {
                         setState(() {
                           _obscurePassword = !_obscurePassword;
@@ -391,7 +424,11 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
                       onPressed: () {
                         setState(() {
                           _obscureConfirmPassword = !_obscureConfirmPassword;
@@ -417,7 +454,10 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Update Password',
-                            style: TextStyle(fontFamily: AppFonts.bold, fontSize: 16),
+                            style: TextStyle(
+                              fontFamily: AppFonts.bold,
+                              fontSize: 16,
+                            ),
                           ),
                   ),
                 ),
@@ -427,7 +467,9 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(
-                    onPressed: _isLoading ? null : () => _showDeleteConfirmation(context),
+                    onPressed: _isLoading
+                        ? null
+                        : () => _showDeleteConfirmation(context),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.red,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -467,7 +509,10 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -483,14 +528,21 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
 
     if (confirmed == true) {
       setState(() => _isLoading = true);
-      final success = await ref.read(authSessionViewModelProvider.notifier).deleteAccount();
+      final success = await ref
+          .read(authSessionViewModelProvider.notifier)
+          .deleteAccount();
       setState(() => _isLoading = false);
 
       if (success) {
         if (!context.mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
       } else {
-        setState(() => _errorMessage = 'Failed to delete account. Please try again later.');
+        setState(
+          () => _errorMessage =
+              'Failed to delete account. Please try again later.',
+        );
       }
     }
   }
@@ -498,13 +550,13 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
   double _calculateFormProgress() {
     int completedFields = 0;
     int totalFields = 5;
-    
+
     if (_firstNameController.text.isNotEmpty) completedFields++;
     if (_lastNameController.text.isNotEmpty) completedFields++;
     if (_usernameController.text.isNotEmpty) completedFields++;
     if (_gender != null) completedFields++;
     if (_ageController.text.isNotEmpty) completedFields++;
-    
+
     return completedFields / totalFields;
   }
 }
@@ -526,12 +578,20 @@ class _FormProgressCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.edit_note_outlined, color: AppColors.primary, size: 18),
+                  Icon(
+                    Icons.edit_note_outlined,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   const Text(
                     'Form Progress',

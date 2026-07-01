@@ -17,7 +17,13 @@ class ShopPage extends ConsumerStatefulWidget {
 
 class _ShopPageState extends ConsumerState<ShopPage> {
   final TextEditingController _searchController = TextEditingController();
-  final List<String> _categories = const ['All', 'tops', 'bottoms', 'shoes', 'accessories'];
+  final List<String> _categories = const [
+    'All',
+    'tops',
+    'bottoms',
+    'shoes',
+    'accessories',
+  ];
   String _selectedCategory = 'All';
   List<ShopItemModel> _items = [];
   Map<String, int> _bag = {};
@@ -92,8 +98,10 @@ class _ShopPageState extends ConsumerState<ShopPage> {
   List<ShopItemModel> get _filteredItems {
     final query = _searchController.text.trim().toLowerCase();
     return _items.where((item) {
-      if (_selectedCategory != 'All' && item.category != _selectedCategory) return false;
-      if (query.isNotEmpty && !item.name.toLowerCase().contains(query)) return false;
+      if (_selectedCategory != 'All' && item.category != _selectedCategory)
+        return false;
+      if (query.isNotEmpty && !item.name.toLowerCase().contains(query))
+        return false;
       return true;
     }).toList();
   }
@@ -157,7 +165,10 @@ class _ShopPageState extends ConsumerState<ShopPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Shop', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+                  const Text(
+                    'Shop',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     'Browse curated fashion items and add them to your bag.',
@@ -165,7 +176,10 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                   ),
                   if (_message.isNotEmpty) ...[
                     const SizedBox(height: 10),
-                    Text(_message, style: const TextStyle(color: Colors.redAccent)),
+                    Text(
+                      _message,
+                      style: const TextStyle(color: Colors.redAccent),
+                    ),
                   ],
                 ],
               ),
@@ -198,7 +212,8 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                   return ChoiceChip(
                     label: Text(category),
                     selected: selected,
-                    onSelected: (_) => setState(() => _selectedCategory = category),
+                    onSelected: (_) =>
+                        setState(() => _selectedCategory = category),
                     selectedColor: AppColors.primary.withValues(alpha: 0.16),
                     labelStyle: TextStyle(
                       color: selected ? AppColors.primaryDark : Colors.black87,
@@ -220,14 +235,21 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
                         children: [
                           if (_featuredDeals.isNotEmpty) ...[
-                            const Text('Featured Deals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                            const Text(
+                              'Featured Deals',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             SizedBox(
                               height: 180,
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: _featuredDeals.length,
-                                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 12),
                                 itemBuilder: (_, index) {
                                   final item = _featuredDeals[index];
                                   return _FeaturedCard(
@@ -243,18 +265,25 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                             ),
                             const SizedBox(height: 22),
                           ],
-                          const Text('All Products', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                          const Text(
+                            'All Products',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: _filteredItems.length,
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 0.68,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                            ),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  childAspectRatio: 0.68,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                ),
                             itemBuilder: (_, index) {
                               final item = _filteredItems[index];
                               return _ProductCard(
@@ -288,7 +317,11 @@ class _ShopPageState extends ConsumerState<ShopPage> {
 }
 
 class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.item, required this.onAdd, required this.onTap});
+  const _FeaturedCard({
+    required this.item,
+    required this.onAdd,
+    required this.onTap,
+  });
 
   final ShopItemModel item;
   final VoidCallback onAdd;
@@ -325,21 +358,36 @@ class _FeaturedCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text(
+              item.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 4),
-            Text('${item.category} • ${item.color}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            Text(
+              '${item.category} • ${item.color}',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
                 Text(
-                  item.discountedPrice != null ? '\$${item.price.toStringAsFixed(2)}' : '\$${item.salePrice.toStringAsFixed(2)}',
+                  item.discountedPrice != null
+                      ? '\$${item.price.toStringAsFixed(2)}'
+                      : '\$${item.salePrice.toStringAsFixed(2)}',
                   style: TextStyle(
-                    decoration: item.discountedPrice != null ? TextDecoration.lineThrough : TextDecoration.none,
+                    decoration: item.discountedPrice != null
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
                     color: Colors.grey.shade600,
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text('\$${item.salePrice.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(
+                  '\$${item.salePrice.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -358,7 +406,11 @@ class _FeaturedCard extends StatelessWidget {
 }
 
 class _ProductCard extends StatelessWidget {
-  const _ProductCard({required this.item, required this.onAdd, required this.onTap});
+  const _ProductCard({
+    required this.item,
+    required this.onAdd,
+    required this.onTap,
+  });
 
   final ShopItemModel item;
   final VoidCallback onAdd;
@@ -379,7 +431,9 @@ class _ProductCard extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
                 child: Image.network(
                   item.imageUrl,
                   width: double.infinity,
@@ -397,15 +451,43 @@ class _ProductCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  Text(
+                    item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
                   const SizedBox(height: 4),
-                  Text(item.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                  Text(
+                    item.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  ),
                   const SizedBox(height: 8),
                   if (item.discountedPrice != null) ...[
-                    Text('\$${item.price.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey.shade600, decoration: TextDecoration.lineThrough)),
-                    Text('\$${item.salePrice.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                    Text(
+                      '\$${item.price.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                    Text(
+                      '\$${item.salePrice.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ] else
-                    Text('\$${item.salePrice.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                    Text(
+                      '\$${item.salePrice.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
@@ -458,9 +540,28 @@ class _BagBar extends StatelessWidget {
             children: [
               const Icon(Icons.shopping_bag_outlined, color: AppColors.primary),
               const SizedBox(width: 8),
-              Text('$itemCount items', style: const TextStyle(fontWeight: FontWeight.w800)),
-              const Spacer(),
-              Text('\$${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              Expanded(
+                child: Text(
+                  '$itemCount items',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 96),
+                child: Text(
+                  '\$${total.toStringAsFixed(2)}',
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -498,20 +599,49 @@ class _BagBar extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(item.$1.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
-                              Text('\$${(item.$1.salePrice * item.$2).toStringAsFixed(2)}', style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
-                              Row(
+                              Text(
+                                item.$1.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                '\$${(item.$1.salePrice * item.$2).toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 2,
                                 children: [
                                   IconButton(
-                                    onPressed: () => onChangeQty(item.$1.id, item.$2 - 1),
-                                    icon: const Icon(Icons.remove_circle_outline),
+                                    onPressed: () =>
+                                        onChangeQty(item.$1.id, item.$2 - 1),
+                                    icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                    ),
                                     visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 30,
+                                      height: 30,
+                                    ),
                                   ),
                                   Text('${item.$2}'),
                                   IconButton(
-                                    onPressed: () => onChangeQty(item.$1.id, item.$2 + 1),
+                                    onPressed: () =>
+                                        onChangeQty(item.$1.id, item.$2 + 1),
                                     icon: const Icon(Icons.add_circle_outline),
                                     visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 30,
+                                      height: 30,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -527,14 +657,17 @@ class _BagBar extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Text('Subtotal: \$${subtotal.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey.shade700)),
-              const SizedBox(width: 12),
-              Text('Savings: \$${savings.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey.shade700)),
-              const Spacer(),
-              TextButton(
-                onPressed: onViewCart,
-                child: const Text('View cart'),
+              Text(
+                'Subtotal: \$${subtotal.toStringAsFixed(2)}',
+                style: TextStyle(color: Colors.grey.shade700),
               ),
+              const SizedBox(width: 12),
+              Text(
+                'Savings: \$${savings.toStringAsFixed(2)}',
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
+              const Spacer(),
+              TextButton(onPressed: onViewCart, child: const Text('View cart')),
             ],
           ),
         ],
