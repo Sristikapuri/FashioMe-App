@@ -8,6 +8,7 @@ class AuthModel {
   final String email;
   final String? gender;
   final String? age;
+  final String? role;
   final String? password;
 
   AuthModel({
@@ -18,6 +19,7 @@ class AuthModel {
     required this.email,
     this.gender,
     this.age,
+    this.role,
     this.password,
   });
 
@@ -66,6 +68,7 @@ class AuthModel {
       email: entity.email,
       gender: entity.gender,
       age: entity.age,
+      role: entity.role,
       password: entity.password,
     );
   }
@@ -79,6 +82,7 @@ class AuthModel {
       email: email,
       gender: gender,
       age: age,
+      role: role,
       password: password,
     );
   }
@@ -103,6 +107,9 @@ class AuthModel {
     if (parsedAge != null) {
       payload['age'] = parsedAge;
     }
+    if (role != null) {
+      payload['role'] = role;
+    }
     if (password != null) {
       payload['password'] = password;
     }
@@ -118,6 +125,7 @@ class AuthModel {
     String? email,
     String? gender,
     String? age,
+    String? role,
     String? password,
   }) {
     return AuthModel(
@@ -128,6 +136,7 @@ class AuthModel {
       email: email ?? this.email,
       gender: gender ?? this.gender,
       age: age ?? this.age,
+      role: role ?? this.role,
       password: password ?? this.password,
     );
   }
@@ -153,6 +162,7 @@ class AuthModel {
       email: _stringValue(userData['email'] ?? json['email']),
       gender: _nullableStringValue(userData['gender'] ?? json['gender']),
       age: _nullableStringValue(userData['age'] ?? json['age']),
+      role: _nullableStringValue(userData['role'] ?? json['role']),
       password: _nullableStringValue(userData['password'] ?? json['password']),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:fashio_me/core/api/api_client.dart';
 import 'package:fashio_me/core/api/api_endpoints.dart';
 import 'package:fashio_me/core/providers/storage_provider.dart';
@@ -137,6 +139,7 @@ class AuthRemoteDatasource implements IAuthDataSource {
           username: user.username,
           gender: user.gender,
           age: user.age,
+          role: user.role,
         ),
       );
     }
@@ -164,7 +167,143 @@ class AuthRemoteDatasource implements IAuthDataSource {
       email: sessionUser.email,
       gender: sessionUser.gender,
       age: sessionUser.age,
+      role: sessionUser.role,
     );
+  }
+
+  @override
+  Future<AuthModel?> whoami() async {
+    final token = await _tokenService.getToken();
+    if (token == null) {
+      return null;
+    }
+
+    try {
+      final response = await _apiClient.get(
+        ApiEndpoints.authWhoami,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+
+      if (!_isSuccessful(response.data)) {
+        return null;
+      }
+
+      final userMap = _extractUserMap(response.data);
+      if (userMap == null) {
+        return null;
+      }
+
+      final user = AuthApiModel.fromJson(userMap);
+      
+      // Update session with fresh user data
+      if (user.authId != null && user.authId!.isNotEmpty) {
+        await _userSessionService.saveUser(
+          SessionUser(
+            userId: user.authId!,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+            gender: user.gender,
+            age: user.age,
+            role: user.role,
+          ),
+        );
+      }
+
+      return AuthModel(
+        authId: user.authId,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        email: user.email,
+        gender: user.gender,
+        age: user.age,
+        role: user.role,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<AuthModel?> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? gender,
+    int? age,
+    File? profileImage,
+    String? password,
+  }) async {
+    final token = await _tokenService.getToken();
+    if (token == null) {
+      return null;
+    }
+
+    try {
+      final formData = FormData.fromMap({});
+      
+      if (firstName != null) formData.fields.add(MapEntry('firstName', firstName));
+      if (lastName != null) formData.fields.add(MapEntry('lastName', lastName));
+      if (username != null) formData.fields.add(MapEntry('username', username));
+      if (gender != null) formData.fields.add(MapEntry('gender', gender));
+      if (age != null) formData.fields.add(MapEntry('age', age.toString()));
+      if (password != null) formData.fields.add(MapEntry('password', password));
+      
+      if (profileImage != null) {
+        formData.files.add(MapEntry(
+          'profileImage',
+          await MultipartFile.fromFile(profileImage.path),
+        ));
+      }
+
+      final response = await _apiClient.put(
+        ApiEndpoints.authUpdate,
+        data: formData,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+
+      if (!_isSuccessful(response.data)) {
+        return null;
+      }
+
+      final userMap = _extractUserMap(response.data);
+      if (userMap == null) {
+        return null;
+      }
+
+      final user = AuthApiModel.fromJson(userMap);
+      
+      // Update session with fresh user data
+      if (user.authId != null && user.authId!.isNotEmpty) {
+        await _userSessionService.saveUser(
+          SessionUser(
+            userId: user.authId!,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+            gender: user.gender,
+            age: user.age,
+            role: user.role,
+          ),
+        );
+      }
+
+      return AuthModel(
+        authId: user.authId,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        email: user.email,
+        gender: user.gender,
+        age: user.age,
+        role: user.role,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
   @override

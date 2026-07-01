@@ -1,17 +1,31 @@
+import 'dart:io';
+import 'package:dartz/dartz.dart';
+import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
+import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart';
 import 'package:fashio_me/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:fashio_me/features/auth/domain/usecases/logout_usecase.dart';
+import 'package:fashio_me/features/auth/domain/usecases/update_profile_usecase.dart';
+import 'package:fashio_me/features/auth/domain/usecases/whoami_usecase.dart';
+import 'package:fashio_me/core/api/api_client.dart';
+import 'package:fashio_me/core/api/api_endpoints.dart';
+import 'package:fashio_me/core/providers/storage_provider.dart';
 import 'package:fashio_me/features/auth/presentation/state/auth_session_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 
 class AuthSessionViewModel extends Notifier<AuthSessionState> {
   late final GetCurrentUserUsecase _getCurrentUserUsecase;
   late final LogoutUsecase _logoutUsecase;
+  late final WhoamiUsecase _whoamiUsecase;
+  late final UpdateProfileUsecase _updateProfileUsecase;
 
   @override
   AuthSessionState build() {
     _getCurrentUserUsecase = ref.read(getCurrentUserUsecaseProvider);
     _logoutUsecase = ref.read(logoutUsecaseProvider);
+    _whoamiUsecase = ref.read(whoamiUsecaseProvider);
+    _updateProfileUsecase = ref.read(updateProfileUsecaseProvider);
     return const AuthSessionState.initial();
   }
 
@@ -26,6 +40,10 @@ class AuthSessionViewModel extends Notifier<AuthSessionState> {
       (_) => state.copyWith(isRestoring: false, clearUser: true),
       (user) => state.copyWith(isRestoring: false, user: user),
     );
+  }
+
+  Future<Either<Failure, AuthEntity>> getCurrentUser() async {
+    return await _getCurrentUserUsecase();
   }
 
   Future<bool> logout() async {
@@ -44,5 +62,63 @@ class AuthSessionViewModel extends Notifier<AuthSessionState> {
         return true;
       },
     );
+  }
+
+  Future<Either<String, AuthEntity>> whoami() async {
+    final result = await _whoamiUsecase();
+    return result.fold(
+      (failure) => Left(failure.message),
+      (user) => Right(user),
+    );
+  }
+
+  Future<Either<String, AuthEntity>> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? gender,
+    int? age,
+    File? profileImage,
+    String? password,
+  }) async {
+    final result = await _updateProfileUsecase(
+      UpdateProfileUsecaseParams(
+        firstName: firstName,
+        lastName: lastName,
+        username: username,
+        gender: gender,
+        age: age,
+        profileImage: profileImage,
+        password: password,
+      ),
+    );
+    return result.fold(
+      (failure) => Left(failure.message),
+      (user) {
+        setUser(user);
+        return Right(user);
+      },
+    );
+  }
+
+  Future<bool> deleteAccount() async {
+    try {
+      final token = await ref.read(tokenServiceProvider).getToken();
+      if (token == null) return false;
+
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.delete(
+        ApiEndpoints.authDelete,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+
+      if (response.data != null) {
+        await logout();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 }

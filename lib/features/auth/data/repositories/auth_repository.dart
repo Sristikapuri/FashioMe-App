@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/features/auth/data/datasources/auth_datasource.dart';
@@ -93,6 +94,52 @@ class AuthRepository implements IAuthRepository {
   }
 
   @override
+  Future<Either<Failure, AuthEntity>> whoami() async {
+    try {
+      final user = await _authDataSource.whoami();
+      if (user == null) {
+        return const Left(
+          ApiFailure(message: 'Failed to fetch user data.'),
+        );
+      }
+      return Right(user.toEntity());
+    } catch (e) {
+      return Left(ApiFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AuthEntity>> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? gender,
+    int? age,
+    File? profileImage,
+    String? password,
+  }) async {
+    try {
+      final user = await _authDataSource.updateProfile(
+        firstName: firstName,
+        lastName: lastName,
+        username: username,
+        gender: gender,
+        age: age,
+        profileImage: profileImage,
+        password: password,
+      );
+      if (user == null) {
+        return const Left(
+          ApiFailure(message: 'Failed to update profile.'),
+        );
+      }
+      return Right(user.toEntity());
+    } catch (e) {
+      return Left(ApiFailure(message: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, bool>> logout() async {
     try {
       final result = await _authDataSource.logout();
@@ -142,21 +189,26 @@ class AuthRepository implements IAuthRepository {
   @override
   Future<Either<Failure, String>> getInitialRoute() async {
     try {
-
+      // Check if user is logged in with valid token
       if (_authDataSource.isLoggedIn()) {
-        final currentUser = await _authDataSource.getCurrentUser();
-        if (currentUser != null) {
+        final whoamiResult = await _authDataSource.whoami();
+        if (whoamiResult != null) {
+          // User is authenticated, check if silhouette is completed
+          // This will be handled in splash page based on silhouette status
           return const Right('dashboard');
         }
-
+        // Token is invalid, clear local session
         await _authDataSource.logout();
       }
 
-
+      // Check if user has completed onboarding
       if (_authDataSource.hasCompletedOnboarding()) {
-        return const Right('login');
+        // Check if user has completed silhouette
+        // For now, go to silhouette if onboarding is done
+        return const Right('silhouette');
       }
   
+      // Show onboarding first
       return const Right('onboarding');
     } catch (e) {
       return Left(ApiFailure(message: e.toString()));

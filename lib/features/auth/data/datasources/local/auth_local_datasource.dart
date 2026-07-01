@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:fashio_me/core/services/hive/hive_service.dart';
 import 'package:fashio_me/core/services/storage/user_session_service.dart';
 import 'package:fashio_me/features/auth/data/datasources/auth_datasource.dart';
@@ -67,6 +68,49 @@ class AuthLocalDataSource implements IAuthDataSource {
       'email': authHiveModel.email,
       'password': authHiveModel.password,
     });
+  }
+
+  @override
+  Future<AuthModel?> whoami() async {
+    return getCurrentUser();
+  }
+
+  @override
+  Future<AuthModel?> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? gender,
+    int? age,
+    File? profileImage,
+    String? password,
+  }) async {
+    final authId = _userSessionService.getUserId();
+    if (authId == null) return null;
+
+    final authHiveModel = _hiveService.getCurrentUser(authId);
+    if (authHiveModel == null) return null;
+
+    final updatedModel = AuthHiveModel(
+      authId: authId,
+      fullName: '${firstName ?? ''} ${lastName ?? ''}'.trim().isNotEmpty 
+          ? '${firstName ?? ''} ${lastName ?? ''}'.trim()
+          : authHiveModel.fullName,
+      email: authHiveModel.email,
+      password: password ?? authHiveModel.password,
+    );
+
+    await _hiveService.registerUser(updatedModel);
+
+    return AuthModel(
+      authId: authId,
+      firstName: firstName ?? authHiveModel.fullName.split(' ').first,
+      lastName: lastName ?? (authHiveModel.fullName.split(' ').length > 1 ? authHiveModel.fullName.split(' ').sublist(1).join(' ') : ''),
+      username: username ?? authId,
+      email: authHiveModel.email,
+      gender: gender,
+      age: age?.toString(),
+    );
   }
 
   @override

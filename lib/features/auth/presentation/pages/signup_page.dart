@@ -2,7 +2,7 @@ import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/core/utils/snackbar_utils.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
-import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart';
+import 'package:fashio_me/features/auth/presentation/providers/auth_view_model_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -73,47 +73,49 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 /// top image
-                Container(
-                  height: 220,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    image: const DecorationImage(
-                      image: NetworkImage(
-                        'https://images.unsplash.com/photo-1496747611176-843222e1e57c',
-                      ),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.15),
-                          Colors.black.withValues(alpha: 0.45),
-                        ],
-                      ),
-                    ),
-
-                    child: const Padding(
-                      padding: EdgeInsets.all(24),
-
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Text(
-                          'Create Your\nFashion Identity',
-                          style: TextStyle(
-                            fontSize: 30,
-                            height: 1.2,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: SizedBox(
+                    height: 220,
+                    width: double.infinity,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          'https://images.unsplash.com/photo-1496747611176-843222e1e57c',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            color: AppColors.cardBackground,
                           ),
                         ),
-                      ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.15),
+                                Colors.black.withValues(alpha: 0.45),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Align(
+                            alignment: Alignment.bottomLeft,
+                            child: Text(
+                              'Create Your\nFashion Identity',
+                              style: TextStyle(
+                                fontSize: 30,
+                                height: 1.2,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

@@ -38,6 +38,9 @@ class ApiEndpoints {
   // =========== Auth Endpoints ===========
   static const String authRegister = '/auth/register';
   static const String authLogin = '/auth/login';
+  static const String authWhoami = '/auth/whoami';
+  static const String authUpdate = '/auth/update';
+  static const String authDelete = '/auth/delete';
 
   // =========== User Endpoints ===========
   static const String users = '/users';
@@ -64,6 +67,11 @@ class ApiEndpoints {
   static const String homeGenerateProfile = '/home/generate-profile';
   static const String homeSearch = '/home/search';
   static String homeWardrobeItem(String id) => '/home/wardrobe/$id';
+  static const String homeClothes = '/home/clothes';
+  static String homeClotheById(String id) => '/home/clothes/$id';
+  static const String cart = '/cart';
+  static const String orders = '/orders';
+  static const String myOrders = '/orders/me';
 
   static String get origin {
     final uri = Uri.parse(baseUrl);

@@ -15,6 +15,7 @@ class SessionUser {
   final String username;
   final String? gender;
   final String? age;
+  final String? role;
 
   const SessionUser({
     required this.userId,
@@ -24,6 +25,7 @@ class SessionUser {
     required this.username,
     this.gender,
     this.age,
+    this.role,
   });
 }
 
@@ -42,6 +44,7 @@ class UserSessionService {
   static const String _keyEmail = 'email';
   static const String _keyGender = 'gender';
   static const String _keyAge = 'age';
+  static const String _keyRole = 'role';
 
   // Save user session
   Future<void> saveSession(String userId) async {
@@ -71,6 +74,12 @@ class UserSessionService {
     } else {
       await _prefs.remove(_keyAge);
     }
+
+    if (user.role != null && user.role!.isNotEmpty) {
+      await _prefs.setString(_keyRole, user.role!);
+    } else {
+      await _prefs.remove(_keyRole);
+    }
   }
 
   SessionUser? getCurrentUser() {
@@ -89,6 +98,7 @@ class UserSessionService {
       email: email,
       gender: _prefs.getString(_keyGender),
       age: _prefs.getString(_keyAge),
+      role: _prefs.getString(_keyRole),
     );
   }
 
@@ -111,6 +121,7 @@ class UserSessionService {
     await _prefs.remove(_keyEmail);
     await _prefs.remove(_keyGender);
     await _prefs.remove(_keyAge);
+    await _prefs.remove(_keyRole);
     await _prefs.setBool(_keyIsLoggedIn, false);
   }
 
