@@ -6,7 +6,7 @@ import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/core/utils/snackbar_utils.dart';
 import 'package:fashio_me/core/widgets/selected_image.dart';
-import 'package:fashio_me/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/features/silhouette/presentation/providers/silhouette_flow_providers.dart';
 import 'package:fashio_me/features/silhouette/presentation/state/silhouette_flow_state.dart';
 
@@ -181,7 +181,7 @@ class SilhouetteFlowPage extends ConsumerWidget {
                   return;
                 }
 
-                AppRoutes.pushAndRemoveUntil(context, const DashboardPage());
+                AppRoutes.pushAndRemoveUntil(context, const LoginPage());
               },
             ),
           ],

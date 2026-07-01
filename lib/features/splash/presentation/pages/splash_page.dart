@@ -76,6 +76,9 @@ class _SplashPageState extends ConsumerState<SplashPage>
         case 'onboarding':
           targetPage = const OnboardingPage();
           break;
+        case 'silhouette':
+          targetPage = const SilhouetteFlowPage();
+          break;
         case 'login':
           targetPage = const LoginPage();
           break;
@@ -118,6 +121,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
                 child: Image.network(
                   'https://images.unsplash.com/photo-1521572267360-ee0c2909d518',
                   fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const SizedBox.expand(),
                 ),
               ),
             ),

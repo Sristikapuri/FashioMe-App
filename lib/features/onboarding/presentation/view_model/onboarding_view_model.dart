@@ -1,3 +1,4 @@
+import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart';
 import 'package:fashio_me/features/auth/domain/usecases/complete_onboarding_usecase.dart';
 import 'package:fashio_me/features/auth/domain/usecases/get_initial_route_usecase.dart';
 import 'package:fashio_me/features/onboarding/domain/entities/onboarding_item.dart';

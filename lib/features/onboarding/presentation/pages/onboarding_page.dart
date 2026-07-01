@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
-import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/features/onboarding/domain/entities/onboarding_item.dart';
 import 'package:fashio_me/features/onboarding/presentation/providers/onboarding_providers.dart';
+import 'package:fashio_me/features/silhouette/presentation/pages/silhouette_flow_page.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
@@ -30,12 +30,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         curve: Curves.easeInOut,
       );
     } else {
-      // Complete onboarding and navigate to login
+      // Complete onboarding and navigate to silhouette
       final completed = await ref
           .read(onboardingViewModelProvider.notifier)
           .completeOnboarding();
       if (!mounted || !completed) return;
-      AppRoutes.pushReplacement(context, const LoginPage());
+      AppRoutes.pushReplacement(context, const SilhouetteFlowPage());
     }
   }
 
@@ -107,10 +107,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                 margin: const EdgeInsets.all(18),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(24),
-                                  image: DecorationImage(
-                                    image: NetworkImage(data.imageUrl),
-                                    fit: BoxFit.cover,
-                                  ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withValues(
@@ -120,6 +116,17 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                       offset: const Offset(0, 10),
                                     ),
                                   ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: Image.network(
+                                    data.imageUrl,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    errorBuilder: (_, _, _) => Container(
+                                      color: AppColors.cardBackground,
+                                    ),
+                                  ),
                                 ),
                               ),
 
