@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
@@ -7,7 +8,6 @@ import 'package:fashio_me/features/auth/presentation/pages/signup_page.dart';
 import 'package:fashio_me/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:fashio_me/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:fashio_me/features/silhouette/presentation/pages/silhouette_flow_page.dart';
-import 'package:fashio_me/features/silhouette/domain/usecases/has_completed_silhouette_profile_usecase.dart';
 import 'package:fashio_me/features/splash/presentation/providers/splash_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

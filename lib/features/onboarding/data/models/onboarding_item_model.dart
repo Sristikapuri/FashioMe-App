@@ -12,11 +12,7 @@ class OnboardingItemModel {
   });
 
   OnboardingItem toEntity() {
-    return OnboardingItem(
-      title: title,
-      subtitle: subtitle,
-      imageUrl: imageUrl,
-    );
+    return OnboardingItem(title: title, subtitle: subtitle, imageUrl: imageUrl);
   }
 
   factory OnboardingItemModel.fromEntity(OnboardingItem entity) {

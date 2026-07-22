@@ -12,7 +12,7 @@ class SplashLocalDataSource implements ISplashDataSource {
   final StorageService _storageService;
 
   SplashLocalDataSource({required StorageService storageService})
-      : _storageService = storageService;
+    : _storageService = storageService;
 
   @override
   bool isLoggedIn() {

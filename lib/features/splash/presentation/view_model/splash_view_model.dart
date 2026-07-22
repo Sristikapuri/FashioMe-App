@@ -23,10 +23,7 @@ class SplashViewModel extends Notifier<SplashState> {
         errorMessage: failure.message,
         targetRoute: 'onboarding',
       ),
-      (route) => state.copyWith(
-        isResolvingRoute: false,
-        targetRoute: route,
-      ),
+      (route) => state.copyWith(isResolvingRoute: false, targetRoute: route),
     );
   }
 

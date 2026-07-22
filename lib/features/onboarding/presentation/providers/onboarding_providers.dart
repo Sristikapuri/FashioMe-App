@@ -4,5 +4,5 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final onboardingViewModelProvider =
     NotifierProvider<OnboardingViewModel, OnboardingState>(
-  OnboardingViewModel.new,
-);
+      OnboardingViewModel.new,
+    );

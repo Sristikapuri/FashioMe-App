@@ -22,8 +22,8 @@ class SplashRepositoryImpl implements ISplashRepository {
   SplashRepositoryImpl({
     required ISplashDataSource remoteDataSource,
     required ISplashDataSource localDataSource,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+  }) : _remoteDataSource = remoteDataSource,
+       _localDataSource = localDataSource;
 
   @override
   Future<Either<Failure, bool>> isLoggedIn() async {
@@ -31,7 +31,7 @@ class SplashRepositoryImpl implements ISplashRepository {
       // Check local first
       final localLoggedIn = _localDataSource.isLoggedIn();
       if (localLoggedIn) return Right(localLoggedIn);
-      
+
       // Fall back to remote
       return Right(_remoteDataSource.isLoggedIn());
     } catch (e) {
@@ -45,7 +45,7 @@ class SplashRepositoryImpl implements ISplashRepository {
       // Check local first
       final localCompleted = _localDataSource.hasCompletedOnboarding();
       if (localCompleted) return Right(localCompleted);
-      
+
       // Fall back to remote
       return Right(_remoteDataSource.hasCompletedOnboarding());
     } catch (e) {

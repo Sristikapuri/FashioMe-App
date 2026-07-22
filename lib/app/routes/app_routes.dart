@@ -33,11 +33,7 @@ class AppRoutes {
     String routeName, {
     Object? arguments,
   }) {
-    return Navigator.pushNamed<T>(
-      context,
-      routeName,
-      arguments: arguments,
-    );
+    return Navigator.pushNamed<T>(context, routeName, arguments: arguments);
   }
 
   static Future<T?> pushReplacementNamed<T extends Object?, TO extends Object?>(

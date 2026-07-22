@@ -13,12 +13,14 @@ class OnboardingItem {
 final List<OnboardingItem> kOnboardingItems = [
   OnboardingItem(
     title: 'Your AI Stylist,\nReimagined.',
-    subtitle: 'Merging the heritage of the Saree with the edge of modern tailoring.',
+    subtitle:
+        'Merging the heritage of the Saree with the edge of modern tailoring.',
     imageUrl: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c',
   ),
   OnboardingItem(
     title: 'Luxury Meets\nTechnology.',
-    subtitle: 'Discover premium fashion recommendations powered by AI intelligence.',
+    subtitle:
+        'Discover premium fashion recommendations powered by AI intelligence.',
     imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b',
   ),
   OnboardingItem(

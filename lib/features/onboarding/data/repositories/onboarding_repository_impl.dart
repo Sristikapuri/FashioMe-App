@@ -8,7 +8,7 @@ import 'package:fashio_me/features/onboarding/domain/repositories/onboarding_rep
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final onboardingRepositoryProvider = Provider<IOnboardingRepository>((ref) {
-  final remoteDataSource = OnboardingRemoteDataSource();
+  final remoteDataSource = ref.read(onboardingRemoteDataSourceProvider);
   final localDataSource = ref.read(onboardingLocalDataSourceProvider);
   return OnboardingRepositoryImpl(
     remoteDataSource: remoteDataSource,
@@ -23,8 +23,8 @@ class OnboardingRepositoryImpl implements IOnboardingRepository {
   OnboardingRepositoryImpl({
     required IOnboardingDataSource remoteDataSource,
     required IOnboardingDataSource localDataSource,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+  }) : _remoteDataSource = remoteDataSource,
+       _localDataSource = localDataSource;
 
   @override
   Future<Either<Failure, List<OnboardingItem>>> getOnboardingItems() async {
@@ -45,7 +45,13 @@ class OnboardingRepositoryImpl implements IOnboardingRepository {
   @override
   Future<Either<Failure, bool>> completeOnboarding() async {
     try {
-      await _remoteDataSource.completeOnboarding();
+      // The first-run screen can be shown before authentication. Keep the
+      // local completion marker even when the protected API is unavailable.
+      try {
+        await _remoteDataSource.completeOnboarding();
+      } catch (_) {
+        // Sync will be retried by the next authenticated flow.
+      }
       await _localDataSource.completeOnboarding();
       return const Right(true);
     } catch (e) {
@@ -57,11 +63,15 @@ class OnboardingRepositoryImpl implements IOnboardingRepository {
   Future<Either<Failure, bool>> hasCompletedOnboarding() async {
     try {
       // Check local first
-      final localCompleted = _localDataSource.hasCompletedOnboarding();
+      final localCompleted = await _localDataSource.hasCompletedOnboarding();
       if (localCompleted) return Right(localCompleted);
-      
+
       // Fall back to remote
-      return Right(_remoteDataSource.hasCompletedOnboarding());
+      try {
+        return Right(await _remoteDataSource.hasCompletedOnboarding());
+      } catch (_) {
+        return const Right(false);
+      }
     } catch (e) {
       return Left(LocalDatabaseFailure(message: e.toString()));
     }

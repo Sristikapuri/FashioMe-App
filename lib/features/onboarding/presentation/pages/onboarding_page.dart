@@ -109,7 +109,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                   borderRadius: BorderRadius.circular(24),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(
+                                      color: AppColors.premiumInk.withValues(
                                         alpha: 0.15,
                                       ),
                                       blurRadius: 20,
@@ -123,9 +123,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                     data.imageUrl,
                                     fit: BoxFit.cover,
                                     width: double.infinity,
-                                    errorBuilder: (_, _, _) => Container(
-                                      color: AppColors.cardBackground,
-                                    ),
+                                    errorBuilder: (_, _, _) =>
+                                        Container(color: AppColors.surfaceSoft),
                                   ),
                                 ),
                               ),
@@ -140,7 +139,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                     end: Alignment.bottomCenter,
                                     colors: [
                                       Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.35),
+                                      AppColors.heroOverlayDark,
                                     ],
                                   ),
                                 ),
@@ -158,7 +157,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.cardBackground,
+                            color: AppColors.surfaceSoft,
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: const Text(

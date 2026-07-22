@@ -12,9 +12,9 @@ class SplashState extends Equatable {
   });
 
   const SplashState.initial()
-      : isResolvingRoute = false,
-        targetRoute = null,
-        errorMessage = null;
+    : isResolvingRoute = false,
+      targetRoute = null,
+      errorMessage = null;
 
   SplashState copyWith({
     bool? isResolvingRoute,
