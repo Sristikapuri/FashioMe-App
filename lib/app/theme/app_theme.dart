@@ -15,7 +15,7 @@ ThemeData _buildTheme() {
       secondary: AppColors.accent,
       onPrimary: Colors.white,
       onSecondary: AppColors.textPrimary,
-      surface: AppColors.cardBackground,
+      surface: AppColors.surface,
       onSurface: AppColors.textPrimary,
       error: AppColors.error,
       brightness: Brightness.light,
@@ -37,7 +37,7 @@ ThemeData _buildTheme() {
       ),
     ),
     cardTheme: const CardThemeData(
-      color: AppColors.cardBackground,
+      color: AppColors.surface,
       surfaceTintColor: Colors.transparent,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -65,7 +65,7 @@ ThemeData _buildTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.cardBackground,
+      fillColor: AppColors.surface,
       hintStyle: const TextStyle(color: AppColors.textSecondary),
       labelStyle: const TextStyle(color: AppColors.textSecondary),
       enabledBorder: OutlineInputBorder(

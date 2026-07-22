@@ -28,5 +28,9 @@ Widget buildSelectedImage(
     );
   }
 
-  return Image.file(File(resolvedImagePath), fit: fit, errorBuilder: errorBuilder);
+  return Image.file(
+    File(resolvedImagePath),
+    fit: fit,
+    errorBuilder: errorBuilder,
+  );
 }

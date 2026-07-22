@@ -38,6 +38,8 @@ class ApiEndpoints {
   // =========== Auth Endpoints ===========
   static const String authRegister = '/auth/register';
   static const String authLogin = '/auth/login';
+  static const String authForgotPassword = '/auth/forgot-password';
+  static const String authResetPassword = '/auth/reset-password';
   static const String authWhoami = '/auth/whoami';
   static const String authUpdate = '/auth/update';
   static const String authDelete = '/auth/delete';
@@ -72,6 +74,8 @@ class ApiEndpoints {
   static const String cart = '/cart';
   static const String orders = '/orders';
   static const String myOrders = '/orders/me';
+  static const String esewaPaymentUrl = '/esewa/payment-url';
+  static const String esewaVerify = '/esewa/verify';
 
   static String get origin {
     final uri = Uri.parse(baseUrl);

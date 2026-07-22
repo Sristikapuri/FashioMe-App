@@ -19,20 +19,22 @@ void main() {
 
   Widget wrap(Widget child) {
     return ProviderScope(
-      overrides: [
-        shopRemoteDataSourceProvider.overrideWithValue(mockRemote),
-      ],
+      overrides: [shopRemoteDataSourceProvider.overrideWithValue(mockRemote)],
       child: MaterialApp(home: child),
     );
   }
 
   setUp(() {
     mockRemote = MockShopRemoteDataSource();
-    when(() => mockRemote.fetchMyOrders()).thenAnswer((_) async => <Map<String, dynamic>>[]);
+    when(
+      () => mockRemote.fetchMyOrders(),
+    ).thenAnswer((_) async => <Map<String, dynamic>>[]);
   });
 
   group('OrderHistoryPage Widget Tests', () {
-    testWidgets('shows the empty-state message when there are no orders', (tester) async {
+    testWidgets('shows the empty-state message when there are no orders', (
+      tester,
+    ) async {
       await prepareSurface(tester);
 
       await tester.pumpWidget(wrap(const OrderHistoryPage()));
@@ -66,6 +68,5 @@ void main() {
       expect(find.text('DELIVERED'), findsOneWidget);
       expect(find.text('Tailored Coat x2'), findsOneWidget);
     });
-
   });
 }

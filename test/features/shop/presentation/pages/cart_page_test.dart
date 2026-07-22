@@ -15,8 +15,8 @@ ShopItemModel _item() {
     category: 'tops',
     size: 'M',
     color: 'Camel',
-    price: 200,
-    discountedPrice: 150,
+    price: 200.0,
+    discountedPrice: 150.0,
     stock: 8,
     imageUrl: 'https://example.com/coat.jpg',
     description: 'A warm tailored coat',
@@ -36,26 +36,41 @@ void main() {
 
   Widget wrap(Widget child) {
     return ProviderScope(
-      overrides: [
-        shopRemoteDataSourceProvider.overrideWithValue(mockRemote),
-      ],
-      child: MaterialApp(
-        theme: ThemeData(useMaterial3: false),
-        home: child,
-      ),
+      overrides: [shopRemoteDataSourceProvider.overrideWithValue(mockRemote)],
+      child: MaterialApp(theme: ThemeData(useMaterial3: false), home: child),
     );
   }
 
+  setUpAll(() {
+    registerFallbackValue(<String, int>{});
+  });
+
   setUp(() {
     mockRemote = MockShopRemoteDataSource();
-    when(() => mockRemote.fetchCartItems()).thenAnswer((_) async => <String, int>{});
-    when(() => mockRemote.fetchShopItems(limit: 100)).thenAnswer((_) async => [_item()]);
+    when(
+      () => mockRemote.fetchCartItems(),
+    ).thenAnswer((_) async => <String, int>{});
+    when(
+      () => mockRemote.fetchShopItems(limit: 100),
+    ).thenAnswer((_) async => [_item()]);
     when(() => mockRemote.saveCartItems(any())).thenAnswer((_) async {});
-    when(() => mockRemote.placeOrder(shippingAddress: any(named: 'shippingAddress'))).thenAnswer((_) async {});
+    when(
+      () => mockRemote.placeOrder(
+        shippingAddress: any(named: 'shippingAddress'),
+        customerName: any(named: 'customerName'),
+        customerEmail: any(named: 'customerEmail'),
+        phone: any(named: 'phone'),
+        city: any(named: 'city'),
+        postalCode: any(named: 'postalCode'),
+        paymentMethod: any(named: 'paymentMethod'),
+      ),
+    ).thenAnswer((_) async => 'order_123');
   });
 
   group('CartPage Widget Tests', () {
-    testWidgets('shows an empty cart message when there are no items', (tester) async {
+    testWidgets('shows an empty cart message when there are no items', (
+      tester,
+    ) async {
       await prepareSurface(tester);
 
       await tester.pumpWidget(wrap(const CartPage()));
@@ -65,7 +80,9 @@ void main() {
       expect(find.text('My Cart'), findsOneWidget);
     });
 
-    testWidgets('removes an item when the remove button is tapped', (tester) async {
+    testWidgets('removes an item when the remove button is tapped', (
+      tester,
+    ) async {
       await prepareSurface(tester);
       when(() => mockRemote.fetchCartItems()).thenAnswer((_) async => {'1': 1});
 

@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/features/silhouette/domain/usecases/has_completed_silhouette_profile_usecase.dart';
 import 'package:fashio_me/features/splash/presentation/pages/splash_page.dart';
@@ -17,8 +18,10 @@ class FakeSplashViewModel extends SplashViewModel {
   @override
   SplashState build() => const SplashState.initial();
 
+  @override
   Future<void> resolveInitialRoute() async {}
 
+  @override
   void clearNavigationTarget() {}
 }
 
@@ -33,10 +36,7 @@ void main() {
           mockUsecase,
         ),
       ],
-      child: MaterialApp(
-        theme: ThemeData(useMaterial3: false),
-        home: child,
-      ),
+      child: MaterialApp(theme: ThemeData(useMaterial3: false), home: child),
     );
   }
 
@@ -49,13 +49,15 @@ void main() {
 
   setUp(() {
     mockUsecase = MockHasCompletedSilhouetteProfileUsecase();
-    when(() => mockUsecase.call()).thenAnswer(
-      (_) async => const Right<Failure, bool>(true),
-    );
+    when(
+      () => mockUsecase.call(),
+    ).thenAnswer((_) async => const Right<Failure, bool>(true));
   });
 
   group('SplashPage Widget Tests', () {
-    testWidgets('shows the splash branding and loading indicator', (tester) async {
+    testWidgets('shows the splash branding and loading indicator', (
+      tester,
+    ) async {
       await prepareSurface(tester);
 
       await tester.pumpWidget(wrap(const SplashPage()));
@@ -78,6 +80,5 @@ void main() {
 
       expect(find.text('INITIALIZING AI INSIGHT ENGINE'), findsOneWidget);
     });
-
   });
 }

@@ -16,9 +16,9 @@ void main() {
   });
 
   test('should call logout on repository', () async {
-    when(() => mockAuthRepository.logout()).thenAnswer(
-      (_) async => const Right(true),
-    );
+    when(
+      () => mockAuthRepository.logout(),
+    ).thenAnswer((_) async => const Right(true));
 
     final result = await usecase(const LogoutUsecaseParams());
 

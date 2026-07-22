@@ -2,6 +2,18 @@
 
 A new Flutter project.
 
+## Architecture
+
+The app uses feature-first Clean Architecture:
+
+- `presentation` contains pages, view models, state, and Riverpod UI providers.
+- `domain` contains entities, repository contracts, and use cases. It does not import Flutter, Riverpod, or data implementations.
+- `data` contains models, data sources, and repository implementations.
+- `core` contains reusable infrastructure and utilities without feature-specific dependencies.
+- `app/di/providers.dart` is the composition root where data implementations are connected to domain contracts.
+
+When adding a feature, keep UI dependencies pointed at domain contracts/use cases and add concrete wiring only in `app/di/providers.dart`.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

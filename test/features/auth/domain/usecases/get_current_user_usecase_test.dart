@@ -27,9 +27,9 @@ void main() {
       age: '24',
     );
 
-    when(() => mockAuthRepository.getCurrentUser()).thenAnswer(
-      (_) async => const Right(tAuthEntity),
-    );
+    when(
+      () => mockAuthRepository.getCurrentUser(),
+    ).thenAnswer((_) async => const Right(tAuthEntity));
 
     final result = await usecase();
 

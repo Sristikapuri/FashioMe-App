@@ -6,6 +6,9 @@ abstract final class AppColors {
   static const background = Color(0xFFFFF7F7);
   static const dashboardBackground = Color(0xFFFFF7F7);
   static const navBarBackground = Color(0xFFF2D8D8);
+  static const surface = Color(0xFFFFFFFF);
+  static const surfaceSoft = Color(0xFFFFECEC);
+  static const surfaceMuted = Color(0xFFF7F2F2);
 
   static const primary = Color(0xFF820000);
   static const primaryLight = Color(0xFFB83333);
@@ -21,7 +24,7 @@ abstract final class AppColors {
   static const textPrimary = Color(0xFF260909);
   static const textSecondary = Color(0xFF735656);
   static const textLight = Color(0xFFA98585);
-  static const cardBackground = Color(0xFFFFECEC);
+  static const cardBackground = surface;
   static const divider = Color(0xFFE7B8B8);
   static const disabled = Color(0xFFD6A7A7);
 
@@ -29,6 +32,10 @@ abstract final class AppColors {
   static const success = Color(0xFF10B981);
   static const error = Color(0xFFEF4444);
   static const warning = Color(0xFFA41515);
+  static const successSoft = Color(0xFFE9F9F3);
+  static const errorSoft = Color(0xFFFDECEC);
+  static const heroOverlayLight = Color(0x262A0808);
+  static const heroOverlayDark = Color(0x732A0808);
 
   static const primaryGradient = LinearGradient(
     colors: [Color(0xFFD86B6B), Color(0xFF820000), Color(0xFF4A0000)],

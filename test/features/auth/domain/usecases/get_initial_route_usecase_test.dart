@@ -16,9 +16,9 @@ void main() {
   });
 
   test('should call getInitialRoute on repository', () async {
-    when(() => mockAuthRepository.getInitialRoute()).thenAnswer(
-      (_) async => const Right('dashboard'),
-    );
+    when(
+      () => mockAuthRepository.getInitialRoute(),
+    ).thenAnswer((_) async => const Right('dashboard'));
 
     final result = await usecase();
 

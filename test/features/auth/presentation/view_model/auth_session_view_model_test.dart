@@ -11,8 +11,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:riverpod/riverpod.dart';
 
 class MockGetCurrentUserUsecase extends Mock implements GetCurrentUserUsecase {}
+
 class MockLogoutUsecase extends Mock implements LogoutUsecase {}
+
 class MockWhoamiUsecase extends Mock implements WhoamiUsecase {}
+
 class MockUpdateProfileUsecase extends Mock implements UpdateProfileUsecase {}
 
 void main() {
@@ -61,6 +64,9 @@ void main() {
     container.read(authSessionViewModelProvider.notifier).setUser(tAuthEntity);
 
     expect(container.read(authSessionViewModelProvider).user, tAuthEntity);
-    expect(container.read(authSessionViewModelProvider).isAuthenticated, isTrue);
+    expect(
+      container.read(authSessionViewModelProvider).isAuthenticated,
+      isTrue,
+    );
   });
 }

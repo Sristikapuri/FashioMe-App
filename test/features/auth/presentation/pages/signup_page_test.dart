@@ -3,13 +3,15 @@ import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
 import 'package:fashio_me/features/auth/domain/usecases/register_usecase.dart';
 import 'package:fashio_me/features/auth/presentation/pages/signup_page.dart';
-import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart' as auth_providers;
+import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart'
+    as auth_providers;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockRegisterUsecase extends Mock implements RegisterUsecase {}
+
 class FakeRegisterUsecaseParams extends Fake implements RegisterUsecaseParams {}
 
 void main() {
@@ -36,12 +38,11 @@ void main() {
   Widget wrap(Widget child) {
     return ProviderScope(
       overrides: [
-        auth_providers.registerUsecaseProvider.overrideWithValue(mockRegisterUsecase),
+        auth_providers.registerUsecaseProvider.overrideWithValue(
+          mockRegisterUsecase,
+        ),
       ],
-      child: MaterialApp(
-        theme: ThemeData(useMaterial3: false),
-        home: child,
-      ),
+      child: MaterialApp(theme: ThemeData(useMaterial3: false), home: child),
     );
   }
 
@@ -58,7 +59,10 @@ void main() {
 
       await tester.pumpWidget(wrap(const SignupPage()));
 
-      expect(find.widgetWithText(ElevatedButton, 'Create Account'), findsOneWidget);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Create Account'),
+        findsOneWidget,
+      );
       expect(find.text('Join the luxury fashion experience.'), findsOneWidget);
     });
 
@@ -69,6 +73,5 @@ void main() {
 
       expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
     });
-
   });
 }

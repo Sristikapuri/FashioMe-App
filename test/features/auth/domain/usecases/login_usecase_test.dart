@@ -27,8 +27,9 @@ void main() {
       age: '24',
     );
 
-    when(() => mockAuthRepository.login('aria@example.com', 'secret123'))
-        .thenAnswer((_) async => const Right(tAuthEntity));
+    when(
+      () => mockAuthRepository.login('aria@example.com', 'secret123'),
+    ).thenAnswer((_) async => const Right(tAuthEntity));
 
     final result = await usecase(
       const LoginUsecaseParams(
@@ -38,6 +39,8 @@ void main() {
     );
 
     expect(result.isRight(), isTrue);
-    verify(() => mockAuthRepository.login('aria@example.com', 'secret123')).called(1);
+    verify(
+      () => mockAuthRepository.login('aria@example.com', 'secret123'),
+    ).called(1);
   });
 }

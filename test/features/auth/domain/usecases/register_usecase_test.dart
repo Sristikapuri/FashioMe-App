@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAuthRepository extends Mock implements IAuthRepository {}
+
 class FakeAuthEntity extends Fake implements AuthEntity {}
 
 void main() {
@@ -32,9 +33,9 @@ void main() {
       age: '24',
     );
 
-    when(() => mockAuthRepository.register(any())).thenAnswer(
-      (_) async => Right(tEntity),
-    );
+    when(
+      () => mockAuthRepository.register(any()),
+    ).thenAnswer((_) async => Right(tEntity));
 
     final result = await usecase(
       const RegisterUsecaseParams(

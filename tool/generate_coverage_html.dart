@@ -1,9 +1,13 @@
+
+
 import 'dart:io';
 
 void main() {
   final lcovFile = File('coverage/lcov.info');
   if (!lcovFile.existsSync()) {
-    print('Error: coverage/lcov.info not found. Please run "flutter test --coverage" first.');
+    stderr.writeln(
+      'Error: coverage/lcov.info not found. Please run "flutter test --coverage" first.',
+    );
     exit(1);
   }
 
@@ -13,7 +17,7 @@ void main() {
   String? currentFile;
   int totalLines = 0;
   int coveredLines = 0;
-  final lineCoverage = <int, int>{}; 
+  final lineCoverage = <int, int>{};
 
   for (var line in lines) {
     line = line.trim();
@@ -35,12 +39,14 @@ void main() {
       coveredLines = int.tryParse(line.substring(3)) ?? 0;
     } else if (line == 'end_of_record') {
       if (currentFile != null) {
-        files.add(FileCoverage(
-          filePath: currentFile,
-          totalLines: totalLines,
-          coveredLines: coveredLines,
-          lineHits: Map.from(lineCoverage),
-        ));
+        files.add(
+          FileCoverage(
+            filePath: currentFile,
+            totalLines: totalLines,
+            coveredLines: coveredLines,
+            lineHits: Map.from(lineCoverage),
+          ),
+        );
       }
       currentFile = null;
     }
@@ -51,10 +57,16 @@ void main() {
 
   // Calculate overall stats
   final grandTotalLines = files.fold<int>(0, (sum, f) => sum + f.totalLines);
-  final grandCoveredLines = files.fold<int>(0, (sum, f) => sum + f.coveredLines);
-  final overallPercentage = grandTotalLines > 0 ? (grandCoveredLines / grandTotalLines) * 100 : 0.0;
+  final grandCoveredLines = files.fold<int>(
+    0,
+    (sum, f) => sum + f.coveredLines,
+  );
+  final overallPercentage = grandTotalLines > 0
+      ? (grandCoveredLines / grandTotalLines) * 100
+      : 0.0;
 
-  final htmlContent = '''<!DOCTYPE html>
+  final htmlContent =
+      '''<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -178,7 +190,11 @@ void main() {
     }
 
     .stat-card.percentage::before {
-      background-color: ${overallPercentage >= 80 ? 'var(--success)' : overallPercentage >= 50 ? 'var(--warning)' : 'var(--error)'};
+      background-color: ${overallPercentage >= 80
+          ? 'var(--success)'
+          : overallPercentage >= 50
+          ? 'var(--warning)'
+          : 'var(--error)'};
     }
 
     .stat-label {
@@ -196,7 +212,11 @@ void main() {
     }
 
     .stat-value.percentage-val {
-      color: ${overallPercentage >= 80 ? 'var(--success)' : overallPercentage >= 50 ? 'var(--warning)' : 'var(--error)'};
+      color: ${overallPercentage >= 80
+          ? 'var(--success)'
+          : overallPercentage >= 50
+          ? 'var(--warning)'
+          : 'var(--error)'};
     }
 
     .stat-desc {
@@ -465,8 +485,12 @@ void main() {
     }
 
     final separatorIndex = file.filePath.lastIndexOf('/');
-    final dir = separatorIndex != -1 ? file.filePath.substring(0, separatorIndex + 1) : '';
-    final name = separatorIndex != -1 ? file.filePath.substring(separatorIndex + 1) : file.filePath;
+    final dir = separatorIndex != -1
+        ? file.filePath.substring(0, separatorIndex + 1)
+        : '';
+    final name = separatorIndex != -1
+        ? file.filePath.substring(separatorIndex + 1)
+        : file.filePath;
 
     buffer.write('''
           <tr class="file-row" data-pct="$pct" data-name="${file.filePath.toLowerCase()}">
@@ -561,7 +585,9 @@ void main() {
 
   final outputFile = File('coverage/index.html');
   outputFile.writeAsStringSync(buffer.toString());
-  print('HTML coverage report successfully generated at: \${outputFile.absolute.path}');
+  stdout.writeln(
+    'HTML coverage report successfully generated at: \${outputFile.absolute.path}',
+  );
 }
 
 class FileCoverage {
@@ -577,5 +603,6 @@ class FileCoverage {
     required this.lineHits,
   });
 
-  double get coveragePercentage => totalLines > 0 ? (coveredLines / totalLines) * 100 : 0.0;
+  double get coveragePercentage =>
+      totalLines > 0 ? (coveredLines / totalLines) * 100 : 0.0;
 }

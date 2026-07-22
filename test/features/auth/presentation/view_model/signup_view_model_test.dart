@@ -1,13 +1,15 @@
 import 'package:dartz/dartz.dart';
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
 import 'package:fashio_me/features/auth/domain/usecases/register_usecase.dart';
-import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart' as auth_providers;
+import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart'
+    as auth_providers;
 import 'package:fashio_me/features/auth/presentation/providers/auth_view_model_providers.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:riverpod/riverpod.dart';
 
 class MockRegisterUsecase extends Mock implements RegisterUsecase {}
+
 class FakeRegisterUsecaseParams extends Fake implements RegisterUsecaseParams {}
 
 void main() {
@@ -22,7 +24,9 @@ void main() {
     mockRegisterUsecase = MockRegisterUsecase();
     container = ProviderContainer(
       overrides: [
-        auth_providers.registerUsecaseProvider.overrideWithValue(mockRegisterUsecase),
+        auth_providers.registerUsecaseProvider.overrideWithValue(
+          mockRegisterUsecase,
+        ),
       ],
     );
   });
@@ -46,7 +50,9 @@ void main() {
       ),
     );
 
-    final result = await container.read(signupViewModelProvider.notifier).register(
+    final result = await container
+        .read(signupViewModelProvider.notifier)
+        .register(
           firstName: 'Aria',
           lastName: 'Chen',
           username: 'aria',

@@ -5,7 +5,8 @@ import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
 import 'package:fashio_me/features/auth/domain/repositories/auth_repository.dart';
 import 'package:fashio_me/features/auth/domain/usecases/get_initial_route_usecase.dart';
-import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart' as auth_providers;
+import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart'
+    as auth_providers;
 import 'package:fashio_me/features/splash/presentation/providers/splash_providers.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
@@ -39,8 +40,7 @@ class FakeAuthRepository implements IAuthRepository {
     int? age,
     File? profileImage,
     String? password,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
   @override
   Future<Either<Failure, bool>> logout() => throw UnimplementedError();
   @override
@@ -54,6 +54,17 @@ class FakeAuthRepository implements IAuthRepository {
       throw UnimplementedError();
   @override
   Future<Either<Failure, bool>> isLoggedIn() => throw UnimplementedError();
+  @override
+  Future<Either<Failure, bool>> forgotPassword(String email) =>
+      throw UnimplementedError();
+  @override
+  Future<Either<Failure, bool>> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+  }) => throw UnimplementedError();
+  @override
+  Future<Either<Failure, bool>> deleteAccount() => throw UnimplementedError();
 }
 
 void main() {
@@ -76,7 +87,9 @@ void main() {
   });
 
   test('SplashViewModel resolves route from usecase', () async {
-    await container.read(splashViewModelProvider.notifier).resolveInitialRoute();
+    await container
+        .read(splashViewModelProvider.notifier)
+        .resolveInitialRoute();
 
     expect(container.read(splashViewModelProvider).targetRoute, 'dashboard');
     expect(container.read(splashViewModelProvider).isResolvingRoute, isFalse);
