@@ -6,14 +6,13 @@ import 'package:fashio_me/features/dashboard/data/datasources/dashboard_state_da
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final dashboardStateLocalDataSourceProvider = Provider<IDashboardStateDataSource>(
-  (ref) {
-    return DashboardStateLocalDataSource(
-      prefs: ref.read(sharedPreferencesProvider),
-      userSessionService: ref.read(userSessionServiceProvider),
-    );
-  },
-);
+final dashboardStateLocalDataSourceProvider =
+    Provider<IDashboardStateDataSource>((ref) {
+      return DashboardStateLocalDataSource(
+        prefs: ref.read(sharedPreferencesProvider),
+        userSessionService: ref.read(userSessionServiceProvider),
+      );
+    });
 
 class DashboardStateLocalDataSource implements IDashboardStateDataSource {
   DashboardStateLocalDataSource({
@@ -49,4 +48,3 @@ class DashboardStateLocalDataSource implements IDashboardStateDataSource {
     await _prefs.setString(_storageKey, jsonEncode(payload));
   }
 }
-

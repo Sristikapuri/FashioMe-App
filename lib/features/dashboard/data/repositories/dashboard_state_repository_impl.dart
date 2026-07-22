@@ -5,15 +5,18 @@ import 'package:fashio_me/features/dashboard/data/datasources/dashboard_state_da
 import 'package:fashio_me/features/dashboard/domain/repositories/dashboard_state_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final dashboardStateRepositoryProvider = Provider<IDashboardStateRepository>((ref) {
+final dashboardStateRepositoryProvider = Provider<IDashboardStateRepository>((
+  ref,
+) {
   return DashboardStateRepositoryImpl(
     localDataSource: ref.read(dashboardStateLocalDataSourceProvider),
   );
 });
 
 class DashboardStateRepositoryImpl implements IDashboardStateRepository {
-  DashboardStateRepositoryImpl({required IDashboardStateDataSource localDataSource})
-      : _localDataSource = localDataSource;
+  DashboardStateRepositoryImpl({
+    required IDashboardStateDataSource localDataSource,
+  }) : _localDataSource = localDataSource;
 
   final IDashboardStateDataSource _localDataSource;
 
@@ -36,4 +39,3 @@ class DashboardStateRepositoryImpl implements IDashboardStateRepository {
     }
   }
 }
-

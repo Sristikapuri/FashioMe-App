@@ -7,7 +7,9 @@ import 'package:fashio_me/features/silhouette/data/models/silhouette_profile_mod
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final silhouetteLocalDataSourceProvider = Provider<ISilhouetteDataSource>((ref) {
+final silhouetteLocalDataSourceProvider = Provider<ISilhouetteDataSource>((
+  ref,
+) {
   return SilhouetteLocalDataSource(
     prefs: ref.read(sharedPreferencesProvider),
     userSessionService: ref.read(userSessionServiceProvider),
@@ -24,33 +26,39 @@ class SilhouetteLocalDataSource implements ISilhouetteDataSource {
   final SharedPreferences _prefs;
   final UserSessionService _userSessionService;
 
-  String? _profileKey() {
+  String _profileKey() {
     final userId = _userSessionService.getUserId();
-    if (userId == null || userId.isEmpty) {
-      return null;
+    if (userId != null && userId.isNotEmpty) {
+      return 'silhouette_profile_$userId';
     }
-    return 'silhouette_profile_$userId';
+    return 'silhouette_profile_guest';
   }
 
   @override
   SilhouetteProfileModel? getProfile() {
-    final key = _profileKey();
-    if (key == null) {
-      return null;
+    final userId = _userSessionService.getUserId();
+    if (userId != null && userId.isNotEmpty) {
+      final userKey = 'silhouette_profile_$userId';
+      final raw = _prefs.getString(userKey);
+      if (raw != null && raw.isNotEmpty) {
+        try {
+          return SilhouetteProfileModel.fromJson(
+            Map<String, dynamic>.from(jsonDecode(raw) as Map),
+          );
+        } catch (_) {}
+      }
     }
 
-    final raw = _prefs.getString(key);
-    if (raw == null || raw.isEmpty) {
-      return null;
+    final guestRaw = _prefs.getString('silhouette_profile_guest');
+    if (guestRaw != null && guestRaw.isNotEmpty) {
+      try {
+        return SilhouetteProfileModel.fromJson(
+          Map<String, dynamic>.from(jsonDecode(guestRaw) as Map),
+        );
+      } catch (_) {}
     }
 
-    try {
-      return SilhouetteProfileModel.fromJson(
-        Map<String, dynamic>.from(jsonDecode(raw) as Map),
-      );
-    } catch (_) {
-      return null;
-    }
+    return null;
   }
 
   @override
@@ -61,19 +69,15 @@ class SilhouetteLocalDataSource implements ISilhouetteDataSource {
   @override
   Future<void> saveProfile(SilhouetteProfileModel profile) async {
     final key = _profileKey();
-    if (key == null) {
-      throw StateError('A logged in user is required before saving silhouette data.');
-    }
     await _prefs.setString(key, jsonEncode(profile.toJson()));
   }
 
   @override
   Future<void> clearProfile() async {
-    final key = _profileKey();
-    if (key == null) {
-      return;
+    final userId = _userSessionService.getUserId();
+    if (userId != null && userId.isNotEmpty) {
+      await _prefs.remove('silhouette_profile_$userId');
     }
-    await _prefs.remove(key);
+    await _prefs.remove('silhouette_profile_guest');
   }
 }
-

@@ -6,7 +6,9 @@ import 'package:fashio_me/features/dashboard/data/datasources/remote/dashboard_u
 import 'package:fashio_me/features/dashboard/domain/repositories/dashboard_upload_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final dashboardUploadRepositoryProvider = Provider<IDashboardUploadRepository>((ref) {
+final dashboardUploadRepositoryProvider = Provider<IDashboardUploadRepository>((
+  ref,
+) {
   return DashboardUploadRepositoryImpl(
     remoteDataSource: ref.read(dashboardUploadRemoteDataSourceProvider),
   );
@@ -52,4 +54,3 @@ class DashboardUploadRepositoryImpl implements IDashboardUploadRepository {
     }
   }
 }
-

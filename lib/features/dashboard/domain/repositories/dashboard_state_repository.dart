@@ -5,4 +5,3 @@ abstract interface class IDashboardStateRepository {
   Future<Either<Failure, Map<String, dynamic>>> read();
   Future<Either<Failure, bool>> write(Map<String, dynamic> payload);
 }
-

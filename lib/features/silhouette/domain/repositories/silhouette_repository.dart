@@ -8,4 +8,3 @@ abstract interface class ISilhouetteRepository {
   Future<Either<Failure, bool>> saveProfile(SilhouetteProfile profile);
   Future<Either<Failure, bool>> clearProfile();
 }
-

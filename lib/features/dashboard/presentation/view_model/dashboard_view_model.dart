@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'package:fashio_me/core/services/storage/user_session_service.dart';
-import 'package:fashio_me/features/dashboard/data/datasources/remote/dashboard_home_remote_datasource.dart';
+import 'package:fashio_me/app/di/providers.dart';
+import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
+import 'package:fashio_me/features/auth/domain/usecases/get_current_user_usecase.dart';
+import 'package:fashio_me/features/dashboard/domain/repositories/dashboard_home_repository.dart';
 import 'package:fashio_me/features/silhouette/domain/entities/silhouette_profile.dart';
 import 'package:fashio_me/features/dashboard/presentation/state/dashboard_state.dart';
 import 'package:fashio_me/features/dashboard/domain/usecases/read_dashboard_state_usecase.dart';
@@ -15,20 +17,21 @@ import 'package:fashio_me/features/silhouette/domain/usecases/save_silhouette_pr
 import 'package:fashio_me/features/silhouette/presentation/providers/silhouette_profile_providers.dart';
 
 class DashboardViewModel extends Notifier<DashboardState> {
-  late final UserSessionService _userSessionService;
+  late final GetCurrentUserUsecase _getCurrentUserUsecase;
   late final GetSilhouetteProfileUsecase _getSilhouetteProfileUsecase;
   late final SaveSilhouetteProfileUsecase _saveSilhouetteProfileUsecase;
   late final ReadDashboardStateUsecase _readDashboardStateUsecase;
   late final PersistDashboardStateUsecase _persistDashboardStateUsecase;
   late final UploadItemPhotoUsecase _uploadItemPhotoUsecase;
-  late final DashboardHomeRemoteDataSource _dashboardHomeRemoteDataSource;
+  late final IDashboardHomeRepository _dashboardHomeRepository;
   final ImagePicker _imagePicker = ImagePicker();
   final Random _random = Random();
+  AuthEntity? _currentUser;
   bool _usedPersistedProfileData = false;
 
   @override
   DashboardState build() {
-    _userSessionService = ref.read(userSessionServiceProvider);
+    _getCurrentUserUsecase = ref.read(getCurrentUserUsecaseProvider);
     _getSilhouetteProfileUsecase = ref.read(
       getSilhouetteProfileUsecaseProvider,
     );
@@ -40,9 +43,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
       persistDashboardStateUsecaseProvider,
     );
     _uploadItemPhotoUsecase = ref.read(uploadItemPhotoUsecaseProvider);
-    _dashboardHomeRemoteDataSource = ref.read(
-      dashboardHomeRemoteDataSourceProvider,
-    );
+    _dashboardHomeRepository = ref.read(dashboardHomeRepositoryProvider);
 
     final initial = _buildStateFromCache(const <String, dynamic>{});
     Future.microtask(_initialize);
@@ -50,7 +51,8 @@ class DashboardViewModel extends Notifier<DashboardState> {
   }
 
   Future<void> _initialize() async {
-    final sessionUser = _userSessionService.getCurrentUser();
+    final currentUserResult = await _getCurrentUserUsecase();
+    _currentUser = currentUserResult.fold((_) => null, (user) => user);
     final cachedResult = await _readDashboardStateUsecase();
     cachedResult.fold((_) {}, (cachedData) {
       if (cachedData.isNotEmpty) {
@@ -59,7 +61,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     });
 
     // Always refresh profile data from current session user
-    if (sessionUser != null) {
+    if (_currentUser != null) {
       await _refreshProfileFromSession();
     }
 
@@ -70,13 +72,12 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
   Future<void> _loadRemoteDashboardContent() async {
     try {
-      final recommendation = await _dashboardHomeRemoteDataSource
-          .generateOutfit(
-            occasion: state.aiStyleOfDay.occasion,
-            profileData: state.profileData,
-            preferenceScores: state.stylePreferenceScores,
-          );
-      final trends = await _dashboardHomeRemoteDataSource.fetchTrends();
+      final recommendation = await _dashboardHomeRepository.generateOutfit(
+        occasion: state.aiStyleOfDay.occasion,
+        profileData: state.profileData,
+        preferenceScores: state.stylePreferenceScores,
+      );
+      final trends = await _dashboardHomeRepository.fetchTrends();
       final refreshedList = [
         recommendation,
         ...state.homeRecommendations.where(
@@ -100,7 +101,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
   Future<void> _loadRemoteWardrobeItems() async {
     try {
-      final remoteItems = await _dashboardHomeRemoteDataSource.fetchWardrobe();
+      final remoteItems = await _dashboardHomeRepository.fetchWardrobe();
       if (remoteItems.isEmpty) {
         return;
       }
@@ -113,19 +114,18 @@ class DashboardViewModel extends Notifier<DashboardState> {
   }
 
   Future<void> _refreshProfileFromSession() async {
-    final sessionUser = _userSessionService.getCurrentUser();
-    if (sessionUser == null) {
+    if (_currentUser == null) {
       return;
     }
 
     final fullName = [
-      sessionUser.firstName,
-      sessionUser.lastName,
+      _currentUser!.firstName,
+      _currentUser!.lastName,
     ].where((part) => part.trim().isNotEmpty).join(' ').trim();
 
     final updatedProfile = state.profileData.copyWith(
       displayName: fullName.isEmpty ? 'User' : fullName,
-      email: sessionUser.email,
+      email: _currentUser!.email,
     );
 
     state = state.copyWith(profileData: updatedProfile);
@@ -133,6 +133,8 @@ class DashboardViewModel extends Notifier<DashboardState> {
   }
 
   Future<void> refreshFromSession() async {
+    final currentUserResult = await _getCurrentUserUsecase();
+    _currentUser = currentUserResult.fold((_) => null, (user) => user);
     await _refreshProfileFromSession();
   }
 
@@ -141,8 +143,9 @@ class DashboardViewModel extends Notifier<DashboardState> {
       PersistDashboardStateParams(payload: const {}),
     );
 
-    final sessionUser = _userSessionService.getCurrentUser();
-    if (sessionUser != null) {
+    final currentUserResult = await _getCurrentUserUsecase();
+    _currentUser = currentUserResult.fold((_) => null, (user) => user);
+    if (_currentUser != null) {
       await _refreshProfileFromSession();
     }
   }
@@ -155,11 +158,10 @@ class DashboardViewModel extends Notifier<DashboardState> {
     _usedPersistedProfileData =
         cachedData['profileData'] is Map &&
         (cachedData['profileData'] as Map).isNotEmpty;
-    final sessionUser = _userSessionService.getCurrentUser();
     final profileData = _buildProfileData(
       rawProfile: cachedData['profileData'] as Map<String, dynamic>?,
       silhouette: null,
-      sessionUser: sessionUser,
+      currentUser: _currentUser,
     );
     final preferenceScores = Map<String, int>.from(
       cachedData['stylePreferenceScores'] as Map<String, dynamic>? ?? const {},
@@ -236,11 +238,10 @@ class DashboardViewModel extends Notifier<DashboardState> {
         return;
       }
 
-      final sessionUser = _userSessionService.getCurrentUser();
       final profileData = _buildProfileData(
         rawProfile: null,
         silhouette: silhouette,
-        sessionUser: sessionUser,
+        currentUser: _currentUser,
       );
 
       await updateProfileData(profileData, persistSilhouette: false);
@@ -270,11 +271,11 @@ class DashboardViewModel extends Notifier<DashboardState> {
   DashboardProfileData _buildProfileData({
     required Map<String, dynamic>? rawProfile,
     required SilhouetteProfile? silhouette,
-    required SessionUser? sessionUser,
+    required AuthEntity? currentUser,
   }) {
     final fullName = [
-      sessionUser?.firstName ?? '',
-      sessionUser?.lastName ?? '',
+      currentUser?.firstName ?? '',
+      currentUser?.lastName ?? '',
     ].where((part) => part.trim().isNotEmpty).join(' ').trim();
 
     final skinTone = silhouette?.toneLabel.trim().isNotEmpty == true
@@ -301,10 +302,30 @@ class DashboardViewModel extends Notifier<DashboardState> {
     final styleMood = rawProfile != null
         ? (rawProfile['styleMood']?.toString() ?? _defaultMoodForTone(skinTone))
         : _defaultMoodForTone(skinTone);
+    final heightCm =
+        silhouette?.heightCm ??
+        (rawProfile?['heightCm'] as num?)?.toInt() ??
+        (rawProfile?['height'] as num?)?.toInt() ??
+        int.tryParse(
+          (rawProfile?['heightCm'] ?? rawProfile?['height'] ?? '172')
+              .toString(),
+        ) ??
+        172;
+    final weightKg =
+        silhouette?.weightKg ??
+        (rawProfile?['weightKg'] as num?)?.toInt() ??
+        (rawProfile?['weight'] as num?)?.toInt() ??
+        int.tryParse(
+          (rawProfile?['weightKg'] ?? rawProfile?['weight'] ?? '64').toString(),
+        ) ??
+        64;
 
     return DashboardProfileData(
       displayName: fullName.isEmpty ? 'User' : fullName,
-      email: sessionUser?.email ?? (rawProfile?['email']?.toString() ?? ''),
+      email: currentUser?.email ?? (rawProfile?['email']?.toString() ?? ''),
+      gender: currentUser?.gender ?? (rawProfile?['gender']?.toString() ?? ''),
+      heightCm: heightCm,
+      weightKg: weightKg,
       styleMood: styleMood,
       stylePreferences: preferences,
       skinTone: skinTone,
@@ -491,7 +512,22 @@ class DashboardViewModel extends Notifier<DashboardState> {
   Future<DashboardRecommendation> generateFreshHomeRecommendation({
     String source = 'My Wardrobe',
   }) async {
-    final occasions = ['Wedding', 'Office', 'Party', 'Travel', 'Weekend'];
+    final occasions = [
+      'Wedding',
+      'Office',
+      'Party',
+      'Travel',
+      'Weekend',
+      'Casual',
+      'Date Night',
+      'Festival',
+      'Gala',
+      'Street Style',
+      'Beach',
+      'Sangeet',
+      'Black Tie',
+      'Brunch',
+    ];
     final currentOccasion = state.aiStyleOfDay.occasion;
     final availableOccasions = occasions
         .where((item) => item.toLowerCase() != currentOccasion.toLowerCase())
@@ -568,7 +604,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     }
 
     try {
-      final result = await _dashboardHomeRemoteDataSource.search(
+      final result = await _dashboardHomeRepository.search(
         query: trimmed,
         profileData: state.profileData,
         preferenceScores: state.stylePreferenceScores,
@@ -609,7 +645,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
           : state.wardrobeItems;
 
       state = state.copyWith(
-        currentIndex: 3,
+        currentIndex: 4,
         discoverFilter: 'Trending',
         discoverItems: discoverItems.isEmpty
             ? state.discoverItems
@@ -650,7 +686,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
           .toList();
 
       state = state.copyWith(
-        currentIndex: localWardrobe.isNotEmpty ? 2 : 3,
+        currentIndex: localWardrobe.isNotEmpty ? 2 : 4,
         discoverItems: localDiscover.isEmpty
             ? state.discoverItems
             : localDiscover,
@@ -721,7 +757,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
     await _persistState();
     try {
-      await _dashboardHomeRemoteDataSource.createWardrobeItem(newItem);
+      await _dashboardHomeRepository.createWardrobeItem(newItem);
       state = state.copyWith(
         uploadMessage: 'Image uploaded and added to your wardrobe.',
         uploadSucceeded: true,
@@ -765,7 +801,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     state = state.copyWith(wardrobeItems: [newItem, ...state.wardrobeItems]);
     await _persistState();
     try {
-      await _dashboardHomeRemoteDataSource.createWardrobeItem(newItem);
+      await _dashboardHomeRepository.createWardrobeItem(newItem);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -802,7 +838,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     state = state.copyWith(wardrobeItems: [newLook, ...state.wardrobeItems]);
     await _persistState();
     try {
-      await _dashboardHomeRemoteDataSource.createWardrobeItem(newLook);
+      await _dashboardHomeRepository.createWardrobeItem(newLook);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -817,7 +853,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
     await _persistState();
     try {
-      await _dashboardHomeRemoteDataSource.updateWardrobeItem(updatedItem);
+      await _dashboardHomeRepository.updateWardrobeItem(updatedItem);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -846,7 +882,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
     await _persistState();
     try {
-      await _dashboardHomeRemoteDataSource.updateWardrobeItem(updatedItem);
+      await _dashboardHomeRepository.updateWardrobeItem(updatedItem);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -860,7 +896,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
     await _persistState();
     try {
-      await _dashboardHomeRemoteDataSource.deleteWardrobeItem(item.id);
+      await _dashboardHomeRepository.deleteWardrobeItem(item.id);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -891,7 +927,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     state = state.copyWith(wardrobeItems: [newItem, ...state.wardrobeItems]);
     await _persistState();
     try {
-      await _dashboardHomeRemoteDataSource.createWardrobeItem(newItem);
+      await _dashboardHomeRepository.createWardrobeItem(newItem);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -956,7 +992,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     String? analysisSummary;
 
     try {
-      final analysis = await _dashboardHomeRemoteDataSource.generateProfile(
+      final analysis = await _dashboardHomeRepository.generateProfile(
         profileData: state.profileData,
         preferenceScores: state.stylePreferenceScores,
         imageReference: uploadedAssetName,
@@ -1211,7 +1247,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     DashboardRecommendation? suggestedRecommendation;
 
     try {
-      final response = await _dashboardHomeRemoteDataSource.chatWithAssistant(
+      final response = await _dashboardHomeRepository.chatWithAssistant(
         message: trimmed,
         profileData: state.profileData,
         preferenceScores: state.stylePreferenceScores,
@@ -1343,7 +1379,22 @@ class DashboardViewModel extends Notifier<DashboardState> {
     DashboardProfileData profileData,
     Map<String, int> preferenceScores,
   ) {
-    final occasions = ['Wedding', 'Office', 'Party', 'Travel', 'Weekend'];
+    final occasions = [
+      'Wedding',
+      'Office',
+      'Party',
+      'Travel',
+      'Weekend',
+      'Casual',
+      'Date Night',
+      'Festival',
+      'Gala',
+      'Street Style',
+      'Beach',
+      'Sangeet',
+      'Black Tie',
+      'Brunch',
+    ];
     return occasions
         .map(
           (occasion) => _generateRecommendation(
@@ -1417,7 +1468,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     String? imageReference,
   }) async {
     try {
-      return await _dashboardHomeRemoteDataSource.generateOutfit(
+      return await _dashboardHomeRepository.generateOutfit(
         occasion: occasion,
         profileData: state.profileData,
         preferenceScores: state.stylePreferenceScores,
@@ -1473,10 +1524,14 @@ class DashboardViewModel extends Notifier<DashboardState> {
     required String excludedCategory,
   }) {
     final candidates = switch (occasion) {
-      'Wedding' => ['Formal', 'Party', 'Elegant'],
+      'Wedding' || 'Sangeet' => ['Formal', 'Party', 'Elegant'],
       'Office' => ['Formal', 'Casual', 'Smart'],
-      'Party' => ['Party', 'Bold', 'Formal'],
-      'Travel' => ['Casual', 'Smart', 'Relaxed'],
+      'Party' || 'Gala' || 'Black Tie' => ['Party', 'Bold', 'Formal'],
+      'Travel' ||
+      'Street Style' ||
+      'Beach' ||
+      'Brunch' ||
+      'Casual' => ['Casual', 'Smart', 'Relaxed'],
       _ => ['Casual', 'Smart', 'Relaxed'],
     };
 
@@ -1922,7 +1977,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
   Future<void> _syncWardrobeWithBackend() async {
     try {
-      await _dashboardHomeRemoteDataSource.syncWardrobe(state.wardrobeItems);
+      await _dashboardHomeRepository.syncWardrobe(state.wardrobeItems);
     } catch (_) {
       // Keep local state when backend sync is unavailable.
     }

@@ -164,7 +164,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
         foregroundColor: Colors.white,
       ),
       body: Container(
-        color: AppColors.cardBackground.withValues(alpha: 0.3),
+        color: AppColors.surfaceSoft.withValues(alpha: 0.65),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Form(
@@ -179,15 +179,17 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
+                      color: AppColors.errorSoft,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.28),
+                      ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.error_outline,
-                          color: Colors.red.shade700,
+                          color: AppColors.error,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -195,7 +197,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                           child: Text(
                             _errorMessage!,
                             style: TextStyle(
-                              color: Colors.red.shade700,
+                              color: AppColors.error,
                               fontSize: 14,
                             ),
                           ),
@@ -208,15 +210,17 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
+                      color: AppColors.successSoft,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.shade200),
+                      border: Border.all(
+                        color: AppColors.success.withValues(alpha: 0.24),
+                      ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.check_circle_outline,
-                          color: Colors.green.shade700,
+                          color: AppColors.success,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -224,7 +228,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                           child: Text(
                             _successMessage!,
                             style: TextStyle(
-                              color: Colors.green.shade700,
+                              color: AppColors.success,
                               fontSize: 14,
                             ),
                           ),
@@ -254,7 +258,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                           : Container(
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: AppColors.cardBackground,
+                                color: AppColors.surface,
                               ),
                               child: Icon(
                                 Icons.camera_alt,
@@ -471,11 +475,11 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                         ? null
                         : () => _showDeleteConfirmation(context),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
+                      foregroundColor: AppColors.error,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
-                        side: const BorderSide(color: Colors.red),
+                        side: const BorderSide(color: AppColors.error),
                       ),
                     ),
                     child: const Text(
@@ -497,10 +501,10 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
+        backgroundColor: AppColors.surface,
         title: const Text(
           'Delete Account',
-          style: TextStyle(fontFamily: AppFonts.bold, color: Colors.red),
+          style: TextStyle(fontFamily: AppFonts.bold, color: AppColors.error),
         ),
         content: const Text(
           'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.',
@@ -517,7 +521,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
             ),
             child: const Text('Delete'),

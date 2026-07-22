@@ -3,9 +3,5 @@ class Occasion {
   final String name;
   final String imageUrl;
 
-  Occasion({
-    required this.id,
-    required this.name,
-    required this.imageUrl,
-  });
+  Occasion({required this.id, required this.name, required this.imageUrl});
 }

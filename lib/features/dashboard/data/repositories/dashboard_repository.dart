@@ -21,13 +21,12 @@ class DashboardRepository implements IDashboardRepository {
   DashboardRepository({
     required IDashboardDataSource remoteDataSource,
     required IDashboardDataSource localDataSource,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+  }) : _remoteDataSource = remoteDataSource,
+       _localDataSource = localDataSource;
 
   @override
   Future<Either<Failure, DashboardEntity>> getDashboardData() async {
     try {
-      
       try {
         final dashboardModel = _remoteDataSource.getDashboardData();
         return Right(dashboardModel.toEntity());
@@ -40,4 +39,3 @@ class DashboardRepository implements IDashboardRepository {
     }
   }
 }
-

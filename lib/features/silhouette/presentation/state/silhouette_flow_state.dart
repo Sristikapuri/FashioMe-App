@@ -63,7 +63,8 @@ class SilhouetteFlowState extends Equatable {
   bool get canFinishStepTwo => skinTone.isNotEmpty;
 
   bool get canFinishStepThree {
-    return (faceShape?.isNotEmpty ?? false) || (portraitPath?.isNotEmpty ?? false);
+    return (faceShape?.isNotEmpty ?? false) ||
+        (portraitPath?.isNotEmpty ?? false);
   }
 
   SilhouetteFlowState copyWith({
@@ -89,7 +90,9 @@ class SilhouetteFlowState extends Equatable {
       bodyShape: bodyShape ?? this.bodyShape,
       skinTone: skinTone ?? this.skinTone,
       faceShape: clearFaceShape ? null : (faceShape ?? this.faceShape),
-      portraitPath: clearPortraitPath ? null : (portraitPath ?? this.portraitPath),
+      portraitPath: clearPortraitPath
+          ? null
+          : (portraitPath ?? this.portraitPath),
       isSaving: isSaving ?? this.isSaving,
     );
   }

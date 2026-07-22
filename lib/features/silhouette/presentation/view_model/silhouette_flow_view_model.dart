@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/features/dashboard/domain/usecases/upload_item_photo_usecase.dart';
 import 'package:fashio_me/features/silhouette/presentation/state/silhouette_flow_state.dart';
 import 'package:fashio_me/features/silhouette/domain/usecases/get_silhouette_profile_usecase.dart';
@@ -24,14 +25,11 @@ class SilhouetteFlowViewModel extends Notifier<SilhouetteFlowState> {
 
   Future<void> _loadSavedProfile() async {
     final result = await _getProfileUsecase();
-    result.fold(
-      (_) {},
-      (profile) {
-        if (profile != null) {
-          state = SilhouetteFlowState.fromProfile(profile);
-        }
-      },
-    );
+    result.fold((_) {}, (profile) {
+      if (profile != null) {
+        state = SilhouetteFlowState.fromProfile(profile);
+      }
+    });
   }
 
   void goToStep(int step) {
@@ -87,16 +85,17 @@ class SilhouetteFlowViewModel extends Notifier<SilhouetteFlowState> {
         return false;
       }
 
-      final uploadedPortraitPath = await _uploadPortraitToBackend(pickedFile.path);
-      if (uploadedPortraitPath == null || uploadedPortraitPath.isEmpty) {
-        state = state.copyWith(isSaving: false);
-        return false;
+      String portraitPath = pickedFile.path;
+      try {
+        final uploadedPath = await _uploadPortraitToBackend(pickedFile.path);
+        if (uploadedPath != null && uploadedPath.trim().isNotEmpty) {
+          portraitPath = uploadedPath.trim();
+        }
+      } catch (_) {
+        // Fallback to local image file path if backend upload fails/offline
       }
 
-      state = state.copyWith(
-        portraitPath: uploadedPortraitPath,
-        isSaving: false,
-      );
+      state = state.copyWith(portraitPath: portraitPath, isSaving: false);
       return true;
     } catch (_) {
       state = state.copyWith(isSaving: false);
@@ -108,9 +107,13 @@ class SilhouetteFlowViewModel extends Notifier<SilhouetteFlowState> {
     state = state.copyWith(clearPortraitPath: true);
   }
 
-  Future<bool> saveProfile() async {
+  /// Returns:
+  ///  1  → profile saved to backend successfully
+  ///  0  → saved locally only (backend unreachable — soft warning)
+  /// -1  → save failed entirely
+  Future<int> saveProfile() async {
     if (!state.toProfile().isComplete) {
-      return false;
+      return -1;
     }
 
     state = state.copyWith(isSaving: true);
@@ -120,12 +123,14 @@ class SilhouetteFlowViewModel extends Notifier<SilhouetteFlowState> {
     return result.fold(
       (_) {
         state = state.copyWith(isSaving: false);
-        return false;
+        return -1;
       },
-      (_) {
+      (savedToBackend) {
         state = state.copyWith(isSaving: false);
         ref.invalidate(silhouetteProfileProvider);
-        return true;
+        // true  = backend confirmed  → 1
+        // false = local-only fallback → 0
+        return savedToBackend ? 1 : 0;
       },
     );
   }
@@ -136,10 +141,7 @@ class SilhouetteFlowViewModel extends Notifier<SilhouetteFlowState> {
       UploadItemPhotoParams(imagePath: imagePath, fileName: fileName),
     );
 
-    return result.fold(
-      (_) => null,
-      _extractUploadedImageReference,
-    );
+    return result.fold((_) => null, _extractUploadedImageReference);
   }
 
   String? _extractUploadedImageReference(Map<String, dynamic> data) {

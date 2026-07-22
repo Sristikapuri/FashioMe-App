@@ -34,6 +34,7 @@ class SilhouetteProfileModel {
     );
   }
 
+  /// Serialise for local SharedPreferences cache (keep full field names).
   Map<String, dynamic> toJson() {
     return {
       'gender': gender,
@@ -45,6 +46,36 @@ class SilhouetteProfileModel {
       'faceShape': faceShape,
       'portraitPath': portraitPath,
     };
+  }
+
+  /// Serialise for the backend API — maps to MongoDB field names.
+  Map<String, dynamic> toBackendJson() {
+    return {
+      'gender': gender,
+      // Backend stores raw cm/kg as 'height' and 'weight'
+      'height': heightCm,
+      'weight': weightKg,
+      // Backend uses 'bodyType' for the combined body description
+      'bodyType': bodyShape.isNotEmpty ? bodyShape : buildType,
+      'skinTone': skinTone,
+      'faceShape': faceShape,
+      if (portraitPath != null && portraitPath!.isNotEmpty)
+        'portraitPath': portraitPath,
+    };
+  }
+
+  /// Parse a response from the backend API.
+  factory SilhouetteProfileModel.fromBackendJson(Map<String, dynamic> json) {
+    return SilhouetteProfileModel(
+      gender: (json['gender'] ?? '').toString(),
+      heightCm: (json['height'] as num?)?.toInt() ?? 172,
+      weightKg: (json['weight'] as num?)?.toInt() ?? 64,
+      buildType: (json['bodyType'] ?? '').toString(),
+      bodyShape: (json['bodyType'] ?? '').toString(),
+      skinTone: (json['skinTone'] ?? '').toString(),
+      faceShape: json['faceShape']?.toString(),
+      portraitPath: json['portraitPath']?.toString(),
+    );
   }
 
   factory SilhouetteProfileModel.fromEntity(SilhouetteProfile entity) {
@@ -73,4 +104,3 @@ class SilhouetteProfileModel {
     );
   }
 }
-

@@ -6,4 +6,3 @@ abstract interface class ISilhouetteDataSource {
   Future<void> saveProfile(SilhouetteProfileModel profile);
   Future<void> clearProfile();
 }
-

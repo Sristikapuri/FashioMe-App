@@ -8,4 +8,3 @@ abstract interface class IDashboardUploadRepository {
     void Function(int sentBytes, int totalBytes)? onSendProgress,
   });
 }
-

@@ -1,6 +1,6 @@
 import 'package:fashio_me/core/api/api_client.dart';
 import 'package:fashio_me/core/api/api_endpoints.dart';
-import 'package:fashio_me/features/dashboard/presentation/state/dashboard_state.dart';
+import 'package:fashio_me/features/dashboard/domain/entities/dashboard_entities.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final dashboardHomeRemoteDataSourceProvider =

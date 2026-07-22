@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/core/utils/snackbar_utils.dart';
 import 'package:fashio_me/core/widgets/selected_image.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
+import 'package:fashio_me/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:fashio_me/features/silhouette/presentation/providers/silhouette_flow_providers.dart';
 import 'package:fashio_me/features/silhouette/presentation/state/silhouette_flow_state.dart';
 
@@ -169,19 +171,39 @@ class SilhouetteFlowPage extends ConsumerWidget {
                   return;
                 }
 
-                final saved = await notifier.saveProfile();
+                final result = await notifier.saveProfile();
                 if (!context.mounted) return;
 
-                if (!saved) {
+                if (result == -1) {
                   showAppSnackBar(
                     context,
-                    'Unable to save your silhouette profile.',
+                    'Unable to save your silhouette profile. Please try again.',
                     isError: true,
                   );
                   return;
                 }
 
-                AppRoutes.pushAndRemoveUntil(context, const LoginPage());
+                if (result == 0) {
+                  // Saved locally; warn user that backend sync failed
+                  showAppSnackBar(
+                    context,
+                    'Profile saved on device. It will sync when you reconnect.',
+                  );
+                }
+
+                final isLoggedInResult = await ref.read(
+                  isLoggedInUsecaseProvider,
+                )();
+                if (!context.mounted) return;
+                final isLoggedIn = isLoggedInResult.fold(
+                  (_) => false,
+                  (value) => value,
+                );
+                if (isLoggedIn) {
+                  AppRoutes.pushAndRemoveUntil(context, const DashboardPage());
+                } else {
+                  AppRoutes.pushAndRemoveUntil(context, const LoginPage());
+                }
               },
             ),
           ],

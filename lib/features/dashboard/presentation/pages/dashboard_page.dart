@@ -12,6 +12,8 @@ import 'package:fashio_me/features/dashboard/presentation/providers/dashboard_pr
 import 'package:fashio_me/features/dashboard/presentation/state/dashboard_state.dart';
 import 'package:fashio_me/features/shop/presentation/pages/shop_page.dart';
 import 'package:fashio_me/features/shop/presentation/pages/order_history_page.dart';
+import 'package:fashio_me/features/shop/presentation/providers/shop_providers.dart';
+import 'package:fashio_me/features/silhouette/presentation/pages/silhouette_flow_page.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -33,6 +35,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     ('Office', Icons.work_outline),
     ('Festival', Icons.auto_awesome_outlined),
     ('Travel', Icons.flight_takeoff_outlined),
+    ('Gala', Icons.star_border_outlined),
+    ('Street Style', Icons.checkroom_outlined),
+    ('Beach', Icons.beach_access_outlined),
+    ('Sangeet', Icons.music_note_outlined),
+    ('Black Tie', Icons.dry_cleaning_outlined),
+    ('Brunch', Icons.local_cafe_outlined),
   ];
 
   static const _titles = [
@@ -59,6 +67,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             occasion: value,
             syncCurrentRecommendation: true,
           );
+          notifier.setIndex(1);
         },
       ),
       _AiStylistTab(
@@ -86,10 +95,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 children: [
                   _TopBar(
                     title: _titles[state.currentIndex],
-                    onLeadingTap: () => _showSnack('Menu coming soon'),
+                    onLeadingTap: _showMenuSheet,
                     onSearchTap: () => _showSearchSheet(),
                     onTrailingTap: () => state.currentIndex == 5
-                        ? _showSnack('Notifications coming soon')
+                        ? _showNotificationsSheet(context)
                         : notifier.setIndex(5),
                     trailingIcon: state.currentIndex == 5
                         ? Icons.notifications_none_rounded
@@ -129,6 +138,114 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         backgroundColor: _DashboardPalette.card,
         content: Text(message, style: const TextStyle(color: Colors.white)),
       ),
+    );
+  }
+
+  void _showMenuSheet() {
+    final notifier = ref.read(dashboardViewModelProvider.notifier);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'FashioMe Menu',
+                style: TextStyle(
+                  color: AppColors.primaryDark,
+                  fontSize: 22,
+                  fontFamily: AppFonts.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(
+                  Icons.home_outlined,
+                  color: AppColors.primary,
+                ),
+                title: const Text('Home'),
+                onTap: () {
+                  Navigator.pop(context);
+                  notifier.setIndex(0);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.auto_awesome_outlined,
+                  color: AppColors.primary,
+                ),
+                title: const Text('AI Stylist'),
+                onTap: () {
+                  Navigator.pop(context);
+                  notifier.setIndex(1);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.checkroom_outlined,
+                  color: AppColors.primary,
+                ),
+                title: const Text('My Wardrobe'),
+                onTap: () {
+                  Navigator.pop(context);
+                  notifier.setIndex(2);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.storefront_outlined,
+                  color: AppColors.primary,
+                ),
+                title: const Text('Shop Catalog'),
+                onTap: () {
+                  Navigator.pop(context);
+                  notifier.setIndex(3);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.explore_outlined,
+                  color: AppColors.primary,
+                ),
+                title: const Text('Discover Trends'),
+                onTap: () {
+                  Navigator.pop(context);
+                  notifier.setIndex(4);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.shopping_bag_outlined,
+                  color: AppColors.primary,
+                ),
+                title: const Text('My Orders'),
+                onTap: () {
+                  Navigator.pop(context);
+                  AppRoutes.push(context, const OrderHistoryPage());
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.person_outline,
+                  color: AppColors.primary,
+                ),
+                title: const Text('My Profile'),
+                onTap: () {
+                  Navigator.pop(context);
+                  notifier.setIndex(5);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -322,6 +439,21 @@ class _HomeTab extends ConsumerWidget {
         _FeaturedRecommendationCard(
           item: state.aiStyleOfDay,
           isLoading: state.isUploading,
+          onAddProduct: (product) async {
+            final added = await ref
+                .read(shopViewModelProvider.notifier)
+                .addToBagById(product.id);
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  added
+                      ? '${product.name} added to your bag.'
+                      : 'Could not add ${product.name} to your bag.',
+                ),
+              ),
+            );
+          },
           onPrimaryTap: () {
             notifier.generateHomeRecommendation(
               occasion: selectedEvent,
@@ -346,9 +478,12 @@ class _HomeTab extends ConsumerWidget {
               width: 122,
               child: _MiniLookCard(
                 item: state.homeRecommendations[index],
-                onTap: () => notifier.selectRecommendation(
-                  state.homeRecommendations[index],
-                ),
+                onTap: () {
+                  notifier.selectRecommendation(
+                    state.homeRecommendations[index],
+                  );
+                  notifier.setIndex(1);
+                },
               ),
             ),
           ),
@@ -356,33 +491,61 @@ class _HomeTab extends ConsumerWidget {
         const SizedBox(height: 24),
         const _SectionTitle(title: 'Seasonal Inspiration'),
         const SizedBox(height: 12),
-        const Row(
+        Row(
           children: [
             Expanded(
               child: _SeasonCard(
                 title: 'Summer\nVibes',
                 imagePath: 'assets/images/weekend.jpg',
+                onTap: () async {
+                  await notifier.generateHomeRecommendation(
+                    occasion: 'Summer',
+                    syncCurrentRecommendation: true,
+                  );
+                  notifier.setIndex(1);
+                },
               ),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: _SeasonCard(
                 title: 'Monsoon\nChic',
                 imagePath: 'assets/images/travel.jpg',
+                onTap: () async {
+                  await notifier.generateHomeRecommendation(
+                    occasion: 'Monsoon',
+                    syncCurrentRecommendation: true,
+                  );
+                  notifier.setIndex(1);
+                },
               ),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: _SeasonCard(
                 title: 'Winter\nLayers',
                 imagePath: 'assets/images/outfit.jpg',
+                onTap: () async {
+                  await notifier.generateHomeRecommendation(
+                    occasion: 'Winter',
+                    syncCurrentRecommendation: true,
+                  );
+                  notifier.setIndex(1);
+                },
               ),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: _SeasonCard(
                 title: 'Festive\nLooks',
                 imagePath: 'assets/images/wedding.jpg',
+                onTap: () async {
+                  await notifier.generateHomeRecommendation(
+                    occasion: 'Festive',
+                    syncCurrentRecommendation: true,
+                  );
+                  notifier.setIndex(1);
+                },
               ),
             ),
           ],
@@ -638,6 +801,34 @@ class _AiStylistTabState extends ConsumerState<_AiStylistTab> {
                 },
         ),
         const SizedBox(height: 24),
+        _FeaturedRecommendationCard(
+          item: state.currentRecommendation,
+          isLoading: state.isUploading,
+          primaryLabel: 'Save to Wardrobe',
+          onAddProduct: (product) async {
+            final added = await ref
+                .read(shopViewModelProvider.notifier)
+                .addToBagById(product.id);
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  added
+                      ? '${product.name} added to your bag.'
+                      : 'Could not add ${product.name} to your bag.',
+                ),
+              ),
+            );
+          },
+          onPrimaryTap: () async {
+            await notifier.saveCurrentRecommendation();
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Look saved to your wardrobe.')),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
         _SectionTitle(
           title: 'Recent AI Looks',
           actionLabel: 'View All',
@@ -799,11 +990,12 @@ class _ChatBubble extends StatelessWidget {
         ? Alignment.centerRight
         : Alignment.centerLeft;
     final background = message.isUser
-        ? _DashboardPalette.softGold.withValues(alpha: 0.18)
+        ? AppColors.primary
         : _DashboardPalette.cardAlt;
     final borderColor = message.isUser
-        ? _DashboardPalette.gold.withValues(alpha: 0.35)
+        ? AppColors.primaryDark
         : _DashboardPalette.outline;
+    final textColor = message.isUser ? Colors.white : AppColors.textPrimary;
 
     return Align(
       alignment: alignment,
@@ -817,11 +1009,7 @@ class _ChatBubble extends StatelessWidget {
         ),
         child: Text(
           message.text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            height: 1.45,
-          ),
+          style: TextStyle(color: textColor, fontSize: 13, height: 1.45),
         ),
       ),
     );
@@ -896,8 +1084,7 @@ class _WardrobeTab extends ConsumerWidget {
         _SectionTitle(
           title: 'My Collection',
           actionLabel: 'View All',
-          onAction: () =>
-              _showLocalSnack(context, 'Collection view expanded soon'),
+          onAction: () => _showFullCollectionView(context, ref, state),
         ),
         const SizedBox(height: 12),
         if (items.isEmpty)
@@ -929,9 +1116,9 @@ class _WardrobeTab extends ConsumerWidget {
         const SizedBox(height: 24),
         _InfoStrip(
           icon: Icons.weekend_outlined,
-          title: 'Closet',
-          subtitle: 'Organize and manage your entire closet in one place.',
-          onTap: () => _showLocalSnack(context, 'Closet organizer coming soon'),
+          title: 'Closet Organizer',
+          subtitle: 'Organize and manage your entire closet by category.',
+          onTap: () => _showClosetOrganizerSheet(context, state),
         ),
         const SizedBox(height: 14),
         _LuxuryCard(
@@ -993,15 +1180,6 @@ class _WardrobeTab extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  void _showLocalSnack(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: _DashboardPalette.card,
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-      ),
     );
   }
 
@@ -1148,7 +1326,11 @@ class _DiscoverTab extends ConsumerWidget {
         _SectionTitle(
           title: 'Trending Looks',
           actionLabel: 'View All',
-          onAction: () => _showDiscoverSnack(context),
+          onAction: () => _showDiscoverSectionSheet(
+            context,
+            'Trending Looks',
+            trendingItems: trendingItems,
+          ),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -1170,7 +1352,7 @@ class _DiscoverTab extends ConsumerWidget {
         _SectionTitle(
           title: 'Color Inspiration',
           actionLabel: 'View All',
-          onAction: () => _showDiscoverSnack(context),
+          onAction: () => _showColorInspirationSheet(context, state),
         ),
         const SizedBox(height: 12),
         _LuxuryCard(
@@ -1186,7 +1368,7 @@ class _DiscoverTab extends ConsumerWidget {
         _SectionTitle(
           title: 'Style Guides',
           actionLabel: 'View All',
-          onAction: () => _showDiscoverSnack(context),
+          onAction: () => _showDiscoverSectionSheet(context, 'Style Guides'),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -1215,7 +1397,8 @@ class _DiscoverTab extends ConsumerWidget {
         _SectionTitle(
           title: 'Fashion Tips & Articles',
           actionLabel: 'View All',
-          onAction: () => _showDiscoverSnack(context),
+          onAction: () =>
+              _showDiscoverSectionSheet(context, 'Fashion Tips & Articles'),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -1243,18 +1426,6 @@ class _DiscoverTab extends ConsumerWidget {
       ],
     );
   }
-
-  void _showDiscoverSnack(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        backgroundColor: _DashboardPalette.card,
-        content: Text(
-          'More discover content coming soon',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-    );
-  }
 }
 
 class _ProfileTab extends ConsumerWidget {
@@ -1265,7 +1436,7 @@ class _ProfileTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileCompletion = _calculateProfileCompletion(state);
-    
+
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 140),
@@ -1329,7 +1500,9 @@ class _ProfileTab extends ConsumerWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ProfileUpdatePage()),
+              MaterialPageRoute(
+                builder: (context) => const ProfileUpdatePage(),
+              ),
             );
           },
         ),
@@ -1338,47 +1511,76 @@ class _ProfileTab extends ConsumerWidget {
           subtitle:
               '${state.profileData.bodyType} body & ${state.profileData.faceShape} analysis',
           icon: Icons.accessibility_new_outlined,
+          onTap: () {
+            AppRoutes.push(context, const SilhouetteFlowPage());
+          },
         ),
         _ProfileMenu(
           title: 'Style Preferences',
-          subtitle: state.profileData.stylePreferences.join(', '),
+          subtitle: state.profileData.stylePreferences.isEmpty
+              ? 'Tap to select style moods'
+              : state.profileData.stylePreferences.join(', '),
           icon: Icons.tune_outlined,
+          onTap: () {
+            _showStylePreferencesSheet(context, ref, state);
+          },
         ),
-        const _ProfileMenu(
+        _ProfileMenu(
           title: 'Saved Looks',
-          subtitle: 'Your favorite AI-generated looks',
+          subtitle:
+              '${state.homeRecommendations.length} AI-generated looks saved',
           icon: Icons.favorite_border,
+          onTap: () {
+            _showSavedLooksSheet(context, ref, state);
+          },
         ),
         _ProfileMenu(
           title: 'Measurements',
-          subtitle: '${state.profileData.skinTone} tone and body stats',
+          subtitle:
+              '${state.profileData.heightCm} cm • ${state.profileData.weightKg} kg • ${state.profileData.skinTone} tone',
           icon: Icons.straighten_outlined,
+          onTap: () {
+            _showMeasurementsSheet(context, state);
+          },
         ),
         _ProfileMenu(
           title: 'My Orders',
-          subtitle: 'Your saved custom items',
+          subtitle: 'Your saved custom items & purchase history',
           icon: Icons.receipt_long_outlined,
           onTap: () => AppRoutes.push(context, const OrderHistoryPage()),
         ),
-        const _ProfileMenu(
+        _ProfileMenu(
           title: 'Closet',
-          subtitle: 'Manage your closet & categories',
+          subtitle:
+              '${state.wardrobeItems.length} items in your digital wardrobe',
           icon: Icons.checkroom_outlined,
+          onTap: () {
+            ref.read(dashboardViewModelProvider.notifier).setIndex(2);
+          },
         ),
-        const _ProfileMenu(
+        _ProfileMenu(
           title: 'Settings',
-          subtitle: 'Notifications & privacy',
+          subtitle: 'Account, privacy & app preferences',
           icon: Icons.settings_outlined,
+          onTap: () {
+            _showSettingsSheet(context, ref);
+          },
         ),
-        const _ProfileMenu(
+        _ProfileMenu(
           title: 'Notifications',
-          subtitle: 'Manage alert preferences',
+          subtitle: 'Daily outfits & trend alerts',
           icon: Icons.notifications_none_rounded,
+          onTap: () {
+            _showNotificationsSheet(context);
+          },
         ),
-        const _ProfileMenu(
+        _ProfileMenu(
           title: 'Help & Support',
-          subtitle: 'Get quick help',
+          subtitle: 'FAQ, contact & app guide',
           icon: Icons.help_outline,
+          onTap: () {
+            _showHelpSupportSheet(context);
+          },
         ),
         const SizedBox(height: 20),
         SizedBox(
@@ -1415,14 +1617,14 @@ class _ProfileTab extends ConsumerWidget {
   double _calculateProfileCompletion(DashboardState state) {
     int completedFields = 0;
     int totalFields = 6;
-    
+
     if (state.profileData.displayName.isNotEmpty) completedFields++;
     if (state.profileData.email.isNotEmpty) completedFields++;
     if (state.profileData.bodyType.isNotEmpty) completedFields++;
     if (state.profileData.skinTone.isNotEmpty) completedFields++;
     if (state.profileData.stylePreferences.isNotEmpty) completedFields++;
     if (state.profileData.faceShape.isNotEmpty) completedFields++;
-    
+
     return completedFields / totalFields;
   }
 }
@@ -1787,12 +1989,16 @@ class _FeaturedRecommendationCard extends StatelessWidget {
   const _FeaturedRecommendationCard({
     required this.item,
     required this.onPrimaryTap,
+    required this.onAddProduct,
     required this.isLoading,
+    this.primaryLabel = 'View Look',
   });
 
   final DashboardRecommendation item;
   final VoidCallback onPrimaryTap;
+  final Future<void> Function(MatchedShopProduct product) onAddProduct;
   final bool isLoading;
+  final String primaryLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1851,6 +2057,48 @@ class _FeaturedRecommendationCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          if (item.wardrobeItemsUsed.isNotEmpty ||
+              item.missingItemsToBuy.isNotEmpty) ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (item.wardrobeItemsUsed.isNotEmpty)
+                  _RecommendationMetaChip(
+                    label:
+                        'From wardrobe: ${item.wardrobeItemsUsed.join(', ')}',
+                  ),
+                if (item.missingItemsToBuy.isNotEmpty)
+                  _RecommendationMetaChip(
+                    label: 'Shop: ${item.missingItemsToBuy.join(', ')}',
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (item.matchedProducts.isNotEmpty) ...[
+            const Text(
+              'Shop pieces matched to this look',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontFamily: AppFonts.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...item.matchedProducts
+                .take(4)
+                .map(
+                  (product) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _MatchedProductTile(
+                      product: product,
+                      onAdd: () => onAddProduct(product),
+                    ),
+                  ),
+                ),
+            const SizedBox(height: 4),
+          ],
           ClipRRect(
             borderRadius: BorderRadius.circular(18),
             child: _NetworkImage(url: item.imageUrl, height: 220),
@@ -1860,7 +2108,7 @@ class _FeaturedRecommendationCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _PrimaryLuxuryButton(
-                  label: 'View Look',
+                  label: primaryLabel,
                   onTap: onPrimaryTap,
                   compact: true,
                 ),
@@ -1870,6 +2118,125 @@ class _FeaturedRecommendationCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MatchedProductTile extends StatelessWidget {
+  const _MatchedProductTile({required this.product, required this.onAdd});
+
+  final MatchedShopProduct product;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: _DashboardPalette.cardAlt,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _DashboardPalette.outline),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 52,
+              height: 52,
+              child: buildSelectedImage(
+                product.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const ColoredBox(
+                  color: _DashboardPalette.outline,
+                  child: Icon(
+                    Icons.checkroom_outlined,
+                    color: _DashboardPalette.mutedText,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontFamily: AppFonts.bold,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  product.matchReason.isEmpty
+                      ? '${product.color} • ${product.size}'
+                      : product.matchReason,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _DashboardPalette.mutedText,
+                    fontSize: 10,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Rs ${product.salePrice.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    color: _DashboardPalette.gold,
+                    fontSize: 11,
+                    fontFamily: AppFonts.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            onPressed: product.stock > 0 ? onAdd : null,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _DashboardPalette.gold,
+              side: const BorderSide(color: _DashboardPalette.gold),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecommendationMetaChip extends StatelessWidget {
+  const _RecommendationMetaChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: _DashboardPalette.cardAlt,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _DashboardPalette.outline),
+      ),
+      child: Text(
+        label,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: _DashboardPalette.mutedText,
+          fontSize: 11,
+        ),
       ),
     );
   }
@@ -1915,52 +2282,56 @@ class _MiniLookCard extends StatelessWidget {
 }
 
 class _SeasonCard extends StatelessWidget {
-  const _SeasonCard({required this.title, required this.imagePath});
+  const _SeasonCard({required this.title, required this.imagePath, this.onTap});
 
   final String title;
   final String imagePath;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return _LuxuryCard(
-      padding: EdgeInsets.zero,
-      child: SizedBox(
-        height: 96,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Image.asset(imagePath, fit: BoxFit.cover),
-            ),
-            Container(
-              decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: onTap,
+      child: _LuxuryCard(
+        padding: EdgeInsets.zero,
+        child: SizedBox(
+          height: 96,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ClipRRect(
                 borderRadius: BorderRadius.circular(18),
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.black.withValues(alpha: 0.18),
-                    Colors.black.withValues(alpha: 0.72),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                child: Image.asset(imagePath, fit: BoxFit.cover),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.black.withValues(alpha: 0.18),
+                      Colors.black.withValues(alpha: 0.72),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 10,
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  height: 1.2,
-                  fontFamily: AppFonts.bold,
+              Positioned(
+                left: 10,
+                right: 10,
+                bottom: 10,
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    height: 1.2,
+                    fontFamily: AppFonts.bold,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -2648,25 +3019,25 @@ class _ProfileMenu extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
+                      subtitle,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            if (onTap != null)
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: _DashboardPalette.mutedText,
-              ),
-          ],
+              if (onTap != null)
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: _DashboardPalette.mutedText,
+                ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 }
 
@@ -2846,12 +3217,12 @@ class _LuxuryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _DashboardPalette.card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: _DashboardPalette.outline),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x18820000),
-            blurRadius: 18,
-            offset: Offset(0, 8),
+            color: Color(0x0F820000),
+            blurRadius: 16,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -2929,13 +3300,17 @@ class _DataPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: _DashboardPalette.cardAlt,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: _DashboardPalette.outline),
       ),
       child: Text(
         '$label  $value',
-        style: const TextStyle(color: Colors.white, fontSize: 11),
+        style: const TextStyle(
+          color: AppColors.primaryDark,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -2991,15 +3366,12 @@ class _ProfileCompletionCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            completion < 0.5 
+            completion < 0.5
                 ? 'Complete your profile for better recommendations'
                 : completion < 1.0
-                    ? 'Almost there! Add more details'
-                    : 'Profile complete! Great job!',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
+                ? 'Almost there! Add more details'
+                : 'Profile complete! Great job!',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -3067,7 +3439,9 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBackground.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.cardBackground.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         children: [
@@ -3084,10 +3458,7 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -3107,7 +3478,9 @@ class _StylePreferencesCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBackground.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.cardBackground.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3130,10 +3503,7 @@ class _StylePreferencesCard extends StatelessWidget {
           if (state.profileData.stylePreferences.isEmpty)
             Text(
               'No style preferences set yet',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             )
           else
             Wrap(
@@ -3141,11 +3511,16 @@ class _StylePreferencesCard extends StatelessWidget {
               runSpacing: 8,
               children: state.profileData.stylePreferences.map((preference) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
                     preference,
@@ -3256,14 +3631,983 @@ class _FallbackAssetImage extends StatelessWidget {
   }
 }
 
+void _showStylePreferencesSheet(
+  BuildContext context,
+  WidgetRef ref,
+  DashboardState state,
+) {
+  final allStyles = [
+    'Minimal',
+    'Glam',
+    'Casual',
+    'Traditional',
+    'Streetwear',
+    'Formal',
+    'Boho',
+    'Vintage',
+  ];
+  final current = Set<String>.from(state.profileData.stylePreferences);
+
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Style Preferences',
+                  style: TextStyle(
+                    color: AppColors.primaryDark,
+                    fontSize: 22,
+                    fontFamily: AppFonts.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Select style moods to customize your AI recommendations.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: allStyles.map((style) {
+                    final selected = current.contains(style);
+                    return FilterChip(
+                      label: Text(style),
+                      selected: selected,
+                      selectedColor: AppColors.primary,
+                      checkmarkColor: Colors.white,
+                      labelStyle: TextStyle(
+                        color: selected ? Colors.white : AppColors.primaryDark,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      onSelected: (val) {
+                        setSheetState(() {
+                          if (val) {
+                            current.add(style);
+                          } else {
+                            current.remove(style);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final updatedProfile = state.profileData.copyWith(
+                        stylePreferences: current.toList(),
+                      );
+                      await ref
+                          .read(dashboardViewModelProvider.notifier)
+                          .updateProfileData(updatedProfile);
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                    child: const Text(
+                      'Save Preferences',
+                      style: TextStyle(fontFamily: AppFonts.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+void _showSavedLooksSheet(
+  BuildContext context,
+  WidgetRef ref,
+  DashboardState state,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      final items = state.homeRecommendations;
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Saved AI Looks',
+                  style: TextStyle(
+                    color: AppColors.primaryDark,
+                    fontSize: 22,
+                    fontFamily: AppFonts.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: items.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No saved looks yet.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    )
+                  : GridView.builder(
+                      itemCount: items.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.75,
+                          ),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                            ref
+                                .read(dashboardViewModelProvider.notifier)
+                                .selectRecommendation(item);
+                            ref
+                                .read(dashboardViewModelProvider.notifier)
+                                .setIndex(1);
+                          },
+                          child: _LuxuryCard(
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: _NetworkImage(
+                                      url: item.imageUrl,
+                                      height: double.infinity,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  item.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                Text(
+                                  item.occasion,
+                                  style: const TextStyle(
+                                    color: _DashboardPalette.mutedText,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void _showMeasurementsSheet(BuildContext context, DashboardState state) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Measurements & Fit Profile',
+              style: TextStyle(
+                color: AppColors.primaryDark,
+                fontSize: 22,
+                fontFamily: AppFonts.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _MeasurementRow(
+              label: 'Height',
+              value: '${state.profileData.heightCm} cm',
+            ),
+            _MeasurementRow(
+              label: 'Weight',
+              value: '${state.profileData.weightKg} kg',
+            ),
+            _MeasurementRow(
+              label: 'Body Build',
+              value: state.profileData.bodyType,
+            ),
+            _MeasurementRow(
+              label: 'Face Shape',
+              value: state.profileData.faceShape,
+            ),
+            _MeasurementRow(
+              label: 'Skin Tone',
+              value: state.profileData.skinTone,
+            ),
+            _MeasurementRow(
+              label: 'Style Mood',
+              value: state.profileData.styleMood,
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileUpdatePage(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text(
+                  'Edit Measurements',
+                  style: TextStyle(fontFamily: AppFonts.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _MeasurementRow extends StatelessWidget {
+  const _MeasurementRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            value.isEmpty ? 'Not set' : value,
+            style: const TextStyle(
+              color: AppColors.primaryDark,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void _showSettingsSheet(BuildContext context, WidgetRef ref) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Settings & Preferences',
+              style: TextStyle(
+                color: AppColors.primaryDark,
+                fontSize: 22,
+                fontFamily: AppFonts.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(
+                Icons.refresh_rounded,
+                color: AppColors.primary,
+              ),
+              title: const Text('Refresh Cache & Sync'),
+              subtitle: const Text(
+                'Sync wardrobe and recommendations with cloud',
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await ref
+                    .read(dashboardViewModelProvider.notifier)
+                    .clearCacheAndRefresh();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Dashboard cache cleared and synced!'),
+                    ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.lock_outline, color: AppColors.primary),
+              title: const Text('Privacy Policy'),
+              subtitle: const Text('Learn how your style data is protected'),
+              onTap: () {
+                Navigator.pop(context);
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Privacy Policy'),
+                    content: const Text(
+                      'FashioMe respects your privacy. All style measurements and uploaded images are processed securely to provide personalized fashion recommendations.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Close'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: AppColors.primary),
+              title: const Text('About FashioMe'),
+              subtitle: const Text('Version 1.0.0 • Luxury AI Stylist App'),
+              onTap: () {},
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void _showNotificationsSheet(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      bool dailyOutfit = true;
+      bool orderStatus = true;
+      bool trendAlerts = false;
+
+      return StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Notification Preferences',
+                  style: TextStyle(
+                    color: AppColors.primaryDark,
+                    fontSize: 22,
+                    fontFamily: AppFonts.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  activeThumbColor: AppColors.primary,
+                  title: const Text('Daily Outfit Suggestion'),
+                  subtitle: const Text('Receive a fresh AI look every morning'),
+                  value: dailyOutfit,
+                  onChanged: (v) => setSheetState(() => dailyOutfit = v),
+                ),
+                SwitchListTile(
+                  activeThumbColor: AppColors.primary,
+                  title: const Text('Order & Shipping Updates'),
+                  subtitle: const Text(
+                    'Get notified when orders change status',
+                  ),
+                  value: orderStatus,
+                  onChanged: (v) => setSheetState(() => orderStatus = v),
+                ),
+                SwitchListTile(
+                  activeThumbColor: AppColors.primary,
+                  title: const Text('New Trend Alerts'),
+                  subtitle: const Text(
+                    'Be notified when seasonal trends launch',
+                  ),
+                  value: trendAlerts,
+                  onChanged: (v) => setSheetState(() => trendAlerts = v),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'Save Notification Settings',
+                      style: TextStyle(fontFamily: AppFonts.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+void _showHelpSupportSheet(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Help & Support',
+              style: TextStyle(
+                color: AppColors.primaryDark,
+                fontSize: 22,
+                fontFamily: AppFonts.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const ListTile(
+              leading: Icon(
+                Icons.question_answer_outlined,
+                color: AppColors.primary,
+              ),
+              title: Text('How does AI Stylist work?'),
+              subtitle: Text(
+                'FashioMe matches your silhouette, color palette, and wardrobe items using advanced AI algorithms.',
+              ),
+            ),
+            const ListTile(
+              leading: Icon(
+                Icons.shopping_bag_outlined,
+                color: AppColors.primary,
+              ),
+              title: Text('How do I track my order?'),
+              subtitle: Text(
+                'Go to My Orders under Profile to see live order details and receipt status.',
+              ),
+            ),
+            const ListTile(
+              leading: Icon(Icons.mail_outline, color: AppColors.primary),
+              title: Text('Need more assistance?'),
+              subtitle: Text('Contact us at support@fashiome.com'),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(fontFamily: AppFonts.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void _showFullCollectionView(
+  BuildContext context,
+  WidgetRef ref,
+  DashboardState state,
+) {
+  final items = state.wardrobeItems;
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Full Wardrobe Collection (${items.length})',
+                  style: const TextStyle(
+                    color: AppColors.primaryDark,
+                    fontSize: 20,
+                    fontFamily: AppFonts.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Expanded(
+              child: items.isEmpty
+                  ? const Center(child: Text('Your wardrobe is empty.'))
+                  : GridView.builder(
+                      itemCount: items.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            childAspectRatio: 0.68,
+                          ),
+                      itemBuilder: (context, index) => _ClosetCard(
+                        item: items[index],
+                        onFavorite: () => ref
+                            .read(dashboardViewModelProvider.notifier)
+                            .toggleWardrobeFavorite(items[index]),
+                        onEdit: () {},
+                        onDelete: () => ref
+                            .read(dashboardViewModelProvider.notifier)
+                            .removeWardrobeItem(items[index]),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void _showClosetOrganizerSheet(BuildContext context, DashboardState state) {
+  final categories = ['Tops', 'Bottoms', 'Dresses', 'Shoes', 'Accessories'];
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Closet Organizer & Category Breakdown',
+              style: TextStyle(
+                color: AppColors.primaryDark,
+                fontSize: 20,
+                fontFamily: AppFonts.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...categories.map((cat) {
+              final count = state.wardrobeItems
+                  .where(
+                    (i) => i.category.toLowerCase().contains(cat.toLowerCase()),
+                  )
+                  .length;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.checkroom_outlined,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      cat,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$count items',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Close Organizer',
+                  style: TextStyle(fontFamily: AppFonts.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void _showDiscoverSectionSheet(
+  BuildContext context,
+  String title, {
+  List<DiscoverEntry>? trendingItems,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.primaryDark,
+                    fontSize: 22,
+                    fontFamily: AppFonts.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Expanded(
+              child: trendingItems != null && trendingItems.isNotEmpty
+                  ? ListView.separated(
+                      itemCount: trendingItems.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final item = trendingItems[index];
+                        return _LuxuryCard(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: _NetworkImage(
+                                  url: item.imageUrl,
+                                  height: 70,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item.caption,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: _DashboardPalette.mutedText,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    )
+                  : ListView(
+                      children: const [
+                        ListTile(
+                          leading: Icon(
+                            Icons.article_outlined,
+                            color: AppColors.primary,
+                          ),
+                          title: Text(
+                            'Mastering Seasonal Colors',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            'Understand color harmony based on warm vs cool skin undertones.',
+                          ),
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.article_outlined,
+                            color: AppColors.primary,
+                          ),
+                          title: Text(
+                            'Building a Capsule Wardrobe',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            'Essential 10 pieces that give you over 30 distinct outfit combinations.',
+                          ),
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.article_outlined,
+                            color: AppColors.primary,
+                          ),
+                          title: Text(
+                            'Footwear & Silhouette Pairing',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            'Which shoes suit slim vs athletic body cuts.',
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void _showColorInspirationSheet(BuildContext context, DashboardState state) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      final palette = state.currentRecommendation.palette;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Color Inspiration Palette',
+              style: TextStyle(
+                color: AppColors.primaryDark,
+                fontSize: 22,
+                fontFamily: AppFonts.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Personalized for your ${state.profileData.skinTone} skin tone and style preference.',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: palette.map((colorHex) {
+                final color = Color(colorHex);
+                final hexStr =
+                    '#${colorHex.toRadixString(16).substring(2).toUpperCase()}';
+                return Column(
+                  children: [
+                    Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        boxShadow: AppColors.softShadow,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      hexStr,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(fontFamily: AppFonts.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 abstract final class _DashboardPalette {
   static const background = AppColors.background;
-  static const card = AppColors.premiumInk;
-  static const cardAlt = AppColors.primary;
+  static const card = AppColors.surface;
+  static const cardAlt = AppColors.surfaceSoft;
   static const outline = AppColors.divider;
-  static const gold = AppColors.accent;
+  static const gold = AppColors.primary;
   static const softGold = AppColors.accentLight;
-  static const mutedText = Color(0xFFEBD0D0);
+  static const mutedText = AppColors.textSecondary;
 }
 
 String _firstName(String name) {

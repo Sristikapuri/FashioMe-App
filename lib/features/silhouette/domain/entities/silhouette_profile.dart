@@ -86,7 +86,9 @@ class SilhouetteProfile {
       bodyShape: bodyShape ?? this.bodyShape,
       skinTone: skinTone ?? this.skinTone,
       faceShape: clearFaceShape ? null : (faceShape ?? this.faceShape),
-      portraitPath: clearPortraitPath ? null : (portraitPath ?? this.portraitPath),
+      portraitPath: clearPortraitPath
+          ? null
+          : (portraitPath ?? this.portraitPath),
     );
   }
 }

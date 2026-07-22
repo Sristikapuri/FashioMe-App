@@ -7,4 +7,3 @@ abstract interface class IDashboardUploadDataSource {
     void Function(int sentBytes, int totalBytes)? onSendProgress,
   });
 }
-
