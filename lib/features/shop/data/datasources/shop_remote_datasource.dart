@@ -42,22 +42,89 @@ class ShopRemoteDataSource {
       ApiEndpoints.cart,
       data: {
         'items': items.entries
-            .map((entry) => {
-                  'clotheId': entry.key,
-                  'quantity': entry.value,
-                })
+            .map((entry) => {'clotheId': entry.key, 'quantity': entry.value})
             .toList(),
       },
     );
   }
 
-  Future<void> placeOrder({required String shippingAddress}) async {
-    await _apiClient.post(
+  Future<String> placeOrder({
+    required String shippingAddress,
+    required String customerName,
+    required String customerEmail,
+    required String phone,
+    required String city,
+    required String postalCode,
+    required String paymentMethod,
+  }) async {
+    final response = await _apiClient.post(
       ApiEndpoints.orders,
       data: {
         'shippingAddress': shippingAddress,
+        'customerName': customerName,
+        'customerEmail': customerEmail,
+        'phone': phone,
+        'city': city,
+        'postalCode': postalCode,
+        'paymentMethod': paymentMethod,
       },
     );
+
+    final data = response.data;
+    final payload = data is Map ? data['responseData'] : null;
+    final order = payload is Map ? payload['order'] : null;
+    final id = order is Map
+        ? (order['_id'] ?? order['id'] ?? '').toString()
+        : '';
+    if (id.isEmpty) {
+      throw StateError('Order ID missing from backend response');
+    }
+    return id;
+  }
+
+  Future<String> getEsewaPaymentUrl({
+    required double amount,
+    required String orderId,
+    required String productCode,
+  }) async {
+    final response = await _apiClient.get(
+      ApiEndpoints.esewaPaymentUrl,
+      queryParameters: {
+        'amount': amount,
+        'orderId': orderId,
+        'productCode': productCode,
+      },
+    );
+
+    final data = response.data;
+    final payload = data is Map ? data['responseData'] : null;
+    final paymentUrl = payload is Map
+        ? payload['paymentUrl']?.toString()
+        : null;
+
+    if (paymentUrl == null || paymentUrl.isEmpty) {
+      throw StateError('Failed to generate payment URL from backend');
+    }
+    return paymentUrl;
+  }
+
+  Future<bool> verifyEsewaPayment({
+    required double amount,
+    required String orderId,
+    required String productCode,
+  }) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.esewaVerify,
+      data: {
+        'amount': amount,
+        'orderId': orderId,
+        'productCode': productCode,
+      },
+    );
+
+    final data = response.data;
+    final payload = data is Map ? data['responseData'] : null;
+    return payload is Map ? payload['verified'] == true : false;
   }
 
   Future<List<Map<String, dynamic>>> fetchMyOrders() async {
@@ -70,7 +137,10 @@ class ShopRemoteDataSource {
       return const [];
     }
 
-    return orders.whereType<Map>().map((order) => Map<String, dynamic>.from(order)).toList();
+    return orders
+        .whereType<Map>()
+        .map((order) => Map<String, dynamic>.from(order))
+        .toList();
   }
 
   Future<ShopItemModel> fetchShopItemById(String id) async {
@@ -97,7 +167,8 @@ class ShopRemoteDataSource {
         'page': page,
         'limit': limit,
         if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
-        if (category != null && category.trim().isNotEmpty) 'category': category.trim(),
+        if (category != null && category.trim().isNotEmpty)
+          'category': category.trim(),
       },
     );
 

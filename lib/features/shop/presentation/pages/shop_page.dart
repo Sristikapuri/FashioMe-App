@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
-import 'package:fashio_me/features/shop/data/datasources/shop_remote_datasource.dart';
-import 'package:fashio_me/features/shop/data/models/shop_item_model.dart';
+import 'package:fashio_me/features/auth/presentation/providers/auth_session_providers.dart';
+import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
 import 'package:fashio_me/features/shop/presentation/pages/cart_page.dart';
 import 'package:fashio_me/features/shop/presentation/pages/shop_detail_page.dart';
+import 'package:fashio_me/features/shop/presentation/providers/shop_providers.dart';
 
 class ShopPage extends ConsumerStatefulWidget {
   const ShopPage({super.key});
@@ -17,24 +18,38 @@ class ShopPage extends ConsumerStatefulWidget {
 
 class _ShopPageState extends ConsumerState<ShopPage> {
   final TextEditingController _searchController = TextEditingController();
-  final List<String> _categories = const [
+  static const List<String> _categories = [
     'All',
     'tops',
     'bottoms',
+    'dresses',
+    'party-wear',
+    'gown',
+    'formal-wear',
+    'streetwear',
+    'traditional',
+    'outerwear',
+    'activewear',
+    'shirts',
+    'pants',
+    'skirts',
+    'sweaters',
     'shoes',
     'accessories',
   ];
-  String _selectedCategory = 'All';
-  List<ShopItemModel> _items = [];
-  Map<String, int> _bag = {};
-  bool _loading = true;
-  String _message = '';
-
+  static const List<(String, String)> _genderFilters = [
+    ('All', 'all'),
+    ('Female', 'female'),
+    ('Male', 'male'),
+  ];
   @override
   void initState() {
     super.initState();
-    _loadBag();
-    _fetchItems();
+    final currentUser = ref.read(authSessionViewModelProvider).user;
+    final userGender = currentUser?.gender?.toLowerCase();
+    if (userGender == 'female' || userGender == 'male') {
+      ref.read(shopViewModelProvider.notifier).setGender(userGender!);
+    }
   }
 
   @override
@@ -43,116 +58,11 @@ class _ShopPageState extends ConsumerState<ShopPage> {
     super.dispose();
   }
 
-  Future<void> _loadBag() async {
-    try {
-      final remote = ref.read(shopRemoteDataSourceProvider);
-      final bag = await remote.fetchCartItems();
-      if (!mounted) return;
-      setState(() {
-        _bag = bag;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _message = 'Unable to sync cart with the backend.';
-      });
-    }
-  }
-
-  Future<void> _saveBag() async {
-    try {
-      await ref.read(shopRemoteDataSourceProvider).saveCartItems(_bag);
-      if (!mounted) return;
-      setState(() {
-        _message = '';
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _message = 'Cart changes could not be synced with the backend.';
-      });
-    }
-  }
-
-  Future<void> _fetchItems() async {
-    try {
-      final remote = ref.read(shopRemoteDataSourceProvider);
-      final items = await remote.fetchShopItems(limit: 48);
-      if (!mounted) return;
-      setState(() {
-        _items = items;
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _message = 'Failed to load shop items.';
-      });
-    }
-  }
-
-  List<ShopItemModel> get _featuredDeals =>
-      _items.where((item) => item.discountedPrice != null).take(3).toList();
-
-  List<ShopItemModel> get _filteredItems {
-    final query = _searchController.text.trim().toLowerCase();
-    return _items.where((item) {
-      if (_selectedCategory != 'All' && item.category != _selectedCategory)
-        return false;
-      if (query.isNotEmpty && !item.name.toLowerCase().contains(query))
-        return false;
-      return true;
-    }).toList();
-  }
-
-  double get _subtotal {
-    return _bag.entries.fold<double>(0, (sum, entry) {
-      final item = _items.where((i) => i.id == entry.key).toList();
-      if (item.isEmpty) return sum;
-      return sum + (item.first.salePrice * entry.value);
-    });
-  }
-
-  double get _discounts {
-    return _bag.entries.fold<double>(0, (sum, entry) {
-      final item = _items.where((i) => i.id == entry.key).toList();
-      if (item.isEmpty) return sum;
-      return sum + (item.first.savings * entry.value);
-    });
-  }
-
-  double get _tax => (_subtotal * 0.05);
-  double get _total => _subtotal + _tax;
-
-  void _addToBag(ShopItemModel item) {
-    setState(() {
-      _bag[item.id] = (_bag[item.id] ?? 0) + 1;
-    });
-    _saveBag();
-  }
-
-  void _changeQty(String id, int quantity) {
-    setState(() {
-      if (quantity <= 0) {
-        _bag.remove(id);
-      } else {
-        _bag[id] = quantity;
-      }
-    });
-    _saveBag();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final bagItems = _bag.entries
-        .map((entry) {
-          final item = _items.where((i) => i.id == entry.key).toList();
-          if (item.isEmpty) return null;
-          return (item.first, entry.value);
-        })
-        .whereType<(ShopItemModel, int)>()
-        .toList();
+    final state = ref.watch(shopViewModelProvider);
+    final notifier = ref.read(shopViewModelProvider.notifier);
+    final bagItems = state.bagItems;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -172,13 +82,13 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                   const SizedBox(height: 6),
                   Text(
                     'Browse curated fashion items and add them to your bag.',
-                    style: TextStyle(color: Colors.grey.shade700),
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
-                  if (_message.isNotEmpty) ...[
+                  if (state.errorMessage != null) ...[
                     const SizedBox(height: 10),
                     Text(
-                      _message,
-                      style: const TextStyle(color: Colors.redAccent),
+                      state.errorMessage!,
+                      style: const TextStyle(color: AppColors.error),
                     ),
                   ],
                 ],
@@ -186,19 +96,50 @@ class _ShopPageState extends ConsumerState<ShopPage> {
             ),
             Padding(
               padding: const EdgeInsets.all(20),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Search products',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFFE7B8B8)),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    onChanged: notifier.setSearchQuery,
+                    decoration: InputDecoration(
+                      hintText: 'Search products',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: AppColors.divider),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 38,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _genderFilters.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (_, index) {
+                        final filter = _genderFilters[index];
+                        final selected = filter.$2 == state.selectedGender;
+                        return ChoiceChip(
+                          label: Text(filter.$1),
+                          selected: selected,
+                          onSelected: (_) => notifier.setGender(filter.$2),
+                          selectedColor: AppColors.primary.withValues(
+                            alpha: 0.16,
+                          ),
+                          labelStyle: TextStyle(
+                            color: selected
+                                ? AppColors.primaryDark
+                                : AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
             SizedBox(
@@ -208,15 +149,16 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                 scrollDirection: Axis.horizontal,
                 itemBuilder: (_, index) {
                   final category = _categories[index];
-                  final selected = category == _selectedCategory;
+                  final selected = category == state.selectedCategory;
                   return ChoiceChip(
                     label: Text(category),
                     selected: selected,
-                    onSelected: (_) =>
-                        setState(() => _selectedCategory = category),
+                    onSelected: (_) => notifier.setCategory(category),
                     selectedColor: AppColors.primary.withValues(alpha: 0.16),
                     labelStyle: TextStyle(
-                      color: selected ? AppColors.primaryDark : Colors.black87,
+                      color: selected
+                          ? AppColors.primaryDark
+                          : AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   );
@@ -227,14 +169,14 @@ class _ShopPageState extends ConsumerState<ShopPage> {
             ),
             const SizedBox(height: 18),
             Expanded(
-              child: _loading
+              child: state.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : RefreshIndicator(
-                      onRefresh: _fetchItems,
+                      onRefresh: notifier.refresh,
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
                         children: [
-                          if (_featuredDeals.isNotEmpty) ...[
+                          if (state.featuredDeals.isNotEmpty) ...[
                             const Text(
                               'Featured Deals',
                               style: TextStyle(
@@ -247,14 +189,14 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                               height: 180,
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                itemCount: _featuredDeals.length,
+                                itemCount: state.featuredDeals.length,
                                 separatorBuilder: (_, _) =>
                                     const SizedBox(width: 12),
                                 itemBuilder: (_, index) {
-                                  final item = _featuredDeals[index];
+                                  final item = state.featuredDeals[index];
                                   return _FeaturedCard(
                                     item: item,
-                                    onAdd: () => _addToBag(item),
+                                    onAdd: () => notifier.addToBag(item),
                                     onTap: () => AppRoutes.push(
                                       context,
                                       ShopDetailPage(itemId: item.id),
@@ -276,7 +218,7 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _filteredItems.length,
+                            itemCount: state.filteredItems.length,
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 2,
@@ -285,10 +227,10 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                                   mainAxisSpacing: 12,
                                 ),
                             itemBuilder: (_, index) {
-                              final item = _filteredItems[index];
+                              final item = state.filteredItems[index];
                               return _ProductCard(
                                 item: item,
-                                onAdd: () => _addToBag(item),
+                                onAdd: () => notifier.addToBag(item),
                                 onTap: () => AppRoutes.push(
                                   context,
                                   ShopDetailPage(itemId: item.id),
@@ -304,12 +246,12 @@ class _ShopPageState extends ConsumerState<ShopPage> {
         ),
       ),
       bottomNavigationBar: _BagBar(
-        itemCount: bagItems.fold<int>(0, (sum, entry) => sum + entry.$2),
-        subtotal: _subtotal,
-        savings: _discounts,
-        total: _total,
+        itemCount: state.itemCount,
+        subtotal: state.subtotal,
+        savings: state.discounts,
+        total: state.total,
         bagItems: bagItems,
-        onChangeQty: _changeQty,
+        onChangeQty: notifier.changeQuantity,
         onViewCart: () => AppRoutes.push(context, const CartPage()),
       ),
     );
@@ -323,7 +265,7 @@ class _FeaturedCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final ShopItemModel item;
+  final ShopItem item;
   final VoidCallback onAdd;
   final VoidCallback onTap;
 
@@ -335,9 +277,9 @@ class _FeaturedCard extends StatelessWidget {
         width: 240,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE7B8B8)),
+          border: Border.all(color: AppColors.divider),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,7 +292,7 @@ class _FeaturedCard extends StatelessWidget {
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => Container(
-                    color: const Color(0xFFF7F7F7),
+                    color: AppColors.surfaceMuted,
                     alignment: Alignment.center,
                     child: const Icon(Icons.image_not_supported_outlined),
                   ),
@@ -367,7 +309,10 @@ class _FeaturedCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${item.category} • ${item.color}',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
@@ -380,7 +325,7 @@ class _FeaturedCard extends StatelessWidget {
                     decoration: item.discountedPrice != null
                         ? TextDecoration.lineThrough
                         : TextDecoration.none,
-                    color: Colors.grey.shade600,
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -412,7 +357,7 @@ class _ProductCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final ShopItemModel item;
+  final ShopItem item;
   final VoidCallback onAdd;
   final VoidCallback onTap;
 
@@ -422,9 +367,9 @@ class _ProductCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE7B8B8)),
+          border: Border.all(color: AppColors.divider),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -439,7 +384,7 @@ class _ProductCard extends StatelessWidget {
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => Container(
-                    color: const Color(0xFFF7F7F7),
+                    color: AppColors.surfaceMuted,
                     alignment: Alignment.center,
                     child: const Icon(Icons.image_not_supported_outlined),
                   ),
@@ -462,14 +407,17 @@ class _ProductCard extends StatelessWidget {
                     item.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   if (item.discountedPrice != null) ...[
                     Text(
                       '\$${item.price.toStringAsFixed(2)}',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: AppColors.textSecondary,
                         decoration: TextDecoration.lineThrough,
                       ),
                     ),
@@ -521,7 +469,7 @@ class _BagBar extends StatelessWidget {
   final double subtotal;
   final double savings;
   final double total;
-  final List<(ShopItemModel, int)> bagItems;
+  final List<(ShopItem, int)> bagItems;
   final void Function(String id, int quantity) onChangeQty;
   final VoidCallback onViewCart;
 
@@ -530,8 +478,8 @@ class _BagBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE7B8B8))),
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.divider)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -578,9 +526,9 @@ class _BagBar extends StatelessWidget {
                     width: 240,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7F7),
+                      color: AppColors.surfaceSoft,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE7B8B8)),
+                      border: Border.all(color: AppColors.divider),
                     ),
                     child: Row(
                       children: [
@@ -609,8 +557,8 @@ class _BagBar extends StatelessWidget {
                               ),
                               Text(
                                 '\$${(item.$1.salePrice * item.$2).toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: Colors.grey.shade700,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -659,12 +607,12 @@ class _BagBar extends StatelessWidget {
             children: [
               Text(
                 'Subtotal: \$${subtotal.toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.grey.shade700),
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(width: 12),
               Text(
                 'Savings: \$${savings.toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.grey.shade700),
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
               const Spacer(),
               TextButton(onPressed: onViewCart, child: const Text('View cart')),

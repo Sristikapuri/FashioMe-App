@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/features/shop/data/datasources/shop_remote_datasource.dart';
+import 'package:fashio_me/features/shop/domain/entities/shop_order.dart';
+import 'package:fashio_me/features/shop/presentation/providers/shop_providers.dart';
 
 class OrderHistoryPage extends ConsumerStatefulWidget {
   const OrderHistoryPage({super.key});
@@ -14,7 +15,7 @@ class OrderHistoryPage extends ConsumerStatefulWidget {
 class _OrderHistoryPageState extends ConsumerState<OrderHistoryPage> {
   bool _loading = true;
   String _error = '';
-  List<Map<String, dynamic>> _orders = [];
+  List<ShopOrder> _orders = [];
 
   @override
   void initState() {
@@ -24,7 +25,9 @@ class _OrderHistoryPageState extends ConsumerState<OrderHistoryPage> {
 
   Future<void> _loadOrders() async {
     try {
-      final orders = await ref.read(shopRemoteDataSourceProvider).fetchMyOrders();
+      final orders = await ref
+          .read(shopViewModelProvider.notifier)
+          .fetchMyOrders();
       if (!mounted) return;
       setState(() {
         _orders = orders;
@@ -56,7 +59,10 @@ class _OrderHistoryPageState extends ConsumerState<OrderHistoryPage> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 children: [
                   if (_error.isNotEmpty) ...[
-                    Text(_error, style: const TextStyle(color: Colors.redAccent)),
+                    Text(
+                      _error,
+                      style: const TextStyle(color: AppColors.error),
+                    ),
                     const SizedBox(height: 12),
                   ],
                   if (_orders.isEmpty)
@@ -81,23 +87,23 @@ class _OrderHistoryPageState extends ConsumerState<OrderHistoryPage> {
 class _OrderCard extends StatelessWidget {
   const _OrderCard({required this.order});
 
-  final Map<String, dynamic> order;
+  final ShopOrder order;
 
   @override
   Widget build(BuildContext context) {
-    final total = (order['total'] as num?)?.toDouble() ?? 0;
-    final subtotal = (order['subtotal'] as num?)?.toDouble() ?? 0;
-    final status = (order['status'] ?? 'pending').toString();
-    final items = (order['items'] as List?) ?? const [];
-    final orderId = (order['_id'] ?? '').toString();
+    final total = order.total;
+    final subtotal = order.subtotal;
+    final status = order.status;
+    final items = order.items;
+    final orderId = order.id;
     final shortId = orderId.length > 6 ? orderId.substring(0, 6) : orderId;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE7B8B8)),
+        border: Border.all(color: AppColors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,16 +125,16 @@ class _OrderCard extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: items.map((item) {
-                final map = item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{};
-                final name = (map['name'] ?? 'Item').toString();
-                final quantity = (map['quantity'] as num?)?.toInt() ?? 1;
-                return _Chip(label: '$name x$quantity');
-              }).toList(),
+              children: items
+                  .map((item) => _Chip(label: '${item.name} x${item.quantity}'))
+                  .toList(),
             ),
           const SizedBox(height: 4),
           Text('Subtotal: \$${subtotal.toStringAsFixed(2)}'),
-          Text('Total: \$${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(
+            'Total: \$${total.toStringAsFixed(2)}',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
         ],
       ),
     );
@@ -145,11 +151,14 @@ class _Chip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7F7),
+        color: AppColors.surfaceSoft,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE7B8B8)),
+        border: Border.all(color: AppColors.divider),
       ),
-      child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+      ),
     );
   }
 }

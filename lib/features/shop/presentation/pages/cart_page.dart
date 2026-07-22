@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/features/shop/data/datasources/shop_remote_datasource.dart';
-import 'package:fashio_me/features/shop/data/models/shop_item_model.dart';
+import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
 import 'package:fashio_me/features/shop/presentation/pages/order_history_page.dart';
+import 'package:fashio_me/features/shop/presentation/pages/shop_detail_page.dart';
+import 'package:fashio_me/features/shop/presentation/providers/shop_providers.dart';
 
 class CartPage extends ConsumerStatefulWidget {
   const CartPage({super.key});
@@ -16,92 +18,268 @@ class CartPage extends ConsumerStatefulWidget {
 
 class _CartPageState extends ConsumerState<CartPage> {
   final TextEditingController _addressController = TextEditingController();
-  bool _loading = true;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _postalCodeController = TextEditingController();
+  String _paymentMethod = 'cod';
   bool _placingOrder = false;
-  String _error = '';
-  Map<String, int> _bag = {};
-  List<ShopItemModel> _catalog = [];
 
   @override
   void initState() {
     super.initState();
-    _loadCart();
   }
 
   @override
   void dispose() {
     _addressController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _cityController.dispose();
+    _postalCodeController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadCart() async {
-    try {
-      final remote = ref.read(shopRemoteDataSourceProvider);
-      final bag = await remote.fetchCartItems();
-      final catalog = await remote.fetchShopItems(limit: 100);
-      if (!mounted) return;
-      setState(() {
-        _bag = bag;
-        _catalog = catalog;
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Failed to load cart.';
-        _loading = false;
-      });
+  Future<bool?> _openEsewaAndCheckStatus({
+    required String orderId,
+    required double totalAmount,
+    required String paymentUrl,
+  }) async {
+    final launched = await launchUrl(
+      Uri.parse(paymentUrl),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched) {
+      throw StateError('Could not open the eSewa payment page.');
     }
-  }
+    if (!mounted) return null;
 
-  Future<void> _persistCart(Map<String, int> nextBag) async {
-    setState(() {
-      _bag = nextBag;
-    });
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        bool verifying = false;
+        String dialogError = '';
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF60BB46),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'e',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'eSewa Gateway',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Order ID: $orderId',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Amount: \$${totalAmount.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: Color(0xFF60BB46),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (dialogError.isNotEmpty) ...[
+                    Text(
+                      dialogError,
+                      style: const TextStyle(color: AppColors.error),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (verifying)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation(Color(0xFF60BB46)),
+                        ),
+                      ),
+                    )
+                  else
+                    const Text(
+                      'Complete the payment in the eSewa page that opened. Return here and check the payment status to confirm your order.',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                ],
+              ),
+              actions: [
+                if (!verifying) ...[
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text(
+                      'Not now',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
+                  OutlinedButton(
+                    onPressed: () async {
+                      await launchUrl(
+                        Uri.parse(paymentUrl),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    },
+                    child: const Text('Open eSewa'),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF60BB46),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () async {
+                      setDialogState(() {
+                        verifying = true;
+                        dialogError = '';
+                      });
 
-    try {
-      await ref.read(shopRemoteDataSourceProvider).saveCartItems(nextBag);
-      if (!mounted) return;
-      setState(() {
-        _error = '';
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Saved locally, but backend sync failed.';
-      });
-    }
+                      try {
+                        final success = await ref
+                            .read(shopViewModelProvider.notifier)
+                            .verifyEsewaPayment(
+                              amount: totalAmount,
+                              orderId: orderId,
+                              productCode: 'EPAYTEST',
+                            );
+                        if (context.mounted) {
+                          if (success) {
+                            Navigator.pop(context, true);
+                          } else {
+                            setDialogState(() {
+                              verifying = false;
+                              dialogError =
+                                  'Payment is not complete yet. Finish eSewa payment and try again.';
+                            });
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          setDialogState(() {
+                            verifying = false;
+                            dialogError =
+                                'Verification failed: ${e.toString()}';
+                          });
+                        }
+                      }
+                    },
+                    child: const Text('Check payment'),
+                  ),
+                ],
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _placeOrder() async {
-    final shippingAddress = _addressController.text.trim();
-    if (shippingAddress.isEmpty) {
-      setState(() {
-        _error = 'Please enter a shipping address.';
-      });
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final city = _cityController.text.trim();
+    final postalCode = _postalCodeController.text.trim();
+    final address = _addressController.text.trim();
+
+    if (name.isEmpty ||
+        email.isEmpty ||
+        phone.isEmpty ||
+        city.isEmpty ||
+        postalCode.isEmpty ||
+        address.isEmpty) {
+      ref
+          .read(shopViewModelProvider.notifier)
+          .setError('Please fill out all checkout fields.');
       return;
     }
 
     setState(() {
       _placingOrder = true;
-      _error = '';
     });
 
+    final shopState = ref.read(shopViewModelProvider);
+    final notifier = ref.read(shopViewModelProvider.notifier);
+    final totalAmount = shopState.total;
+    final shippingAddress = '$address, $city, $postalCode';
+
     try {
-      await ref
-          .read(shopRemoteDataSourceProvider)
-          .placeOrder(shippingAddress: shippingAddress);
-      await _persistCart({});
+      final orderId = await notifier.placeOrder(
+        shippingAddress: shippingAddress,
+        customerName: name,
+        customerEmail: email,
+        phone: phone,
+        city: city,
+        postalCode: postalCode,
+        paymentMethod: _paymentMethod,
+      );
+
+      if (_paymentMethod == 'esewa') {
+        final paymentUrl = await notifier.getEsewaPaymentUrl(
+          amount: totalAmount,
+          orderId: orderId,
+          productCode: 'EPAYTEST',
+        );
+
+        final success = await _openEsewaAndCheckStatus(
+          orderId: orderId,
+          totalAmount: totalAmount,
+          paymentUrl: paymentUrl,
+        );
+        if (success != true) {
+          if (!mounted) return;
+          notifier.setError(
+            'Order $orderId was created and is awaiting eSewa payment. You can check its status from order history.',
+          );
+          return;
+        }
+      }
+
+      await notifier.clearBag();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order placed successfully.')),
+        SnackBar(
+          content: Text(
+            _paymentMethod == 'esewa'
+                ? 'Order paid and confirmed successfully!'
+                : 'Order placed successfully.',
+          ),
+        ),
       );
       Navigator.pop(context);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _error = 'Failed to place order.';
-      });
+      notifier.setError('Failed to place order: ${e.toString()}');
     } finally {
       if (mounted) {
         setState(() {
@@ -111,39 +289,16 @@ class _CartPageState extends ConsumerState<CartPage> {
     }
   }
 
-  ShopItemModel? _findItem(String id) {
-    for (final item in _catalog) {
-      if (item.id == id) return item;
-    }
-    return null;
-  }
-
-  double get _subtotal {
-    return _bag.entries.fold<double>(0, (sum, entry) {
-      final item = _findItem(entry.key);
-      if (item == null) return sum;
-      return sum + (item.salePrice * entry.value);
-    });
-  }
-
-  double get _tax => _subtotal * 0.05;
-  double get _total => _subtotal + _tax;
-
   void _changeQty(String id, int quantity) {
-    final nextBag = Map<String, int>.from(_bag);
-    if (quantity <= 0) {
-      nextBag.remove(id);
-    } else {
-      nextBag[id] = quantity;
-    }
-    _persistCart(nextBag);
+    ref.read(shopViewModelProvider.notifier).changeQuantity(id, quantity);
   }
 
   void _removeItem(String id) => _changeQty(id, 0);
 
   @override
   Widget build(BuildContext context) {
-    final entries = _bag.entries.toList();
+    final shopState = ref.watch(shopViewModelProvider);
+    final entries = shopState.bag.entries.toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -152,37 +307,31 @@ class _CartPageState extends ConsumerState<CartPage> {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
       ),
-      body: _loading
+      body: shopState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadCart,
+              onRefresh: ref.read(shopViewModelProvider.notifier).refresh,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 children: [
-                  if (_error.isNotEmpty) ...[
+                  if (shopState.errorMessage != null) ...[
                     Text(
-                      _error,
-                      style: const TextStyle(color: Colors.redAccent),
+                      shopState.errorMessage!,
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
                   ],
-                  TextField(
-                    controller: _addressController,
-                    decoration: const InputDecoration(
-                      labelText: 'Shipping address',
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   if (entries.isEmpty)
                     const Padding(
                       padding: EdgeInsets.only(top: 80),
                       child: Center(child: Text('Your cart is empty.')),
                     )
-                  else
+                  else ...[
                     ...entries.map((entry) {
-                      final item = _findItem(entry.key);
+                      final item = shopState.itemById(entry.key);
                       if (item == null) return const SizedBox.shrink();
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
@@ -196,18 +345,160 @@ class _CartPageState extends ConsumerState<CartPage> {
                           onRemove: () => _removeItem(item.id),
                           onTap: () => AppRoutes.push(
                             context,
-                            CartDetailStubPage(itemId: item.id),
+                            ShopDetailPage(itemId: item.id),
                           ),
                         ),
                       );
                     }),
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: AppColors.divider),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Checkout Information',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Full Name',
+                              filled: true,
+                              fillColor: Colors.transparent,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              labelText: 'Email Address',
+                              filled: true,
+                              fillColor: Colors.transparent,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: 'Phone Number',
+                              filled: true,
+                              fillColor: Colors.transparent,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _cityController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'City',
+                                    filled: true,
+                                    fillColor: Colors.transparent,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextField(
+                                  controller: _postalCodeController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Postal Code',
+                                    filled: true,
+                                    fillColor: Colors.transparent,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _addressController,
+                            decoration: const InputDecoration(
+                              labelText: 'Street Address',
+                              filled: true,
+                              fillColor: Colors.transparent,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Payment Method',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ChoiceChip(
+                                  label: const Center(child: Text('COD')),
+                                  selected: _paymentMethod == 'cod',
+                                  selectedColor: AppColors.primary,
+                                  labelStyle: TextStyle(
+                                    color: _paymentMethod == 'cod'
+                                        ? Colors.white
+                                        : AppColors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      setState(() {
+                                        _paymentMethod = 'cod';
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: ChoiceChip(
+                                  label: const Center(child: Text('eSewa')),
+                                  selected: _paymentMethod == 'esewa',
+                                  selectedColor: const Color(0xFF60BB46),
+                                  labelStyle: TextStyle(
+                                    color: _paymentMethod == 'esewa'
+                                        ? Colors.white
+                                        : AppColors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      setState(() {
+                                        _paymentMethod = 'esewa';
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFE7B8B8)),
+                      border: Border.all(color: AppColors.divider),
                     ),
                     child: Column(
                       children: [
@@ -219,7 +510,7 @@ class _CartPageState extends ConsumerState<CartPage> {
                             ),
                             const Spacer(),
                             Text(
-                              '\$${_subtotal.toStringAsFixed(2)}',
+                              '\$${shopState.subtotal.toStringAsFixed(2)}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w900,
                               ),
@@ -230,13 +521,17 @@ class _CartPageState extends ConsumerState<CartPage> {
                         Row(
                           children: [
                             Text(
-                              'Tax',
-                              style: TextStyle(color: Colors.grey.shade700),
+                              'Tax (5%)',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                             const Spacer(),
                             Text(
-                              '\$${_tax.toStringAsFixed(2)}',
-                              style: TextStyle(color: Colors.grey.shade700),
+                              '\$${shopState.tax.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ],
                         ),
@@ -249,8 +544,10 @@ class _CartPageState extends ConsumerState<CartPage> {
                                 : _placeOrder,
                             child: Text(
                               _placingOrder
-                                  ? 'Placing order...'
-                                  : 'Place order',
+                                  ? 'Processing...'
+                                  : _paymentMethod == 'esewa'
+                                  ? 'Pay with eSewa'
+                                  : 'Place Order (COD)',
                             ),
                           ),
                         ),
@@ -280,7 +577,7 @@ class _CartCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final ShopItemModel item;
+  final ShopItem item;
   final int quantity;
   final VoidCallback onIncrease;
   final VoidCallback onDecrease;
@@ -294,9 +591,9 @@ class _CartCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE7B8B8)),
+          border: Border.all(color: AppColors.divider),
         ),
         child: Row(
           children: [
@@ -310,7 +607,7 @@ class _CartCard extends StatelessWidget {
                 errorBuilder: (_, _, _) => Container(
                   width: 72,
                   height: 72,
-                  color: const Color(0xFFF7F7F7),
+                  color: AppColors.surfaceMuted,
                   alignment: Alignment.center,
                   child: const Icon(Icons.image_not_supported_outlined),
                 ),
@@ -328,12 +625,18 @@ class _CartCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '${item.category} • ${item.color}',
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     '\$${item.salePrice.toStringAsFixed(2)} each',
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   LayoutBuilder(

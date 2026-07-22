@@ -2,28 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/features/shop/data/datasources/shop_remote_datasource.dart';
-import 'package:fashio_me/features/shop/data/models/shop_item_model.dart';
+import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
+import 'package:fashio_me/features/shop/presentation/providers/shop_providers.dart';
 
 class ShopDetailPage extends ConsumerWidget {
-  const ShopDetailPage({
-    super.key,
-    required this.itemId,
-  });
+  const ShopDetailPage({super.key, required this.itemId});
 
   final String itemId;
 
-  Future<void> _addToBag(WidgetRef ref, ShopItemModel item) async {
-    final remote = ref.read(shopRemoteDataSourceProvider);
-    final bag = await remote.fetchCartItems();
-    bag[item.id] = (bag[item.id] ?? 0) + 1;
-    await remote.saveCartItems(bag);
+  Future<void> _addToBag(WidgetRef ref, ShopItem item) async {
+    await ref.read(shopViewModelProvider.notifier).addToBag(item);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final remote = ref.read(shopRemoteDataSourceProvider);
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -31,8 +23,8 @@ class ShopDetailPage extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         title: const Text('Product Details'),
       ),
-      body: FutureBuilder<ShopItemModel>(
-        future: remote.fetchShopItemById(itemId),
+      body: FutureBuilder<ShopItem>(
+        future: ref.read(shopViewModelProvider.notifier).fetchItem(itemId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -44,7 +36,7 @@ class ShopDetailPage extends ConsumerWidget {
                 padding: const EdgeInsets.all(24),
                 child: Text(
                   'Failed to load product details.',
-                  style: TextStyle(color: Colors.grey.shade700),
+                  style: const TextStyle(color: AppColors.textSecondary),
                 ),
               ),
             );
@@ -66,15 +58,24 @@ class ShopDetailPage extends ConsumerWidget {
                     item.imageUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => Container(
-                      color: Colors.white,
+                      color: AppColors.surfaceMuted,
                       alignment: Alignment.center,
-                      child: const Icon(Icons.image_not_supported_outlined, size: 40),
+                      child: const Icon(
+                        Icons.image_not_supported_outlined,
+                        size: 40,
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 18),
-              Text(item.name, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+              Text(
+                item.name,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -93,7 +94,7 @@ class ShopDetailPage extends ConsumerWidget {
                     Text(
                       '\$${item.price.toStringAsFixed(2)}',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: AppColors.textSecondary,
                         decoration: TextDecoration.lineThrough,
                         fontSize: 16,
                       ),
@@ -101,7 +102,10 @@ class ShopDetailPage extends ConsumerWidget {
                   if (item.discountedPrice != null) const SizedBox(width: 10),
                   Text(
                     '\$${item.salePrice.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ],
               ),
@@ -110,10 +114,13 @@ class ShopDetailPage extends ConsumerWidget {
                 item.discountedPrice != null
                     ? 'You save \$${item.savings.toStringAsFixed(2)} on this item.'
                     : '${item.stock} in stock',
-                style: TextStyle(color: Colors.grey.shade700),
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 18),
-              Text(item.description, style: const TextStyle(fontSize: 16, height: 1.5)),
+              Text(
+                item.description,
+                style: const TextStyle(fontSize: 16, height: 1.5),
+              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () async {
@@ -161,9 +168,9 @@ class _Chip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE7B8B8)),
+        border: Border.all(color: AppColors.divider),
       ),
       child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
     );
