@@ -16,10 +16,10 @@ class AuthSessionState extends Equatable {
   });
 
   const AuthSessionState.initial()
-      : user = null,
-        isRestoring = false,
-        isLoggingOut = false,
-        errorMessage = null;
+    : user = null,
+      isRestoring = false,
+      isLoggingOut = false,
+      errorMessage = null;
 
   bool get isAuthenticated => user != null;
 

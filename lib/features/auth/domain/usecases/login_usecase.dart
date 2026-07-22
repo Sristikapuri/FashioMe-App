@@ -15,9 +15,10 @@ class LoginUsecaseParams extends Equatable {
   List<Object?> get props => [email, password];
 }
 
-class LoginUsecase implements UsecaseWithParams<AuthEntity, LoginUsecaseParams> {
+class LoginUsecase
+    implements UsecaseWithParams<AuthEntity, LoginUsecaseParams> {
   LoginUsecase({required IAuthRepository authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final IAuthRepository _authRepository;
 

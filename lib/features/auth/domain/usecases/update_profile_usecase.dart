@@ -25,9 +25,10 @@ class UpdateProfileUsecaseParams {
   });
 }
 
-class UpdateProfileUsecase implements UsecaseWithParams<AuthEntity, UpdateProfileUsecaseParams> {
+class UpdateProfileUsecase
+    implements UsecaseWithParams<AuthEntity, UpdateProfileUsecaseParams> {
   UpdateProfileUsecase({required IAuthRepository authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final IAuthRepository _authRepository;
 

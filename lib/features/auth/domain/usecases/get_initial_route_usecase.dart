@@ -5,7 +5,7 @@ import 'package:fashio_me/features/auth/domain/repositories/auth_repository.dart
 
 class GetInitialRouteUsecase implements UsecaseWithoutParams<String> {
   GetInitialRouteUsecase({required IAuthRepository authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final IAuthRepository _authRepository;
 

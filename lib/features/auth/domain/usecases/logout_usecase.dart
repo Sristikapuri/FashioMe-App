@@ -13,7 +13,7 @@ class LogoutUsecaseParams extends Equatable {
 
 class LogoutUsecase implements UsecaseWithParams<bool, LogoutUsecaseParams> {
   LogoutUsecase({required IAuthRepository authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final IAuthRepository _authRepository;
 

@@ -14,10 +14,10 @@ class SignupState extends Equatable {
   });
 
   const SignupState.initial()
-      : obscurePassword = true,
-        obscureConfirmPassword = true,
-        isLoading = false,
-        errorMessage = null;
+    : obscurePassword = true,
+      obscureConfirmPassword = true,
+      isLoading = false,
+      errorMessage = null;
 
   SignupState copyWith({
     bool? obscurePassword,
@@ -37,9 +37,9 @@ class SignupState extends Equatable {
 
   @override
   List<Object?> get props => [
-        obscurePassword,
-        obscureConfirmPassword,
-        isLoading,
-        errorMessage,
-      ];
+    obscurePassword,
+    obscureConfirmPassword,
+    isLoading,
+    errorMessage,
+  ];
 }

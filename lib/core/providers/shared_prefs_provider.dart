@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// Must be overridden in `main.dart` after calling `SharedPreferences.getInstance()`.
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError('SharedPreferences must be initialized in main.dart');
+  throw UnimplementedError(
+    'SharedPreferences must be initialized in main.dart',
+  );
 });
-

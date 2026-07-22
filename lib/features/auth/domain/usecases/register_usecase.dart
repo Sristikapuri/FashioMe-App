@@ -25,13 +25,21 @@ class RegisterUsecaseParams extends Equatable {
   });
 
   @override
-  List<Object?> get props => [firstName, lastName, username, email, password, gender, age];
+  List<Object?> get props => [
+    firstName,
+    lastName,
+    username,
+    email,
+    password,
+    gender,
+    age,
+  ];
 }
 
 class RegisterUsecase
     implements UsecaseWithParams<AuthEntity, RegisterUsecaseParams> {
   RegisterUsecase({required IAuthRepository authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final IAuthRepository _authRepository;
 

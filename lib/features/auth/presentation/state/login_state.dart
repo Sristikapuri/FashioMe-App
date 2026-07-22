@@ -12,9 +12,9 @@ class LoginState extends Equatable {
   });
 
   const LoginState.initial()
-      : obscurePassword = true,
-        isLoading = false,
-        errorMessage = null;
+    : obscurePassword = true,
+      isLoading = false,
+      errorMessage = null;
 
   LoginState copyWith({
     bool? obscurePassword,

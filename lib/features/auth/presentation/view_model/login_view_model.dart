@@ -26,7 +26,9 @@ class LoginViewModel extends Notifier<LoginState> {
       state = state.copyWith(errorMessage: 'Email is required.');
       return false;
     }
-    if (!RegExp(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$').hasMatch(trimmedEmail)) {
+    if (!RegExp(
+      r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
+    ).hasMatch(trimmedEmail)) {
       state = state.copyWith(errorMessage: 'Enter a valid email address.');
       return false;
     }
@@ -35,7 +37,9 @@ class LoginViewModel extends Notifier<LoginState> {
       return false;
     }
     if (trimmedPassword.length < 6) {
-      state = state.copyWith(errorMessage: 'Password must be at least 6 characters.');
+      state = state.copyWith(
+        errorMessage: 'Password must be at least 6 characters.',
+      );
       return false;
     }
 
@@ -53,7 +57,7 @@ class LoginViewModel extends Notifier<LoginState> {
       (entity) {
         ref.read(authSessionViewModelProvider.notifier).setUser(entity);
         state = state.copyWith(isLoading: false);
-       
+
         Future.microtask(() {
           ref.read(dashboardViewModelProvider.notifier).clearCacheAndRefresh();
         });

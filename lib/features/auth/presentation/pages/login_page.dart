@@ -1,6 +1,7 @@
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/core/utils/snackbar_utils.dart';
+import 'package:fashio_me/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:fashio_me/features/auth/presentation/pages/signup_page.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_view_model_providers.dart';
 import 'package:fashio_me/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -61,9 +62,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         Image.network(
                           'https://images.unsplash.com/photo-1529139574466-a303027c1d8b',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
-                            color: AppColors.cardBackground,
-                          ),
+                          errorBuilder: (_, _, _) =>
+                              Container(color: AppColors.surfaceSoft),
                         ),
                         Container(
                           decoration: BoxDecoration(
@@ -71,8 +71,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.black.withValues(alpha: 0.15),
-                                Colors.black.withValues(alpha: 0.45),
+                                AppColors.heroOverlayLight,
+                                AppColors.heroOverlayDark,
                               ],
                             ),
                           ),
@@ -164,7 +164,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   alignment: Alignment.centerRight,
 
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      AppRoutes.push(
+                        context,
+                        ForgotPasswordPage(
+                          initialEmail: emailController.text.trim(),
+                        ),
+                      );
+                    },
 
                     child: const Text(
                       'Forgot Password?',

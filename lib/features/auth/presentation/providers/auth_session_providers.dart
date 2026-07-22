@@ -4,5 +4,5 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final authSessionViewModelProvider =
     NotifierProvider<AuthSessionViewModel, AuthSessionState>(
-  AuthSessionViewModel.new,
-);
+      AuthSessionViewModel.new,
+    );

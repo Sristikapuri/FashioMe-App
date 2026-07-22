@@ -84,7 +84,8 @@ class AuthRemoteDatasource implements IAuthDataSource {
 
     final responseData = data['responseData'];
     if (responseData is Map<String, dynamic>) {
-      final responseToken = responseData['token'] ?? responseData['accessToken'];
+      final responseToken =
+          responseData['token'] ?? responseData['accessToken'];
       if (responseToken is String && responseToken.isNotEmpty) {
         return responseToken;
       }
@@ -99,6 +100,23 @@ class AuthRemoteDatasource implements IAuthDataSource {
     }
 
     return null;
+  }
+
+  String _extractMessage(dynamic data, {required String fallback}) {
+    if (data is Map<String, dynamic>) {
+      final message = data['responseMessage'] ?? data['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return message.trim();
+      }
+    }
+    return fallback;
+  }
+
+  String _readErrorMessage(Object error, {required String fallback}) {
+    if (error is DioException) {
+      return _extractMessage(error.response?.data, fallback: fallback);
+    }
+    return fallback;
   }
 
   @override
@@ -194,7 +212,7 @@ class AuthRemoteDatasource implements IAuthDataSource {
       }
 
       final user = AuthApiModel.fromJson(userMap);
-      
+
       // Update session with fresh user data
       if (user.authId != null && user.authId!.isNotEmpty) {
         await _userSessionService.saveUser(
@@ -227,6 +245,87 @@ class AuthRemoteDatasource implements IAuthDataSource {
   }
 
   @override
+  Future<void> forgotPassword(String email) async {
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.authForgotPassword,
+        data: {'email': email.trim().toLowerCase()},
+      );
+
+      if (!_isSuccessful(response.data)) {
+        throw Exception(
+          _extractMessage(
+            response.data,
+            fallback: 'Failed to send password reset instructions.',
+          ),
+        );
+      }
+    } catch (e) {
+      throw Exception(
+        _readErrorMessage(
+          e,
+          fallback: 'Failed to send password reset instructions.',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.authResetPassword,
+        data: {
+          'email': email.trim().toLowerCase(),
+          'token': token.trim(),
+          'password': password,
+        },
+      );
+
+      if (!_isSuccessful(response.data)) {
+        throw Exception(
+          _extractMessage(response.data, fallback: 'Failed to reset password.'),
+        );
+      }
+    } catch (e) {
+      throw Exception(
+        _readErrorMessage(e, fallback: 'Failed to reset password.'),
+      );
+    }
+  }
+
+  @override
+  Future<bool> deleteAccount() async {
+    final token = await _tokenService.getToken();
+    if (token == null) {
+      throw Exception('No active session found.');
+    }
+
+    try {
+      final response = await _apiClient.delete(
+        ApiEndpoints.authDelete,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+
+      if (!_isSuccessful(response.data)) {
+        throw Exception(
+          _extractMessage(response.data, fallback: 'Failed to delete account.'),
+        );
+      }
+
+      return true;
+    } catch (e) {
+      throw Exception(
+        _readErrorMessage(e, fallback: 'Failed to delete account.'),
+      );
+    }
+  }
+
+  @override
   Future<AuthModel?> updateProfile({
     String? firstName,
     String? lastName,
@@ -243,19 +342,23 @@ class AuthRemoteDatasource implements IAuthDataSource {
 
     try {
       final formData = FormData.fromMap({});
-      
-      if (firstName != null) formData.fields.add(MapEntry('firstName', firstName));
+
+      if (firstName != null) {
+        formData.fields.add(MapEntry('firstName', firstName));
+      }
       if (lastName != null) formData.fields.add(MapEntry('lastName', lastName));
       if (username != null) formData.fields.add(MapEntry('username', username));
       if (gender != null) formData.fields.add(MapEntry('gender', gender));
       if (age != null) formData.fields.add(MapEntry('age', age.toString()));
       if (password != null) formData.fields.add(MapEntry('password', password));
-      
+
       if (profileImage != null) {
-        formData.files.add(MapEntry(
-          'profileImage',
-          await MultipartFile.fromFile(profileImage.path),
-        ));
+        formData.files.add(
+          MapEntry(
+            'profileImage',
+            await MultipartFile.fromFile(profileImage.path),
+          ),
+        );
       }
 
       final response = await _apiClient.put(
@@ -274,7 +377,7 @@ class AuthRemoteDatasource implements IAuthDataSource {
       }
 
       final user = AuthApiModel.fromJson(userMap);
-      
+
       // Update session with fresh user data
       if (user.authId != null && user.authId!.isNotEmpty) {
         await _userSessionService.saveUser(

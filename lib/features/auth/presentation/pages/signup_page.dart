@@ -84,9 +84,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                         Image.network(
                           'https://images.unsplash.com/photo-1496747611176-843222e1e57c',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
-                            color: AppColors.cardBackground,
-                          ),
+                          errorBuilder: (_, _, _) =>
+                              Container(color: AppColors.surfaceSoft),
                         ),
                         Container(
                           decoration: BoxDecoration(
@@ -94,8 +93,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.black.withValues(alpha: 0.15),
-                                Colors.black.withValues(alpha: 0.45),
+                                AppColors.heroOverlayLight,
+                                AppColors.heroOverlayDark,
                               ],
                             ),
                           ),

@@ -44,7 +44,9 @@ class SignupViewModel extends Notifier<SignupState> {
       return false;
     }
     if (trimmedFirstName.length < 2) {
-      state = state.copyWith(errorMessage: 'First name must be at least 2 characters.');
+      state = state.copyWith(
+        errorMessage: 'First name must be at least 2 characters.',
+      );
       return false;
     }
 
@@ -53,7 +55,9 @@ class SignupViewModel extends Notifier<SignupState> {
       return false;
     }
     if (trimmedLastName.length < 2) {
-      state = state.copyWith(errorMessage: 'Last name must be at least 2 characters.');
+      state = state.copyWith(
+        errorMessage: 'Last name must be at least 2 characters.',
+      );
       return false;
     }
 
@@ -62,7 +66,9 @@ class SignupViewModel extends Notifier<SignupState> {
       return false;
     }
     if (trimmedUsername.length < 3) {
-      state = state.copyWith(errorMessage: 'Username must be at least 3 characters.');
+      state = state.copyWith(
+        errorMessage: 'Username must be at least 3 characters.',
+      );
       return false;
     }
 
@@ -70,7 +76,9 @@ class SignupViewModel extends Notifier<SignupState> {
       state = state.copyWith(errorMessage: 'Email is required.');
       return false;
     }
-    if (!RegExp(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$').hasMatch(trimmedEmail)) {
+    if (!RegExp(
+      r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
+    ).hasMatch(trimmedEmail)) {
       state = state.copyWith(errorMessage: 'Enter a valid email address.');
       return false;
     }
@@ -80,7 +88,9 @@ class SignupViewModel extends Notifier<SignupState> {
       return false;
     }
     if (trimmedPassword.length < 6) {
-      state = state.copyWith(errorMessage: 'Password must be at least 6 characters.');
+      state = state.copyWith(
+        errorMessage: 'Password must be at least 6 characters.',
+      );
       return false;
     }
     if (trimmedConfirmPassword.isEmpty) {
@@ -88,7 +98,9 @@ class SignupViewModel extends Notifier<SignupState> {
       return false;
     }
     if (trimmedConfirmPassword.length < 6) {
-      state = state.copyWith(errorMessage: 'Confirm password must be at least 6 characters.');
+      state = state.copyWith(
+        errorMessage: 'Confirm password must be at least 6 characters.',
+      );
       return false;
     }
     if (trimmedPassword != trimmedConfirmPassword) {

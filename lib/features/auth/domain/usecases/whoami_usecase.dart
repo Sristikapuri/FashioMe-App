@@ -6,7 +6,7 @@ import 'package:fashio_me/features/auth/domain/repositories/auth_repository.dart
 
 class WhoamiUsecase implements UsecaseWithoutParams<AuthEntity> {
   WhoamiUsecase({required IAuthRepository authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final IAuthRepository _authRepository;
 

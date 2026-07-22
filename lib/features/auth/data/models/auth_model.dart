@@ -24,9 +24,10 @@ class AuthModel {
   });
 
   String get fullName {
-    final parts = [firstName.trim(), lastName.trim()]
-        .where((part) => part.isNotEmpty)
-        .toList();
+    final parts = [
+      firstName.trim(),
+      lastName.trim(),
+    ].where((part) => part.isNotEmpty).toList();
     return parts.join(' ');
   }
 
@@ -53,10 +54,7 @@ class AuthModel {
       return (firstName: parts.first, lastName: '');
     }
 
-    return (
-      firstName: parts.first,
-      lastName: parts.sublist(1).join(' '),
-    );
+    return (firstName: parts.first, lastName: parts.sublist(1).join(' '));
   }
 
   factory AuthModel.fromEntity(AuthEntity entity) {
@@ -144,7 +142,7 @@ class AuthModel {
   factory AuthModel.fromJson(Map<String, dynamic> json) {
     final fallbackName = _splitFullName(_stringValue(json['fullName']));
     final email = _stringValue(json['email']);
-    
+
     // Handle nested responseData structure
     Map<String, dynamic> userData = json;
     if (json['responseData'] is Map<String, dynamic>) {
@@ -152,12 +150,27 @@ class AuthModel {
     }
 
     return AuthModel(
-      authId: _nullableStringValue(userData['authId'] ?? userData['_id'] ?? userData['id'] ?? json['authId'] ?? json['_id'] ?? json['id']),
+      authId: _nullableStringValue(
+        userData['authId'] ??
+            userData['_id'] ??
+            userData['id'] ??
+            json['authId'] ??
+            json['_id'] ??
+            json['id'],
+      ),
       firstName:
-          _nullableStringValue(userData['firstName'] ?? json['firstName']) ?? fallbackName.firstName,
-      lastName: _nullableStringValue(userData['lastName'] ?? json['lastName']) ?? fallbackName.lastName,
+          _nullableStringValue(userData['firstName'] ?? json['firstName']) ??
+          fallbackName.firstName,
+      lastName:
+          _nullableStringValue(userData['lastName'] ?? json['lastName']) ??
+          fallbackName.lastName,
       username:
-          _nullableStringValue(userData['username'] ?? userData['userName'] ?? json['username'] ?? json['userName']) ??
+          _nullableStringValue(
+            userData['username'] ??
+                userData['userName'] ??
+                json['username'] ??
+                json['userName'],
+          ) ??
           (email.contains('@') ? email.split('@').first : ''),
       email: _stringValue(userData['email'] ?? json['email']),
       gender: _nullableStringValue(userData['gender'] ?? json['gender']),

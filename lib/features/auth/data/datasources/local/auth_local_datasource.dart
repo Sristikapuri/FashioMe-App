@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'package:fashio_me/core/services/hive/hive_service.dart';
 import 'package:fashio_me/core/services/storage/user_session_service.dart';
 import 'package:fashio_me/features/auth/data/datasources/auth_datasource.dart';
 import 'package:fashio_me/features/auth/data/models/auth_model.dart';
 import 'package:fashio_me/features/auth/data/models/auth_hive_model.dart';
+import 'package:fashio_me/features/auth/data/services/hive_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final authLocalDatasourceProvider = Provider<IAuthDataSource>((ref) {
@@ -20,8 +20,8 @@ class AuthLocalDataSource implements IAuthDataSource {
   AuthLocalDataSource({
     required HiveService hiveService,
     required UserSessionService userSessionService,
-  })  : _hiveService = hiveService,
-        _userSessionService = userSessionService;
+  }) : _hiveService = hiveService,
+       _userSessionService = userSessionService;
 
   @override
   Future<bool> register(AuthModel model) async {
@@ -42,10 +42,10 @@ class AuthLocalDataSource implements IAuthDataSource {
   Future<AuthModel?> login(String email, String password) async {
     final authHiveModel = await _hiveService.loginUser(email, password);
     if (authHiveModel == null) return null;
-    
+
     // Save session after successful login
     await saveSession(authHiveModel.authId);
-    
+
     return AuthModel.fromJson({
       'authId': authHiveModel.authId,
       'fullName': authHiveModel.fullName,
@@ -58,10 +58,10 @@ class AuthLocalDataSource implements IAuthDataSource {
   Future<AuthModel?> getCurrentUser() async {
     final authId = _userSessionService.getUserId();
     if (authId == null) return null;
-    
+
     final authHiveModel = _hiveService.getCurrentUser(authId);
     if (authHiveModel == null) return null;
-    
+
     return AuthModel.fromJson({
       'authId': authHiveModel.authId,
       'fullName': authHiveModel.fullName,
@@ -73,6 +73,32 @@ class AuthLocalDataSource implements IAuthDataSource {
   @override
   Future<AuthModel?> whoami() async {
     return getCurrentUser();
+  }
+
+  @override
+  Future<void> forgotPassword(String email) async {
+    final exists = _hiveService.isEmailExist(email);
+    if (!exists) {
+      throw Exception('No account found for that email.');
+    }
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+  }) async {
+    throw Exception(
+      'Password reset is only supported with the backend service.',
+    );
+  }
+
+  @override
+  Future<bool> deleteAccount() async {
+    throw Exception(
+      'Account deletion is only supported with the backend service.',
+    );
   }
 
   @override
@@ -93,7 +119,7 @@ class AuthLocalDataSource implements IAuthDataSource {
 
     final updatedModel = AuthHiveModel(
       authId: authId,
-      fullName: '${firstName ?? ''} ${lastName ?? ''}'.trim().isNotEmpty 
+      fullName: '${firstName ?? ''} ${lastName ?? ''}'.trim().isNotEmpty
           ? '${firstName ?? ''} ${lastName ?? ''}'.trim()
           : authHiveModel.fullName,
       email: authHiveModel.email,
@@ -105,7 +131,11 @@ class AuthLocalDataSource implements IAuthDataSource {
     return AuthModel(
       authId: authId,
       firstName: firstName ?? authHiveModel.fullName.split(' ').first,
-      lastName: lastName ?? (authHiveModel.fullName.split(' ').length > 1 ? authHiveModel.fullName.split(' ').sublist(1).join(' ') : ''),
+      lastName:
+          lastName ??
+          (authHiveModel.fullName.split(' ').length > 1
+              ? authHiveModel.fullName.split(' ').sublist(1).join(' ')
+              : ''),
       username: username ?? authId,
       email: authHiveModel.email,
       gender: gender,

@@ -26,12 +26,23 @@ class AuthEntity extends Equatable {
   });
 
   String get fullName {
-    final parts = [firstName.trim(), lastName.trim()]
-        .where((part) => part.isNotEmpty)
-        .toList();
+    final parts = [
+      firstName.trim(),
+      lastName.trim(),
+    ].where((part) => part.isNotEmpty).toList();
     return parts.join(' ');
   }
 
   @override
-  List<Object?> get props => [authId, firstName, lastName, username, email, password, gender, age, role];
+  List<Object?> get props => [
+    authId,
+    firstName,
+    lastName,
+    username,
+    email,
+    password,
+    gender,
+    age,
+    role,
+  ];
 }

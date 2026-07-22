@@ -6,6 +6,13 @@ abstract interface class IAuthDataSource {
   Future<AuthModel?> login(String email, String password);
   Future<AuthModel?> getCurrentUser();
   Future<AuthModel?> whoami();
+  Future<void> forgotPassword(String email);
+  Future<void> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+  });
+  Future<bool> deleteAccount();
   Future<AuthModel?> updateProfile({
     String? firstName,
     String? lastName,

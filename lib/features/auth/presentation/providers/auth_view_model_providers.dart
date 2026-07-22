@@ -8,11 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 export 'auth_session_providers.dart';
 
-final loginViewModelProvider =
-    NotifierProvider<LoginViewModel, LoginState>(LoginViewModel.new);
+final loginViewModelProvider = NotifierProvider<LoginViewModel, LoginState>(
+  LoginViewModel.new,
+);
 
-final signupViewModelProvider =
-    NotifierProvider<SignupViewModel, SignupState>(SignupViewModel.new);
+final signupViewModelProvider = NotifierProvider<SignupViewModel, SignupState>(
+  SignupViewModel.new,
+);
 
 /// Read-only access to the signed-in user from session state.
 final currentUserProvider = Provider<AuthEntity?>((ref) {

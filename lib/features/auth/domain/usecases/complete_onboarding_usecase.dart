@@ -14,7 +14,7 @@ class CompleteOnboardingUsecaseParams extends Equatable {
 class CompleteOnboardingUsecase
     implements UsecaseWithParams<bool, CompleteOnboardingUsecaseParams> {
   CompleteOnboardingUsecase({required IAuthRepository authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final IAuthRepository _authRepository;
 

@@ -15,7 +15,7 @@ final authRepositoryProvider = Provider<IAuthRepository>((ref) {
 
 class AuthRepository implements IAuthRepository {
   AuthRepository({required IAuthDataSource authDataSource})
-      : _authDataSource = authDataSource;
+    : _authDataSource = authDataSource;
 
   final IAuthDataSource _authDataSource;
 
@@ -39,11 +39,8 @@ class AuthRepository implements IAuthRepository {
       final model = AuthModel.fromEntity(normalized);
       final registered = await _authDataSource.register(model);
       if (!registered) {
-        return const Left(
-          ValidationFailure(message: 'Registration failed.'),
-        );
+        return const Left(ValidationFailure(message: 'Registration failed.'));
       }
-
 
       return Right(model.toEntity());
     } catch (e) {
@@ -66,9 +63,7 @@ class AuthRepository implements IAuthRepository {
 
       final authId = user.authId;
       if (authId == null) {
-        return const Left(
-          ApiFailure(message: 'Invalid email or password.'),
-        );
+        return const Left(ApiFailure(message: 'Invalid email or password.'));
       }
 
       await _authDataSource.saveSession(authId);
@@ -83,9 +78,7 @@ class AuthRepository implements IAuthRepository {
     try {
       final user = await _authDataSource.getCurrentUser();
       if (user == null) {
-        return const Left(
-          ApiFailure(message: 'No user logged in.'),
-        );
+        return const Left(ApiFailure(message: 'No user logged in.'));
       }
       return Right(user.toEntity());
     } catch (e) {
@@ -98,11 +91,46 @@ class AuthRepository implements IAuthRepository {
     try {
       final user = await _authDataSource.whoami();
       if (user == null) {
-        return const Left(
-          ApiFailure(message: 'Failed to fetch user data.'),
-        );
+        return const Left(ApiFailure(message: 'Failed to fetch user data.'));
       }
       return Right(user.toEntity());
+    } catch (e) {
+      return Left(ApiFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> forgotPassword(String email) async {
+    try {
+      await _authDataSource.forgotPassword(email);
+      return const Right(true);
+    } catch (e) {
+      return Left(ApiFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+  }) async {
+    try {
+      await _authDataSource.resetPassword(
+        email: email,
+        token: token,
+        password: password,
+      );
+      return const Right(true);
+    } catch (e) {
+      return Left(ApiFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteAccount() async {
+    try {
+      return Right(await _authDataSource.deleteAccount());
     } catch (e) {
       return Left(ApiFailure(message: e.toString()));
     }
@@ -129,9 +157,7 @@ class AuthRepository implements IAuthRepository {
         password: password,
       );
       if (user == null) {
-        return const Left(
-          ApiFailure(message: 'Failed to update profile.'),
-        );
+        return const Left(ApiFailure(message: 'Failed to update profile.'));
       }
       return Right(user.toEntity());
     } catch (e) {
@@ -207,7 +233,7 @@ class AuthRepository implements IAuthRepository {
         // For now, go to silhouette if onboarding is done
         return const Right('silhouette');
       }
-  
+
       // Show onboarding first
       return const Right('onboarding');
     } catch (e) {
