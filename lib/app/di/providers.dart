@@ -43,9 +43,7 @@ import 'package:fashio_me/features/silhouette/domain/usecases/get_silhouette_pro
 import 'package:fashio_me/features/silhouette/domain/usecases/has_completed_silhouette_profile_usecase.dart';
 import 'package:fashio_me/features/silhouette/domain/usecases/save_silhouette_profile_usecase.dart';
 
-// This file is the composition root for feature dependencies. The domain
-// layer stays framework- and implementation-independent; only this outer
-// layer knows which data source/repository implementations to construct.
+
 
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   return ref.read(auth_data.authRepositoryProvider);

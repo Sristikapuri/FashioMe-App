@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Simple navigation utility class.
+
 class AppRoutes {
   AppRoutes._();
 

@@ -33,7 +33,7 @@ class ApiClient {
     // Add interceptors
     _dio.interceptors.add(_AuthInterceptor(tokenService: _tokenService));
 
-    // Auto retry on network failures
+
     _dio.interceptors.add(
       RetryInterceptor(
         dio: _dio,
@@ -44,7 +44,7 @@ class ApiClient {
           Duration(seconds: 3),
         ],
         retryEvaluator: (error, attempt) {
-          // Retry on connection errors and timeouts, not on 4xx/5xx
+        
           return error.type == DioExceptionType.connectionTimeout ||
               error.type == DioExceptionType.sendTimeout ||
               error.type == DioExceptionType.receiveTimeout ||
@@ -53,7 +53,7 @@ class ApiClient {
       ),
     );
 
-    // Only add logger in debug mode
+
     if (kDebugMode) {
       _dio.interceptors.add(
         PrettyDioLogger(
@@ -94,7 +94,7 @@ class ApiClient {
     );
   }
 
-  // PUT request
+
   Future<Response> put(
     String path, {
     dynamic data,
@@ -109,7 +109,7 @@ class ApiClient {
     );
   }
 
-  // PATCH request
+
   Future<Response> patch(
     String path, {
     dynamic data,
@@ -124,7 +124,7 @@ class ApiClient {
     );
   }
 
-  // DELETE request
+
   Future<Response> delete(
     String path, {
     dynamic data,
@@ -139,7 +139,7 @@ class ApiClient {
     );
   }
 
-  // Multipart request for file uploads
+
   Future<Response> uploadFile(
     String path, {
     required FormData formData,
@@ -174,7 +174,7 @@ class _AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Skip auth for public endpoints
+
     final publicEndpoints = [ApiEndpoints.authLogin];
 
     final isPublicGet =
@@ -197,11 +197,11 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    // Handle 401 Unauthorized - token expired
+  
     if (err.response?.statusCode == 401) {
-      // Clear token and redirect to login
+
       _tokenService.clearToken();
-      // You can add navigation logic here or use a callback
+
     }
     handler.next(err);
   }

@@ -1,4 +1,5 @@
 import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
+import 'package:fashio_me/features/shop/domain/entities/shop_cart_snapshot.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_order.dart';
 
 abstract interface class IShopRepository {
@@ -11,7 +12,7 @@ abstract interface class IShopRepository {
 
   Future<ShopItem> fetchShopItemById(String id);
 
-  Future<Map<String, int>> fetchCartItems();
+  Future<ShopCartSnapshot> fetchCartItems();
 
   Future<void> saveCartItems(Map<String, int> items);
 

@@ -142,5 +142,5 @@ ThemeData _buildTheme() {
   );
 }
 
-/// Backwards-compatible helper used during migration.
+
 ThemeData buildAppTheme() => AppTheme.lightTheme;

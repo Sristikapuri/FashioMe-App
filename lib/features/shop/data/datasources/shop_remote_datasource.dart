@@ -3,6 +3,13 @@ import 'package:fashio_me/core/api/api_client.dart';
 import 'package:fashio_me/core/api/api_endpoints.dart';
 import 'package:fashio_me/features/shop/data/models/shop_item_model.dart';
 
+class ShopCartSnapshotModel {
+  const ShopCartSnapshotModel({this.bag = const {}, this.items = const []});
+
+  final Map<String, int> bag;
+  final List<ShopItemModel> items;
+}
+
 final shopRemoteDataSourceProvider = Provider<ShopRemoteDataSource>((ref) {
   return ShopRemoteDataSource(apiClient: ref.read(apiClientProvider));
 });
@@ -12,17 +19,18 @@ class ShopRemoteDataSource {
 
   final ApiClient _apiClient;
 
-  Future<Map<String, int>> fetchCartItems() async {
+  Future<ShopCartSnapshotModel> fetchCartItems() async {
     final response = await _apiClient.get(ApiEndpoints.cart);
     final data = response.data;
     final payload = data is Map<String, dynamic> ? data['responseData'] : null;
     final items = payload is Map<String, dynamic> ? payload['items'] : null;
 
     if (items is! List) {
-      return {};
+      return const ShopCartSnapshotModel();
     }
 
     final bag = <String, int>{};
+    final cartItems = <ShopItemModel>[];
     for (final item in items.whereType<Map>()) {
       final clothe = item['clothe'];
       final quantity = (item['quantity'] as num?)?.toInt() ?? 0;
@@ -30,11 +38,14 @@ class ShopRemoteDataSource {
         final id = (clothe['_id'] ?? clothe['id'] ?? '').toString();
         if (id.isNotEmpty) {
           bag[id] = quantity;
+          cartItems.add(
+            ShopItemModel.fromJson(Map<String, dynamic>.from(clothe)),
+          );
         }
       }
     }
 
-    return bag;
+    return ShopCartSnapshotModel(bag: bag, items: cartItems);
   }
 
   Future<void> saveCartItems(Map<String, int> items) async {
@@ -115,11 +126,7 @@ class ShopRemoteDataSource {
   }) async {
     final response = await _apiClient.post(
       ApiEndpoints.esewaVerify,
-      data: {
-        'amount': amount,
-        'orderId': orderId,
-        'productCode': productCode,
-      },
+      data: {'amount': amount, 'orderId': orderId, 'productCode': productCode},
     );
 
     final data = response.data;

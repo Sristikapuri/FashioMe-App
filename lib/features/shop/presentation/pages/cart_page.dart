@@ -211,6 +211,7 @@ class _CartPageState extends ConsumerState<CartPage> {
     final city = _cityController.text.trim();
     final postalCode = _postalCodeController.text.trim();
     final address = _addressController.text.trim();
+    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
     if (name.isEmpty ||
         email.isEmpty ||
@@ -221,6 +222,13 @@ class _CartPageState extends ConsumerState<CartPage> {
       ref
           .read(shopViewModelProvider.notifier)
           .setError('Please fill out all checkout fields.');
+      return;
+    }
+
+    if (!emailPattern.hasMatch(email)) {
+      ref
+          .read(shopViewModelProvider.notifier)
+          .setError('Please enter a valid email address.');
       return;
     }
 
@@ -298,7 +306,7 @@ class _CartPageState extends ConsumerState<CartPage> {
   @override
   Widget build(BuildContext context) {
     final shopState = ref.watch(shopViewModelProvider);
-    final entries = shopState.bag.entries.toList();
+    final entries = shopState.bagItems;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -331,17 +339,15 @@ class _CartPageState extends ConsumerState<CartPage> {
                     )
                   else ...[
                     ...entries.map((entry) {
-                      final item = shopState.itemById(entry.key);
-                      if (item == null) return const SizedBox.shrink();
+                      final item = entry.$1;
+                      final quantity = entry.$2;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _CartCard(
                           item: item,
-                          quantity: entry.value,
-                          onIncrease: () =>
-                              _changeQty(item.id, entry.value + 1),
-                          onDecrease: () =>
-                              _changeQty(item.id, entry.value - 1),
+                          quantity: quantity,
+                          onIncrease: () => _changeQty(item.id, quantity + 1),
+                          onDecrease: () => _changeQty(item.id, quantity - 1),
                           onRemove: () => _removeItem(item.id),
                           onTap: () => AppRoutes.push(
                             context,

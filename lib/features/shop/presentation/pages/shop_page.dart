@@ -215,29 +215,35 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: state.filteredItems.length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  childAspectRatio: 0.68,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                ),
-                            itemBuilder: (_, index) {
-                              final item = state.filteredItems[index];
-                              return _ProductCard(
-                                item: item,
-                                onAdd: () => notifier.addToBag(item),
-                                onTap: () => AppRoutes.push(
-                                  context,
-                                  ShopDetailPage(itemId: item.id),
-                                ),
-                              );
-                            },
-                          ),
+                          if (state.filteredItems.isEmpty)
+                            _EmptyShopState(
+                              hasError: state.errorMessage != null,
+                              onRefresh: notifier.refresh,
+                            )
+                          else
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: state.filteredItems.length,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    childAspectRatio: 0.68,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                  ),
+                              itemBuilder: (_, index) {
+                                final item = state.filteredItems[index];
+                                return _ProductCard(
+                                  item: item,
+                                  onAdd: () => notifier.addToBag(item),
+                                  onTap: () => AppRoutes.push(
+                                    context,
+                                    ShopDetailPage(itemId: item.id),
+                                  ),
+                                );
+                              },
+                            ),
                         ],
                       ),
                     ),
@@ -253,6 +259,51 @@ class _ShopPageState extends ConsumerState<ShopPage> {
         bagItems: bagItems,
         onChangeQty: notifier.changeQuantity,
         onViewCart: () => AppRoutes.push(context, const CartPage()),
+      ),
+    );
+  }
+}
+
+class _EmptyShopState extends StatelessWidget {
+  const _EmptyShopState({required this.hasError, required this.onRefresh});
+
+  final bool hasError;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Column(
+        children: [
+          Icon(
+            hasError ? Icons.cloud_off_outlined : Icons.inventory_2_outlined,
+            size: 42,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            hasError ? 'Shop is temporarily unavailable' : 'No products found',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hasError
+                ? 'Check your connection and try again.'
+                : 'Try another search or category.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+          if (hasError) ...[
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          ],
+        ],
       ),
     );
   }

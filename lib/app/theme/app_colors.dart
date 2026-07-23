@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Brand colors and font families for FashioMe.
-/// Luxury fashion theme.
 abstract final class AppColors {
   static const background = Color(0xFFFFF7F7);
   static const dashboardBackground = Color(0xFFFFF7F7);

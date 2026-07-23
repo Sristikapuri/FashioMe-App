@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:fashio_me/features/shop/data/datasources/shop_remote_datasource.dart';
 import 'package:fashio_me/features/shop/data/models/shop_order_model.dart';
+import 'package:fashio_me/features/shop/domain/entities/shop_cart_snapshot.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_order.dart';
 import 'package:fashio_me/features/shop/domain/repositories/shop_repository.dart';
@@ -19,8 +20,14 @@ class ShopRepositoryImpl implements IShopRepository {
   final ShopRemoteDataSource _remoteDataSource;
 
   @override
-  Future<Map<String, int>> fetchCartItems() {
-    return _remoteDataSource.fetchCartItems();
+  Future<ShopCartSnapshot> fetchCartItems() async {
+    final snapshot = await _remoteDataSource.fetchCartItems();
+    return ShopCartSnapshot(
+      bag: snapshot.bag,
+      items: snapshot.items
+          .map((item) => item.toEntity())
+          .toList(growable: false),
+    );
   }
 
   @override

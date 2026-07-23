@@ -44,22 +44,22 @@ class ApiEndpoints {
   static const String authUpdate = '/auth/update';
   static const String authDelete = '/auth/delete';
 
-  // =========== User Endpoints ===========
+
   static const String users = '/users';
   static String userById(String id) => '/users/$id';
 
-  // =========== Upload Endpoints ===========
+
   static const String itemUploadPhoto = '/upload/upload-photo';
   static const String itemUploadVideo = '/upload/upload-video';
 
-  // =========== Onboarding Endpoints ===========
+ 
   static const String onboardingStatus = '/onboarding/status';
   static const String onboardingComplete = '/onboarding/complete';
 
-  // =========== Silhouette Endpoints ===========
+
   static const String silhouetteProfile = '/silhouette/profile';
 
-  // =========== Home AI Endpoints ===========
+
   static const String homeDashboard = '/home/dashboard';
   static const String homeTrends = '/home/trends';
   static const String homeGenerateOutfit = '/home/generate-outfit';

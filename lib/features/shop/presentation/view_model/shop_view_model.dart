@@ -29,19 +29,44 @@ class ShopViewModel extends Notifier<ShopState> {
 
   Future<void> _load() async {
     state = state.copyWith(isLoading: true, clearError: true);
+
+    var items = state.items;
+    var bag = state.bag;
+    String? loadError;
+
     try {
-      final items = await _repository.fetchShopItems(limit: 100);
-      final bag = await _repository.fetchCartItems();
-      state = state.copyWith(
-        items: items,
-        bag: bag,
-        isLoading: false,
-        clearError: true,
-      );
+      items = await _repository.fetchShopItems(limit: 100);
     } catch (_) {
+      loadError = 'Unable to load products. Pull down to try again.';
+    }
+
+    try {
+      final cartSnapshot = await _repository.fetchCartItems();
+      bag = cartSnapshot.bag;
+      final bagProducts = cartSnapshot.items;
+      if (bagProducts.isNotEmpty) {
+        final mergedItems = <ShopItem>[
+          ...items,
+          for (final item in bagProducts)
+            if (!items.any((existing) => existing.id == item.id)) item,
+        ];
+        items = mergedItems;
+      }
+    } catch (_) {
+      loadError ??= 'Products loaded, but your bag could not be synced.';
+    }
+
+    state = state.copyWith(
+      items: items,
+      bag: bag,
+      isLoading: false,
+      errorMessage: loadError,
+      clearError: loadError == null,
+    );
+
+    if (items.isEmpty && loadError == null) {
       state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Unable to load the shop right now.',
+        errorMessage: 'No products are available right now. Pull to refresh.',
       );
     }
   }

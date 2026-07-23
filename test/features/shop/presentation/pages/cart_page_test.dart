@@ -49,7 +49,7 @@ void main() {
     mockRemote = MockShopRemoteDataSource();
     when(
       () => mockRemote.fetchCartItems(),
-    ).thenAnswer((_) async => <String, int>{});
+    ).thenAnswer((_) async => const ShopCartSnapshotModel());
     when(
       () => mockRemote.fetchShopItems(limit: 100),
     ).thenAnswer((_) async => [_item()]);
@@ -84,7 +84,10 @@ void main() {
       tester,
     ) async {
       await prepareSurface(tester);
-      when(() => mockRemote.fetchCartItems()).thenAnswer((_) async => {'1': 1});
+      when(() => mockRemote.fetchCartItems()).thenAnswer(
+        (_) async =>
+            ShopCartSnapshotModel(bag: const {'1': 1}, items: [_item()]),
+      );
 
       await tester.pumpWidget(wrap(const CartPage()));
       await tester.pumpAndSettle();

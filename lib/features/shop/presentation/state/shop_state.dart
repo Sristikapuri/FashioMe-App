@@ -52,9 +52,11 @@ class ShopState extends Equatable {
 
   List<ShopItem> get filteredItems {
     final query = searchQuery.trim().toLowerCase();
+    final category = selectedCategory.trim().toLowerCase();
     return items
         .where((item) {
-          if (selectedCategory != 'All' && item.category != selectedCategory) {
+          if (category != 'all' &&
+              item.category.trim().toLowerCase() != category) {
             return false;
           }
           if (selectedGender != 'all') {
@@ -63,7 +65,11 @@ class ShopState extends Equatable {
               return false;
             }
           }
-          return query.isEmpty || item.name.toLowerCase().contains(query);
+          return query.isEmpty ||
+              item.name.toLowerCase().contains(query) ||
+              item.description.toLowerCase().contains(query) ||
+              item.category.toLowerCase().contains(query) ||
+              item.color.toLowerCase().contains(query);
         })
         .toList(growable: false);
   }

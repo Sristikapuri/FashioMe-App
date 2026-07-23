@@ -1245,6 +1245,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
     String reply;
     DashboardRecommendation? suggestedRecommendation;
+    var isGeneratingPromptLook = false;
 
     try {
       final response = await _dashboardHomeRepository.chatWithAssistant(
@@ -1275,6 +1276,35 @@ class DashboardViewModel extends Notifier<DashboardState> {
       reply = _generateChatReply(trimmed);
     }
 
+    // The assistant endpoint is responsible for the conversation, but it can
+    // legitimately return only a text reply. A styling prompt should still
+    // produce a visual look, so use the outfit generator as a fallback when
+    // the chat response did not include a usable recommendation image.
+    if (_looksLikeVisualStylingRequest(trimmed) &&
+        (suggestedRecommendation == null ||
+            suggestedRecommendation.imageUrl.trim().isEmpty)) {
+      isGeneratingPromptLook = true;
+      state = state.copyWith(
+        isUploading: true,
+        uploadProgress: 0.2,
+        aiProcessingMessage: 'Generating your look...',
+        uploadMessage: 'Turning your styling request into an outfit...',
+      );
+
+      suggestedRecommendation = await _generateRecommendationFromBackend(
+        // Passing the prompt through this field preserves the user’s full
+        // request for the backend AI prompt while its occasion normalizer can
+        // still extract values such as Wedding, Party, or Office.
+        occasion: trimmed,
+        source: source,
+        fallback: () => _generateRecommendation(
+          occasion: state.currentRecommendation.occasion,
+          profileData: state.profileData,
+          preferenceScores: state.stylePreferenceScores,
+        ),
+      );
+    }
+
     final nextRecommendations = suggestedRecommendation == null
         ? state.homeRecommendations
         : [
@@ -1296,9 +1326,21 @@ class DashboardViewModel extends Notifier<DashboardState> {
       uploadMessage: suggestedRecommendation == null
           ? state.uploadMessage
           : 'AI assistant suggested a new ${suggestedRecommendation.category.toLowerCase()} look.',
+      isUploading: isGeneratingPromptLook ? false : state.isUploading,
+      uploadProgress: isGeneratingPromptLook ? 1 : state.uploadProgress,
+      aiProcessingMessage: isGeneratingPromptLook
+          ? 'Look ready.'
+          : state.aiProcessingMessage,
       isChatTyping: false,
     );
     await _persistState();
+  }
+
+  bool _looksLikeVisualStylingRequest(String message) {
+    return RegExp(
+      r'\b(generate|create|suggest|recommend|outfit|wear|style me|styling|look|dress|gown|clothes|clothing|fashion|saree|sari|kurta|kurti|blazer|shirt|top|skirt|trousers|pants|jeans|jacket|shoes|heels|accessories|color palette|colour palette|hairstyle|hair style|wardrobe|party|wedding|office|date night|festival|formal|casual|vacation|holiday|airport|travel|brunch|beach|dinner|meeting|interview)\b',
+      caseSensitive: false,
+    ).hasMatch(message);
   }
 
   Future<void> updateProfileData(
