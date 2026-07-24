@@ -2527,7 +2527,7 @@ class _ActionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.primary,
         side: const BorderSide(color: _DashboardPalette.outline),
         backgroundColor: _DashboardPalette.card,
         padding: const EdgeInsets.symmetric(vertical: 14),
