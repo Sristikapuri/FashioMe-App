@@ -154,6 +154,12 @@ class DashboardViewModel extends Notifier<DashboardState> {
     state = state.copyWith(currentIndex: index);
   }
 
+  bool _isLiveRecommendation(DashboardRecommendation recommendation) {
+    return recommendation.imageUrl.startsWith('/uploads/') ||
+        recommendation.imageUrl.startsWith('http://') ||
+        recommendation.imageUrl.startsWith('https://');
+  }
+
   DashboardState _buildStateFromCache(Map<String, dynamic> cachedData) {
     _usedPersistedProfileData =
         cachedData['profileData'] is Map &&
@@ -167,23 +173,41 @@ class DashboardViewModel extends Notifier<DashboardState> {
       cachedData['stylePreferenceScores'] as Map<String, dynamic>? ?? const {},
     );
 
-    final discoverItems = _discoverCatalog();
-    final homeRecommendations = _generateHomeRecommendations(
-      profileData,
-      preferenceScores,
-    );
-    final aiStyleOfDay = cachedData['aiStyleOfDay'] is Map<String, dynamic>
+    // Discover content is hydrated from the backend's AI-generated trends.
+    final discoverItems = <DiscoverEntry>[];
+    final cachedRecommendations =
+        (cachedData['homeRecommendations'] as List<dynamic>? ?? const [])
+            .whereType<Map>()
+            .map(
+              (item) => DashboardRecommendation.fromJson(
+                Map<String, dynamic>.from(item),
+              ),
+            )
+            .where(_isLiveRecommendation)
+            .toList(growable: false);
+    final homeRecommendations = cachedRecommendations.isEmpty
+        ? [DashboardRecommendation.empty()]
+        : cachedRecommendations;
+    final cachedAiStyle = cachedData['aiStyleOfDay'] is Map
         ? DashboardRecommendation.fromJson(
             Map<String, dynamic>.from(cachedData['aiStyleOfDay'] as Map),
           )
+        : null;
+    final aiStyleOfDay = cachedAiStyle != null &&
+            _isLiveRecommendation(cachedAiStyle)
+        ? cachedAiStyle
         : homeRecommendations.first;
-    final currentRecommendation =
-        cachedData['currentRecommendation'] is Map<String, dynamic>
+    final cachedCurrentRecommendation = cachedData['currentRecommendation']
+        is Map
         ? DashboardRecommendation.fromJson(
             Map<String, dynamic>.from(
               cachedData['currentRecommendation'] as Map,
             ),
           )
+        : null;
+    final currentRecommendation = cachedCurrentRecommendation != null &&
+            _isLiveRecommendation(cachedCurrentRecommendation)
+        ? cachedCurrentRecommendation
         : aiStyleOfDay;
     final wardrobeItems =
         (cachedData['wardrobeItems'] as List<dynamic>? ?? const [])
@@ -258,6 +282,9 @@ class DashboardViewModel extends Notifier<DashboardState> {
       'stylePreferenceScores': state.stylePreferenceScores,
       'aiStyleOfDay': state.aiStyleOfDay.toJson(),
       'currentRecommendation': state.currentRecommendation.toJson(),
+      'homeRecommendations': state.homeRecommendations
+          .map((item) => item.toJson())
+          .toList(),
       'chatMessages': state.chatMessages.map((item) => item.toJson()).toList(),
       'wardrobeFilter': state.wardrobeFilter,
       'discoverFilter': state.discoverFilter,
@@ -1255,11 +1282,11 @@ class DashboardViewModel extends Notifier<DashboardState> {
         source: source,
         currentRecommendation: state.currentRecommendation,
       );
+      final remoteReply = response['reply'] ?? response['text'];
       reply =
-          (response['reply'] is String &&
-              (response['reply'] as String).trim().isNotEmpty)
-          ? (response['reply'] as String).trim()
-          : _generateChatReply(trimmed);
+          (remoteReply is String && remoteReply.trim().isNotEmpty)
+          ? remoteReply.trim()
+          : 'Your AI stylist did not return a message. Please try again.';
 
       final recommendationPayload = response['recommendation'];
       if (recommendationPayload is Map<String, dynamic>) {
@@ -1272,8 +1299,8 @@ class DashboardViewModel extends Notifier<DashboardState> {
         );
       }
     } catch (_) {
-      await Future.delayed(const Duration(milliseconds: 800));
-      reply = _generateChatReply(trimmed);
+      reply =
+          'I could not reach the AI styling service right now. Please check your connection and try again.';
     }
 
     // The assistant endpoint is responsible for the conversation, but it can
@@ -1349,20 +1376,6 @@ class DashboardViewModel extends Notifier<DashboardState> {
   }) async {
     state = state.copyWith(
       profileData: profileData,
-      aiStyleOfDay: _generateRecommendation(
-        occasion: state.aiStyleOfDay.occasion,
-        profileData: profileData,
-        preferenceScores: state.stylePreferenceScores,
-      ),
-      currentRecommendation: _generateRecommendation(
-        occasion: state.currentRecommendation.occasion,
-        profileData: profileData,
-        preferenceScores: state.stylePreferenceScores,
-      ),
-      homeRecommendations: _generateHomeRecommendations(
-        profileData,
-        state.stylePreferenceScores,
-      ),
     );
 
     if (persistSilhouette) {
@@ -1415,37 +1428,6 @@ class DashboardViewModel extends Notifier<DashboardState> {
       ).copyWith(isFavorite: markFavorite),
       ...items,
     ];
-  }
-
-  List<DashboardRecommendation> _generateHomeRecommendations(
-    DashboardProfileData profileData,
-    Map<String, int> preferenceScores,
-  ) {
-    final occasions = [
-      'Wedding',
-      'Office',
-      'Party',
-      'Travel',
-      'Weekend',
-      'Casual',
-      'Date Night',
-      'Festival',
-      'Gala',
-      'Street Style',
-      'Beach',
-      'Sangeet',
-      'Black Tie',
-      'Brunch',
-    ];
-    return occasions
-        .map(
-          (occasion) => _generateRecommendation(
-            occasion: occasion,
-            profileData: profileData,
-            preferenceScores: preferenceScores,
-          ),
-        )
-        .toList();
   }
 
   List<int> _paletteValuesForLabels(List<String> labels) {
@@ -1529,160 +1511,11 @@ class DashboardViewModel extends Notifier<DashboardState> {
     required Map<String, int> preferenceScores,
     String excludedCategory = '',
   }) {
-    final category = _selectCategory(
-      occasion: occasion,
-      preferenceScores: preferenceScores,
-      excludedCategory: excludedCategory,
-    );
-    final palette = _paletteFor(profileData.skinTone, category);
-    final hairstyle = _hairstyleFor(profileData.faceShape, category);
-    final outfit = _outfitFor(occasion, category, profileData.styleMood);
-    final image = _imageFor(occasion, category);
-    final explanation = _explanationFor(
-      profileData: profileData,
-      category: category,
-      paletteLabels: palette.$2,
-      hairstyle: hairstyle,
-    );
-
-    return DashboardRecommendation(
-      id: _id('rec'),
-      title: '$occasion ${_displayCategory(category)} Edit',
-      occasion: occasion,
-      category: category,
-      mood: profileData.styleMood,
-      imageUrl: image,
-      outfit: outfit,
-      hairstyle: hairstyle,
-      explanation: explanation,
-      palette: palette.$1,
-      paletteLabels: palette.$2,
-    );
+    return DashboardRecommendation.empty(occasion: occasion);
   }
 
-  String _selectCategory({
-    required String occasion,
-    required Map<String, int> preferenceScores,
-    required String excludedCategory,
-  }) {
-    final candidates = switch (occasion) {
-      'Wedding' || 'Sangeet' => ['Formal', 'Party', 'Elegant'],
-      'Office' => ['Formal', 'Casual', 'Smart'],
-      'Party' || 'Gala' || 'Black Tie' => ['Party', 'Bold', 'Formal'],
-      'Travel' ||
-      'Street Style' ||
-      'Beach' ||
-      'Brunch' ||
-      'Casual' => ['Casual', 'Smart', 'Relaxed'],
-      _ => ['Casual', 'Smart', 'Relaxed'],
-    };
-
-    final filtered = candidates
-        .where((item) => item.toLowerCase() != excludedCategory.toLowerCase())
-        .toList();
-    if (filtered.isEmpty) {
-      return candidates.first;
-    }
-
-    filtered.sort(
-      (a, b) => (preferenceScores[b] ?? 0).compareTo(preferenceScores[a] ?? 0),
-    );
-    if ((preferenceScores[filtered.first] ?? 0) > 0 && _random.nextBool()) {
-      return filtered.first;
-    }
-    return filtered[_random.nextInt(filtered.length)];
-  }
-
-  (List<int>, List<String>) _paletteFor(String skinTone, String category) {
-    final normalized = skinTone.toLowerCase();
-    if (normalized.contains('warm')) {
-      return (
-        [
-          0xFFB86F52,
-          0xFFD7B38C,
-          0xFF6E7B56,
-          category == 'Party' ? 0xFF7C2946 : 0xFF4A3A34,
-        ],
-        [
-          'Terracotta',
-          'Sand',
-          'Olive',
-          category == 'Party' ? 'Berry' : 'Cocoa',
-        ],
-      );
-    }
-    if (normalized.contains('olive')) {
-      return (
-        [0xFF8A6A4A, 0xFFCFC1A8, 0xFF556B5D, 0xFF3A3440],
-        ['Camel', 'Stone', 'Sage', 'Espresso'],
-      );
-    }
-    if (normalized.contains('deep')) {
-      return (
-        [0xFF4F2F4F, 0xFFB07AA1, 0xFFE6D9C8, 0xFF6B3D2E],
-        ['Plum', 'Mauve', 'Ivory', 'Cedar'],
-      );
-    }
-    return (
-      [0xFFD9B7C3, 0xFFF2E8E5, 0xFF9AA7B1, 0xFF5D506A],
-      ['Dusty Pink', 'Porcelain', 'Slate', 'Mulberry'],
-    );
-  }
-
-  String _hairstyleFor(String faceShape, String category) {
-    final normalized = faceShape.toLowerCase();
-    if (normalized.contains('round')) {
-      return 'Layered volume with a soft side part to elongate the face shape.';
-    }
-    if (normalized.contains('square')) {
-      return 'Soft textured layers to balance strong angles and keep the look polished.';
-    }
-    if (normalized.contains('heart')) {
-      return 'Face-framing layers with light movement around the jawline.';
-    }
-    return category == 'Party'
-        ? 'Sleek brushed-back texture for a confident evening finish.'
-        : 'Clean layered styling with natural movement and easy structure.';
-  }
-
-  String _outfitFor(String occasion, String category, String mood) {
-    return switch (occasion) {
-      'Wedding' =>
-        'Cream tailored shirt, fluid trousers, tonal loafers, and subtle jewelry for a $mood finish.',
-      'Office' =>
-        'Structured blazer, soft knit base, tapered trousers, and clean leather shoes for a sharp ${category.toLowerCase()} office edit.',
-      'Party' =>
-        'Dark statement layer, elevated trousers, sleek footwear, and a refined accent piece for a standout evening look.',
-      'Travel' =>
-        'Relaxed overshirt, breathable tee, easy trousers, and supportive sneakers for polished movement.',
-      _ =>
-        'Relaxed top layer, dependable basics, and a clean finishing piece for an effortless day look.',
-    };
-  }
-
-  String _explanationFor({
-    required DashboardProfileData profileData,
-    required String category,
-    required List<String> paletteLabels,
-    required String hairstyle,
-  }) {
-    final toneHint = profileData.skinTone.toLowerCase().contains('warm')
-        ? 'earthy tones'
-        : '${paletteLabels.first} and ${paletteLabels[1]}';
-    return 'This recommendation leans into $toneHint for ${profileData.skinTone.toLowerCase()} skin, keeps the outfit in a ${category.toLowerCase()} direction, and pairs it with ${hairstyle.split('.').first.toLowerCase()}.';
-  }
-
-  String _imageFor(String occasion, String category) {
-    final key = '$occasion-$category';
-    return switch (key) {
-      'Wedding-Formal' => 'assets/images/ai_wedding_formal.jpg',
-      'Office-Formal' => 'assets/images/outfit.jpg',
-      'Party-Party' => 'assets/images/party.jpg',
-      'Travel-Casual' => 'assets/images/travel.jpg',
-      _ => 'assets/images/weekend.jpg',
-    };
-  }
-
+  // Legacy cache migration data; live Discover content comes from the AI API.
+  // ignore: unused_element
   List<DiscoverEntry> _discoverCatalog() {
     return const [
       DiscoverEntry(
@@ -1800,6 +1633,8 @@ class DashboardViewModel extends Notifier<DashboardState> {
     ];
   }
 
+  // Kept as a migration reference; sendChatMessage never uses local replies.
+  // ignore: unused_element
   String _generateChatReply(String message) {
     final lower = message.toLowerCase();
     final recommendation = state.currentRecommendation;
@@ -1963,12 +1798,6 @@ class DashboardViewModel extends Notifier<DashboardState> {
     ];
 
     return defaultResponses[_random.nextInt(defaultResponses.length)];
-  }
-
-  String _displayCategory(String category) {
-    return category == 'Smart' || category == 'Elegant' || category == 'Bold'
-        ? category
-        : _toTitleCase(category);
   }
 
   String _toTitleCase(String value) {

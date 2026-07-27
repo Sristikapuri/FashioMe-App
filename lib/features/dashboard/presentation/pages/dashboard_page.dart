@@ -49,6 +49,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     'My Wardrobe',
     'Shop',
     'Discover',
+    'My Orders',
     'Profile',
   ];
 
@@ -81,6 +82,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       _WardrobeTab(state: state, onAddItem: () => _showAddItemSheet(context)),
       const ShopPage(),
       _DiscoverTab(state: state),
+      const OrderHistoryPage(),
       _ProfileTab(state: state),
     ];
 
@@ -3622,11 +3624,16 @@ class _FallbackAssetImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/outfit.jpg',
+    return Container(
       height: height,
       width: double.infinity,
-      fit: BoxFit.cover,
+      color: _DashboardPalette.cardAlt,
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.auto_awesome_outlined,
+        color: _DashboardPalette.gold,
+        size: 32,
+      ),
     );
   }
 }

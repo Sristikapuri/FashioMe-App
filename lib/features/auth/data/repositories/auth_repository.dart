@@ -227,14 +227,13 @@ class AuthRepository implements IAuthRepository {
         await _authDataSource.logout();
       }
 
-      // Check if user has completed onboarding
+
       if (_authDataSource.hasCompletedOnboarding()) {
-        // Check if user has completed silhouette
-        // For now, go to silhouette if onboarding is done
+
         return const Right('silhouette');
       }
 
-      // Show onboarding first
+
       return const Right('onboarding');
     } catch (e) {
       return Left(ApiFailure(message: e.toString()));

@@ -108,6 +108,22 @@ class DashboardRecommendation extends Equatable {
   final List<String> missingItemsToBuy;
   final List<MatchedShopProduct> matchedProducts;
 
+  factory DashboardRecommendation.empty({String occasion = 'Weekend'}) {
+    return DashboardRecommendation(
+      id: 'awaiting-ai',
+      title: 'Your AI look is loading',
+      occasion: occasion,
+      category: 'AI Stylist',
+      mood: 'Personalized',
+      imageUrl: '',
+      outfit: '',
+      hairstyle: '',
+      explanation: 'Generate a look to receive a recommendation from the AI stylist.',
+      palette: const [],
+      paletteLabels: const [],
+    );
+  }
+
   factory DashboardRecommendation.fromJson(Map<String, dynamic> json) {
     return DashboardRecommendation(
       id: (json['id'] ?? '').toString(),
