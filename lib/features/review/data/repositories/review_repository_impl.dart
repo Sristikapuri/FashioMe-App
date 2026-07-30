@@ -28,6 +28,13 @@ class ReviewRepositoryImpl implements ReviewRepository {
                 price: model.clothe!.price,
                 category: model.clothe!.category,
               ),
+        reviewer: model.reviewer == null
+            ? null
+            : Reviewer(
+                firstName: model.reviewer!.firstName,
+                lastName: model.reviewer!.lastName,
+                profileImage: model.reviewer!.profileImage,
+              ),
       );
 
   @override

@@ -12,6 +12,19 @@ class Clothe {
   });
 }
 
+class Reviewer {
+  final String? firstName;
+  final String? lastName;
+  final String? profileImage;
+
+  Reviewer({this.firstName, this.lastName, this.profileImage});
+
+  String get displayName {
+    final name = [firstName, lastName].where((n) => n != null && n.isNotEmpty).join(' ');
+    return name.isEmpty ? 'Anonymous' : name;
+  }
+}
+
 class Review {
   final String id;
   final String clotheId;
@@ -23,6 +36,7 @@ class Review {
   final String createdAt;
   final String updatedAt;
   final Clothe? clothe;
+  final Reviewer? reviewer;
 
   Review({
     required this.id,
@@ -35,5 +49,6 @@ class Review {
     required this.createdAt,
     required this.updatedAt,
     this.clothe,
+    this.reviewer,
   });
 }
