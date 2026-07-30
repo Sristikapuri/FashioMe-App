@@ -19,10 +19,10 @@ void main() async {
     ),
   );
 
-  // Initialize Hive
+
   await HiveService().init();
 
-  // Initialize SharedPreferences
+
   final prefs = await SharedPreferences.getInstance();
 
   runApp(
