@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:dartz/dartz.dart';
 import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
+import 'package:fashio_me/features/auth/domain/entities/uploaded_file.dart';
 import 'package:fashio_me/features/auth/domain/repositories/auth_repository.dart';
 import 'package:fashio_me/features/auth/domain/usecases/get_initial_route_usecase.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart'
@@ -38,7 +37,7 @@ class FakeAuthRepository implements IAuthRepository {
     String? username,
     String? gender,
     int? age,
-    File? profileImage,
+    UploadedFile? profileImage,
     String? password,
   }) => throw UnimplementedError();
   @override
