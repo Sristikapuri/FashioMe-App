@@ -1,21 +1,8 @@
 import 'package:dartz/dartz.dart';
 import 'package:fashio_me/core/error/failures.dart';
-import 'package:fashio_me/features/onboarding/data/datasources/local/onboarding_local_datasource.dart';
 import 'package:fashio_me/features/onboarding/data/datasources/onboarding_datasource.dart';
-import 'package:fashio_me/features/onboarding/data/datasources/remote/onboarding_remote_datasource.dart';
 import 'package:fashio_me/features/onboarding/domain/entities/onboarding_item.dart';
 import 'package:fashio_me/features/onboarding/domain/repositories/onboarding_repository.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-final onboardingRepositoryProvider = Provider<IOnboardingRepository>((ref) {
-  final remoteDataSource = ref.read(onboardingRemoteDataSourceProvider);
-  final localDataSource = ref.read(onboardingLocalDataSourceProvider);
-  return OnboardingRepositoryImpl(
-    remoteDataSource: remoteDataSource,
-    localDataSource: localDataSource,
-  );
-});
-
 class OnboardingRepositoryImpl implements IOnboardingRepository {
   final IOnboardingDataSource _remoteDataSource;
   final IOnboardingDataSource _localDataSource;

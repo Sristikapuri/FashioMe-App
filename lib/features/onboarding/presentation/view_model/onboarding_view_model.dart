@@ -1,18 +1,18 @@
 import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/features/auth/domain/usecases/get_initial_route_usecase.dart';
-import 'package:fashio_me/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:fashio_me/features/auth/domain/usecases/complete_onboarding_usecase.dart';
 import 'package:fashio_me/features/onboarding/domain/entities/onboarding_item.dart';
 import 'package:fashio_me/features/onboarding/presentation/state/onboarding_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class OnboardingViewModel extends Notifier<OnboardingState> {
   late final GetInitialRouteUsecase _getInitialRouteUsecase;
-  late final IOnboardingRepository _onboardingRepository;
+  late final CompleteOnboardingUsecase _completeOnboardingUsecase;
 
   @override
   OnboardingState build() {
     _getInitialRouteUsecase = ref.read(getInitialRouteUsecaseProvider);
-    _onboardingRepository = ref.read(onboardingRepositoryProvider);
+    _completeOnboardingUsecase = ref.read(completeOnboardingUsecaseProvider);
     return const OnboardingState.initial();
   }
 
@@ -30,7 +30,9 @@ class OnboardingViewModel extends Notifier<OnboardingState> {
 
   Future<bool> completeOnboarding() async {
     state = state.copyWith(isCompleting: true);
-    final result = await _onboardingRepository.completeOnboarding();
+    final result = await _completeOnboardingUsecase(
+      const CompleteOnboardingUsecaseParams(),
+    );
     return result.fold(
       (_) {
         state = state.copyWith(isCompleting: false);

@@ -5,6 +5,7 @@ import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/features/onboarding/domain/entities/onboarding_item.dart';
 import 'package:fashio_me/features/onboarding/presentation/providers/onboarding_providers.dart';
 import 'package:fashio_me/features/silhouette/presentation/pages/silhouette_flow_page.dart';
+import 'package:fashio_me/core/extensions/context_extensions.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
@@ -19,7 +20,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   @override
   void initState() {
     super.initState();
-    // Removed redirect check to allow onboarding to show
+
   }
 
   Future<void> nextPage() async {
@@ -30,7 +31,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         curve: Curves.easeInOut,
       );
     } else {
-      // Complete onboarding and navigate to silhouette
+
       final completed = await ref
           .read(onboardingViewModelProvider.notifier)
           .completeOnboarding();
@@ -80,6 +81,17 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 },
                 itemBuilder: (context, index) {
                   final data = kOnboardingItems[index];
+                  final strings = context.strings;
+                  final title = [
+                    strings.onboardingTitle1,
+                    strings.onboardingTitle2,
+                    strings.onboardingTitle3,
+                  ][index];
+                  final subtitle = [
+                    strings.onboardingSubtitle1,
+                    strings.onboardingSubtitle2,
+                    strings.onboardingSubtitle3,
+                  ][index];
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -160,8 +172,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             color: AppColors.surfaceSoft,
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          child: const Text(
-                            'PERSONALIZED STYLE',
+                          child: Text(
+                            strings.onboardingTag,
                             style: TextStyle(
                               fontSize: 11,
                               letterSpacing: 2,
@@ -175,7 +187,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
                         /// title
                         Text(
-                          data.title,
+                          title,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 34,
@@ -191,7 +203,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
-                            data.subtitle,
+                            subtitle,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 17,
@@ -250,8 +262,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                   )
                                 : Text(
                                     currentIndex == kOnboardingItems.length - 1
-                                        ? 'Continue'
-                                        : 'Next',
+                                        ? strings.getStarted
+                                        : strings.next,
                                     style: const TextStyle(
                                       fontSize: 18,
                                       color: Colors.white,
