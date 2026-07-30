@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
+import 'package:fashio_me/core/extensions/context_extensions.dart';
+import 'package:fashio_me/core/services/sensors/shake_detector_service.dart';
+import 'package:fashio_me/core/services/sensors/tilt_detector_service.dart';
+import 'package:fashio_me/core/services/sensors/sensor_settings.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_session_providers.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
 import 'package:fashio_me/features/shop/presentation/pages/cart_page.dart';
@@ -42,6 +48,11 @@ class _ShopPageState extends ConsumerState<ShopPage> {
     ('Female', 'female'),
     ('Male', 'male'),
   ];
+
+  StreamSubscription<void>? _shakeSubscription;
+  StreamSubscription<TiltDirection>? _tiltSubscription;
+  bool _isRefreshingFromShake = false;
+
   @override
   void initState() {
     super.initState();
@@ -50,11 +61,53 @@ class _ShopPageState extends ConsumerState<ShopPage> {
     if (userGender == 'female' || userGender == 'male') {
       ref.read(shopViewModelProvider.notifier).setGender(userGender!);
     }
+    if (ref.read(sensorGesturesEnabledProvider)) {
+      _startSensorListeners();
+    }
+  }
+
+  void _startSensorListeners() {
+    final shakeService = ref.read(shakeDetectorServiceProvider);
+    shakeService.start();
+    _shakeSubscription = shakeService.shakeStream.listen((_) {
+      _onShakeDetected();
+    });
+
+    final tiltService = ref.read(tiltDetectorServiceProvider);
+    tiltService.start();
+    _tiltSubscription = tiltService.tiltStream.listen((direction) {
+      _onTiltDetected(direction);
+    });
+  }
+
+  Future<void> _onShakeDetected() async {
+    // Cooldown already prevents rapid re-fires from the sensor itself; this
+    // guard additionally prevents overlapping refresh calls while one is
+    // still in flight.
+    if (_isRefreshingFromShake) return;
+    _isRefreshingFromShake = true;
+    try {
+      await ref.read(shopViewModelProvider.notifier).refresh();
+      if (!mounted) return;
+      context.showSnackBar('Inventory refreshed');
+    } finally {
+      _isRefreshingFromShake = false;
+    }
+  }
+
+  void _onTiltDetected(TiltDirection direction) {
+    ref
+        .read(shopViewModelProvider.notifier)
+        .setLowStockOnly(direction == TiltDirection.right);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _shakeSubscription?.cancel();
+    _tiltSubscription?.cancel();
+    ref.read(shakeDetectorServiceProvider).stop();
+    ref.read(tiltDetectorServiceProvider).stop();
     super.dispose();
   }
 
@@ -139,6 +192,18 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                       },
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  // Mirrors the gyroscope tilt gesture: tilt left/right to
+                  // switch sections, or tap here directly.
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment(value: false, label: Text('All Items')),
+                      ButtonSegment(value: true, label: Text('Low Stock')),
+                    ],
+                    selected: {state.showLowStockOnly},
+                    onSelectionChanged: (selection) =>
+                        notifier.setLowStockOnly(selection.first),
+                  ),
                 ],
               ),
             ),
@@ -207,9 +272,11 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                             ),
                             const SizedBox(height: 22),
                           ],
-                          const Text(
-                            'All Products',
-                            style: TextStyle(
+                          Text(
+                            state.showLowStockOnly
+                                ? 'Low Stock'
+                                : 'All Items',
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                             ),
@@ -237,6 +304,8 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                                 return _ProductCard(
                                   item: item,
                                   onAdd: () => notifier.addToBag(item),
+                                  isWishlisted: state.wishlistIds.contains(item.id),
+                                  onWishlist: () => notifier.toggleWishlist(item.id),
                                   onTap: () => AppRoutes.push(
                                     context,
                                     ShopDetailPage(itemId: item.id),
@@ -406,11 +475,15 @@ class _ProductCard extends StatelessWidget {
     required this.item,
     required this.onAdd,
     required this.onTap,
+    required this.isWishlisted,
+    required this.onWishlist,
   });
 
   final ShopItem item;
   final VoidCallback onAdd;
   final VoidCallback onTap;
+  final bool isWishlisted;
+  final VoidCallback onWishlist;
 
   @override
   Widget build(BuildContext context) {
@@ -426,20 +499,22 @@ class _ProductCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
-                child: Image.network(
-                  item.imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    color: AppColors.surfaceMuted,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.image_not_supported_outlined),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    child: Image.network(item.imageUrl, width: double.infinity, fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(color: AppColors.surfaceMuted, alignment: Alignment.center, child: const Icon(Icons.image_not_supported_outlined))),
                   ),
-                ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IconButton.filledTonal(
+                      onPressed: onWishlist,
+                      icon: Icon(isWishlisted ? Icons.favorite : Icons.favorite_border),
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(

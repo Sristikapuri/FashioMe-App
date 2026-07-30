@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
+import 'package:fashio_me/core/extensions/context_extensions.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_order.dart';
+import 'package:fashio_me/features/shop/presentation/pages/order_detail_page.dart';
 import 'package:fashio_me/features/shop/presentation/providers/shop_providers.dart';
 
 class OrderHistoryPage extends ConsumerStatefulWidget {
@@ -42,12 +45,34 @@ class _OrderHistoryPageState extends ConsumerState<OrderHistoryPage> {
     }
   }
 
+  Future<void> _cancelOrder(ShopOrder order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancel order?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Keep order')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Cancel order')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(shopViewModelProvider.notifier).cancelOrder(order.id);
+      await _loadOrders();
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Unable to cancel this order.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Order History'),
+        title: Text(strings.orderHistory),
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
       ),
@@ -66,15 +91,24 @@ class _OrderHistoryPageState extends ConsumerState<OrderHistoryPage> {
                     const SizedBox(height: 12),
                   ],
                   if (_orders.isEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 80),
-                      child: Center(child: Text('No orders yet.')),
+                      child: Center(child: Text(strings.noOrders)),
                     )
                   else
                     ..._orders.map(
                       (order) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: _OrderCard(order: order),
+                        child: GestureDetector(
+                          onTap: () => AppRoutes.push(
+                            context,
+                            OrderDetailPage(orderId: order.id),
+                          ),
+                          child: _OrderCard(
+                            order: order,
+                            onCancel: () => _cancelOrder(order),
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -85,9 +119,10 @@ class _OrderHistoryPageState extends ConsumerState<OrderHistoryPage> {
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order});
+  const _OrderCard({required this.order, required this.onCancel});
 
   final ShopOrder order;
+  final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +156,8 @@ class _OrderCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text('Items: ${items.length}'),
           const SizedBox(height: 8),
+          if (items.isNotEmpty) _OrderItemThumbnails(items: items),
+          const SizedBox(height: 8),
           if (items.isNotEmpty)
             Wrap(
               spacing: 8,
@@ -135,6 +172,91 @@ class _OrderCard extends StatelessWidget {
             'Total: \$${total.toStringAsFixed(2)}',
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
+          if (status == 'pending' || status == 'paid') ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: onCancel,
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Cancel order'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OrderItemThumbnails extends StatelessWidget {
+  const _OrderItemThumbnails({required this.items});
+
+  final List<ShopOrderItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    const maxThumbnails = 5;
+    final shown = items.take(maxThumbnails).toList();
+    final overflow = items.length - shown.length;
+
+    return SizedBox(
+      height: 44,
+      child: Row(
+        children: [
+          ...shown.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: (item.imageUrl == null || item.imageUrl!.isEmpty)
+                      ? Container(
+                          color: AppColors.surfaceMuted,
+                          alignment: Alignment.center,
+                          child: const Icon(
+                            Icons.image_outlined,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      : Image.network(
+                          item.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            color: AppColors.surfaceMuted,
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.image_outlined,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+          if (overflow > 0)
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceSoft,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Text(
+                '+$overflow',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -1,17 +1,9 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:fashio_me/features/shop/data/datasources/shop_remote_datasource.dart';
 import 'package:fashio_me/features/shop/data/models/shop_order_model.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_cart_snapshot.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_order.dart';
 import 'package:fashio_me/features/shop/domain/repositories/shop_repository.dart';
-
-final shopRepositoryProvider = Provider<IShopRepository>((ref) {
-  return ShopRepositoryImpl(
-    remoteDataSource: ref.read(shopRemoteDataSourceProvider),
-  );
-});
 
 class ShopRepositoryImpl implements IShopRepository {
   ShopRepositoryImpl({required ShopRemoteDataSource remoteDataSource})
@@ -37,6 +29,24 @@ class ShopRepositoryImpl implements IShopRepository {
         .map((order) => ShopOrderModel.fromJson(order).toEntity())
         .toList(growable: false);
   }
+
+  @override
+  Future<ShopOrder> fetchOrderById(String id) async {
+    final order = await _remoteDataSource.fetchOrderById(id);
+    return ShopOrderModel.fromJson(order).toEntity();
+  }
+
+  @override
+  Future<ShopOrder> cancelOrder(String id) async {
+    final order = await _remoteDataSource.cancelOrder(id);
+    return ShopOrderModel.fromJson(order).toEntity();
+  }
+
+  @override
+  Future<Set<String>> fetchWishlistIds() => _remoteDataSource.fetchWishlistIds();
+
+  @override
+  Future<bool> toggleWishlist(String id) => _remoteDataSource.toggleWishlist(id);
 
   @override
   Future<ShopItem> fetchShopItemById(String id) async {

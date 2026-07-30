@@ -1,17 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
-import 'package:fashio_me/features/shop/domain/repositories/shop_repository.dart';
+import 'package:fashio_me/features/shop/domain/usecases/shop_usecases.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_order.dart';
 import 'package:fashio_me/features/shop/presentation/state/shop_state.dart';
-import 'package:fashio_me/features/shop/presentation/providers/shop_repository_providers.dart';
 
 class ShopViewModel extends Notifier<ShopState> {
-  late final IShopRepository _repository;
+  late final ShopUsecases _shop;
   Future<void>? _loadTask;
 
   @override
   ShopState build() {
-    _repository = ref.read(shopRepositoryProvider);
+    _shop = ref.read(shopUsecasesProvider);
     Future.microtask(load);
     return const ShopState();
   }
@@ -32,16 +32,21 @@ class ShopViewModel extends Notifier<ShopState> {
 
     var items = state.items;
     var bag = state.bag;
+    var wishlistIds = state.wishlistIds;
     String? loadError;
 
     try {
-      items = await _repository.fetchShopItems(limit: 100);
+      wishlistIds = await _shop.fetchWishlistIds();
+    } catch (_) {}
+
+    try {
+      items = await _shop.fetchShopItems(limit: 100);
     } catch (_) {
       loadError = 'Unable to load products. Pull down to try again.';
     }
 
     try {
-      final cartSnapshot = await _repository.fetchCartItems();
+      final cartSnapshot = await _shop.fetchCartItems();
       bag = cartSnapshot.bag;
       final bagProducts = cartSnapshot.items;
       if (bagProducts.isNotEmpty) {
@@ -59,6 +64,7 @@ class ShopViewModel extends Notifier<ShopState> {
     state = state.copyWith(
       items: items,
       bag: bag,
+      wishlistIds: wishlistIds,
       isLoading: false,
       errorMessage: loadError,
       clearError: loadError == null,
@@ -69,6 +75,13 @@ class ShopViewModel extends Notifier<ShopState> {
         errorMessage: 'No products are available right now. Pull to refresh.',
       );
     }
+  }
+
+  Future<void> toggleWishlist(String id) async {
+    final saved = await _shop.toggleWishlist(id);
+    final ids = {...state.wishlistIds};
+    saved ? ids.add(id) : ids.remove(id);
+    state = state.copyWith(wishlistIds: ids);
   }
 
   Future<void> refresh() => load(force: true);
@@ -85,6 +98,10 @@ class ShopViewModel extends Notifier<ShopState> {
     state = state.copyWith(selectedGender: gender);
   }
 
+  void setLowStockOnly(bool showLowStockOnly) {
+    state = state.copyWith(showLowStockOnly: showLowStockOnly);
+  }
+
   void setError(String message) {
     state = state.copyWith(errorMessage: message);
   }
@@ -97,7 +114,7 @@ class ShopViewModel extends Notifier<ShopState> {
     var item = state.itemById(id);
     if (item == null) {
       try {
-        item = await _repository.fetchShopItemById(id);
+        item = await _shop.fetchShopItemById(id);
         state = state.copyWith(
           items: [
             ...state.items.where((existing) => existing.id != item!.id),
@@ -127,7 +144,7 @@ class ShopViewModel extends Notifier<ShopState> {
 
     state = state.copyWith(bag: nextBag, isSyncingCart: true, clearError: true);
     try {
-      await _repository.saveCartItems(nextBag);
+      await _shop.saveCartItems(nextBag);
       state = state.copyWith(isSyncingCart: false);
     } catch (_) {
       state = state.copyWith(
@@ -144,7 +161,7 @@ class ShopViewModel extends Notifier<ShopState> {
       clearError: true,
     );
     try {
-      await _repository.saveCartItems(const {});
+      await _shop.saveCartItems(const {});
       state = state.copyWith(isSyncingCart: false);
     } catch (_) {
       state = state.copyWith(
@@ -163,7 +180,7 @@ class ShopViewModel extends Notifier<ShopState> {
     required String postalCode,
     required String paymentMethod,
   }) {
-    return _repository.placeOrder(
+    return _shop.placeOrder(
       shippingAddress: shippingAddress,
       customerName: customerName,
       customerEmail: customerEmail,
@@ -179,7 +196,7 @@ class ShopViewModel extends Notifier<ShopState> {
     required String orderId,
     required String productCode,
   }) {
-    return _repository.getEsewaPaymentUrl(
+    return _shop.getEsewaPaymentUrl(
       amount: amount,
       orderId: orderId,
       productCode: productCode,
@@ -191,14 +208,18 @@ class ShopViewModel extends Notifier<ShopState> {
     required String orderId,
     required String productCode,
   }) {
-    return _repository.verifyEsewaPayment(
+    return _shop.verifyEsewaPayment(
       amount: amount,
       orderId: orderId,
       productCode: productCode,
     );
   }
 
-  Future<ShopItem> fetchItem(String id) => _repository.fetchShopItemById(id);
+  Future<ShopItem> fetchItem(String id) => _shop.fetchShopItemById(id);
 
-  Future<List<ShopOrder>> fetchMyOrders() => _repository.fetchMyOrders();
+  Future<List<ShopOrder>> fetchMyOrders() => _shop.fetchMyOrders();
+
+  Future<ShopOrder> fetchOrderById(String id) => _shop.fetchOrderById(id);
+
+  Future<ShopOrder> cancelOrder(String id) => _shop.cancelOrder(id);
 }

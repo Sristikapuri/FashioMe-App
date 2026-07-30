@@ -1,3 +1,4 @@
+import 'package:fashio_me/core/api/api_endpoints.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_order.dart';
 
 class ShopOrderItemModel {
@@ -30,8 +31,9 @@ class ShopOrderItemModel {
           (json['price'] as num?)?.toDouble() ??
           (clotheMap?['discountedPrice'] as num?)?.toDouble() ??
           (clotheMap?['price'] as num?)?.toDouble(),
-      imageUrl:
-          json['imageUrl']?.toString() ?? clotheMap?['imageUrl']?.toString(),
+      imageUrl: ApiEndpoints.resolveAssetUrl(
+        (json['imageUrl'] ?? clotheMap?['imageUrl'] ?? '').toString(),
+      ),
       category:
           json['category']?.toString() ?? clotheMap?['category']?.toString(),
       color: json['color']?.toString() ?? clotheMap?['color']?.toString(),

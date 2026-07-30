@@ -11,7 +11,12 @@ class ShopState extends Equatable {
     this.isLoading = true,
     this.errorMessage,
     this.isSyncingCart = false,
+    this.showLowStockOnly = false,
+    this.wishlistIds = const {},
   });
+
+  /// Items at or below this stock count are considered "low stock".
+  static const int lowStockThreshold = 5;
 
   final List<ShopItem> items;
   final Map<String, int> bag;
@@ -21,6 +26,8 @@ class ShopState extends Equatable {
   final bool isLoading;
   final String? errorMessage;
   final bool isSyncingCart;
+  final bool showLowStockOnly;
+  final Set<String> wishlistIds;
 
   ShopState copyWith({
     List<ShopItem>? items,
@@ -32,6 +39,8 @@ class ShopState extends Equatable {
     String? errorMessage,
     bool clearError = false,
     bool? isSyncingCart,
+    bool? showLowStockOnly,
+    Set<String>? wishlistIds,
   }) {
     return ShopState(
       items: items ?? this.items,
@@ -42,6 +51,8 @@ class ShopState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       isSyncingCart: isSyncingCart ?? this.isSyncingCart,
+      showLowStockOnly: showLowStockOnly ?? this.showLowStockOnly,
+      wishlistIds: wishlistIds ?? this.wishlistIds,
     );
   }
 
@@ -55,6 +66,9 @@ class ShopState extends Equatable {
     final category = selectedCategory.trim().toLowerCase();
     return items
         .where((item) {
+          if (showLowStockOnly && item.stock > lowStockThreshold) {
+            return false;
+          }
           if (category != 'all' &&
               item.category.trim().toLowerCase() != category) {
             return false;
@@ -113,5 +127,7 @@ class ShopState extends Equatable {
     isLoading,
     errorMessage,
     isSyncingCart,
+    showLowStockOnly,
+    wishlistIds,
   ];
 }

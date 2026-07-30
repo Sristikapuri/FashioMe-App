@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:fashio_me/app/theme/app_colors.dart';
+import 'package:fashio_me/features/review/presentation/widgets/reviews_section.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
 import 'package:fashio_me/features/shop/presentation/providers/shop_providers.dart';
 
@@ -150,6 +151,10 @@ class ShopDetailPage extends ConsumerWidget {
                 ),
                 child: const Text('Back to shop'),
               ),
+              const SizedBox(height: 28),
+              const Divider(color: AppColors.divider),
+              const SizedBox(height: 16),
+              ReviewsSection(clotheId: item.id),
             ],
           );
         },

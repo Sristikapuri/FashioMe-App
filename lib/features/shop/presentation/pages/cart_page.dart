@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
+import 'package:fashio_me/core/extensions/context_extensions.dart';
+import 'package:fashio_me/core/services/deep_link/deep_link_service.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
 import 'package:fashio_me/features/shop/presentation/pages/order_history_page.dart';
 import 'package:fashio_me/features/shop/presentation/pages/shop_detail_page.dart';
@@ -56,152 +58,182 @@ class _CartPageState extends ConsumerState<CartPage> {
     }
     if (!mounted) return null;
 
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        bool verifying = false;
-        String dialogError = '';
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              title: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF60BB46),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      'e',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
+    final verifying = ValueNotifier<bool>(false);
+    final dialogError = ValueNotifier<String>('');
+    // Guards against a deep link arriving after the dialog already closed
+    // (e.g. "Not now" was tapped, then a delayed callback fires) from
+    // popping the wrong route — CartPage itself, not the dialog.
+    var dialogOpen = true;
+
+    Future<void> runVerification() async {
+      if (!dialogOpen || !mounted || verifying.value) return;
+      verifying.value = true;
+      dialogError.value = '';
+      try {
+        final success = await ref
+            .read(shopViewModelProvider.notifier)
+            .verifyEsewaPayment(
+              amount: totalAmount,
+              orderId: orderId,
+              productCode: 'EPAYTEST',
+            );
+        if (!dialogOpen || !mounted) return;
+        if (success) {
+          dialogOpen = false;
+          Navigator.of(context).pop(true);
+        } else {
+          verifying.value = false;
+          dialogError.value =
+              'Payment is not complete yet. Finish eSewa payment and try again.';
+        }
+      } catch (e) {
+        if (!dialogOpen || !mounted) return;
+        verifying.value = false;
+        dialogError.value = 'Verification failed: ${e.toString()}';
+      }
+    }
+
+    final deepLinkService = ref.read(deepLinkServiceProvider);
+    deepLinkService.start();
+    final linkSubscription = deepLinkService.linkStream.listen((uri) {
+      if (uri.host != 'esewa-payment') return;
+      final linkOrderId = uri.queryParameters['orderId'];
+      if (linkOrderId != null && linkOrderId != orderId) return;
+
+      final status = uri.queryParameters['status'];
+      if (status == 'success') {
+        runVerification();
+      } else if (status == 'failed' && dialogOpen && mounted) {
+        dialogOpen = false;
+        Navigator.of(context).pop(false);
+      }
+    });
+
+    try {
+      return await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AnimatedBuilder(
+            animation: Listenable.merge([verifying, dialogError]),
+            builder: (dialogContext, _) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                title: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF60BB46),
+                        shape: BoxShape.circle,
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'eSewa Gateway',
-                    style: TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Order ID: $orderId',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Amount: \$${totalAmount.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      color: Color(0xFF60BB46),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (dialogError.isNotEmpty) ...[
-                    Text(
-                      dialogError,
-                      style: const TextStyle(color: AppColors.error),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (verifying)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(Color(0xFF60BB46)),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'e',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
                         ),
                       ),
-                    )
-                  else
+                    ),
+                    const SizedBox(width: 10),
                     const Text(
-                      'Complete the payment in the eSewa page that opened. Return here and check the payment status to confirm your order.',
-                      style: TextStyle(fontSize: 13, height: 1.4),
+                      'eSewa Gateway',
+                      style: TextStyle(fontWeight: FontWeight.w900),
                     ),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order ID: $orderId',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Amount: \$${totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: Color(0xFF60BB46),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (dialogError.value.isNotEmpty) ...[
+                      Text(
+                        dialogError.value,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (verifying.value)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation(
+                              Color(0xFF60BB46),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      const Text(
+                        "Complete the payment in the eSewa page that opened. "
+                        "We'll detect it automatically — or check manually below.",
+                        style: TextStyle(fontSize: 13, height: 1.4),
+                      ),
+                  ],
+                ),
+                actions: [
+                  if (!verifying.value) ...[
+                    TextButton(
+                      onPressed: () {
+                        dialogOpen = false;
+                        Navigator.of(dialogContext).pop(false);
+                      },
+                      child: const Text(
+                        'Not now',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
+                    OutlinedButton(
+                      onPressed: () async {
+                        await launchUrl(
+                          Uri.parse(paymentUrl),
+                          mode: LaunchMode.externalApplication,
+                        );
+                      },
+                      child: const Text('Open eSewa'),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF60BB46),
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: runVerification,
+                      child: const Text('Check payment'),
+                    ),
+                  ],
                 ],
-              ),
-              actions: [
-                if (!verifying) ...[
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text(
-                      'Not now',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ),
-                  OutlinedButton(
-                    onPressed: () async {
-                      await launchUrl(
-                        Uri.parse(paymentUrl),
-                        mode: LaunchMode.externalApplication,
-                      );
-                    },
-                    child: const Text('Open eSewa'),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF60BB46),
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: () async {
-                      setDialogState(() {
-                        verifying = true;
-                        dialogError = '';
-                      });
-
-                      try {
-                        final success = await ref
-                            .read(shopViewModelProvider.notifier)
-                            .verifyEsewaPayment(
-                              amount: totalAmount,
-                              orderId: orderId,
-                              productCode: 'EPAYTEST',
-                            );
-                        if (context.mounted) {
-                          if (success) {
-                            Navigator.pop(context, true);
-                          } else {
-                            setDialogState(() {
-                              verifying = false;
-                              dialogError =
-                                  'Payment is not complete yet. Finish eSewa payment and try again.';
-                            });
-                          }
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          setDialogState(() {
-                            verifying = false;
-                            dialogError =
-                                'Verification failed: ${e.toString()}';
-                          });
-                        }
-                      }
-                    },
-                    child: const Text('Check payment'),
-                  ),
-                ],
-              ],
-            );
-          },
-        );
-      },
-    );
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      dialogOpen = false;
+      await linkSubscription.cancel();
+      deepLinkService.stop();
+      verifying.dispose();
+      dialogError.dispose();
+    }
   }
 
   Future<void> _placeOrder() async {
@@ -275,16 +307,34 @@ class _CartPageState extends ConsumerState<CartPage> {
 
       await notifier.clearBag();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+      final viewOrders = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Order successful'),
           content: Text(
             _paymentMethod == 'esewa'
-                ? 'Order paid and confirmed successfully!'
-                : 'Order placed successfully.',
+                ? 'Your payment was confirmed and your order is being processed.'
+                : 'Your order was placed successfully and is being processed.',
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Continue Shopping'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('View Order History'),
+            ),
+          ],
         ),
       );
-      Navigator.pop(context);
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      if (viewOrders == true && mounted) {
+        AppRoutes.push(context, const OrderHistoryPage());
+      }
     } catch (e) {
       if (!mounted) return;
       notifier.setError('Failed to place order: ${e.toString()}');

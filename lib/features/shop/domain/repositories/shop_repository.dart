@@ -39,4 +39,9 @@ abstract interface class IShopRepository {
   });
 
   Future<List<ShopOrder>> fetchMyOrders();
+
+  Future<ShopOrder> fetchOrderById(String id);
+  Future<ShopOrder> cancelOrder(String id);
+  Future<Set<String>> fetchWishlistIds();
+  Future<bool> toggleWishlist(String id);
 }
