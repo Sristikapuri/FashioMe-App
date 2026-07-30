@@ -1,20 +1,24 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:fashio_me/app/di/providers.dart';
+import 'package:fashio_me/core/services/media/image_picker_service.dart';
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
 import 'package:fashio_me/features/auth/domain/usecases/get_current_user_usecase.dart';
-import 'package:fashio_me/features/dashboard/domain/repositories/dashboard_home_repository.dart';
+import 'package:fashio_me/features/dashboard/domain/usecases/dashboard_home_usecases.dart';
 import 'package:fashio_me/features/silhouette/domain/entities/silhouette_profile.dart';
 import 'package:fashio_me/features/dashboard/presentation/state/dashboard_state.dart';
 import 'package:fashio_me/features/dashboard/domain/usecases/read_dashboard_state_usecase.dart';
 import 'package:fashio_me/features/dashboard/domain/usecases/persist_dashboard_state_usecase.dart';
 import 'package:fashio_me/features/dashboard/domain/usecases/upload_item_photo_usecase.dart';
+import 'package:fashio_me/features/dashboard/domain/usecases/generate_recommendation_usecase.dart';
 import 'package:fashio_me/features/silhouette/domain/usecases/get_silhouette_profile_usecase.dart';
 import 'package:fashio_me/features/silhouette/domain/usecases/save_silhouette_profile_usecase.dart';
-import 'package:fashio_me/features/silhouette/presentation/providers/silhouette_profile_providers.dart';
+import 'package:fashio_me/features/style_archive/domain/week_key_utils.dart';
+import 'package:fashio_me/features/style_archive/domain/usecases/save_style_archive_entry_usecase.dart';
 
 class DashboardViewModel extends Notifier<DashboardState> {
   late final GetCurrentUserUsecase _getCurrentUserUsecase;
@@ -23,14 +27,17 @@ class DashboardViewModel extends Notifier<DashboardState> {
   late final ReadDashboardStateUsecase _readDashboardStateUsecase;
   late final PersistDashboardStateUsecase _persistDashboardStateUsecase;
   late final UploadItemPhotoUsecase _uploadItemPhotoUsecase;
-  late final IDashboardHomeRepository _dashboardHomeRepository;
-  final ImagePicker _imagePicker = ImagePicker();
+  late final DashboardHomeUsecases _dashboardHome;
+  late final GenerateRecommendationUsecase _generateRecommendationUsecase;
+  late final SaveStyleArchiveEntryUsecase _saveStyleArchiveEntryUsecase;
+  late final ImagePickerService _imagePicker;
   final Random _random = Random();
   AuthEntity? _currentUser;
   bool _usedPersistedProfileData = false;
 
   @override
   DashboardState build() {
+    _imagePicker = ref.read(imagePickerServiceProvider);
     _getCurrentUserUsecase = ref.read(getCurrentUserUsecaseProvider);
     _getSilhouetteProfileUsecase = ref.read(
       getSilhouetteProfileUsecaseProvider,
@@ -43,7 +50,13 @@ class DashboardViewModel extends Notifier<DashboardState> {
       persistDashboardStateUsecaseProvider,
     );
     _uploadItemPhotoUsecase = ref.read(uploadItemPhotoUsecaseProvider);
-    _dashboardHomeRepository = ref.read(dashboardHomeRepositoryProvider);
+    _dashboardHome = ref.read(dashboardHomeUsecasesProvider);
+    _generateRecommendationUsecase = ref.read(
+      generateRecommendationUsecaseProvider,
+    );
+    _saveStyleArchiveEntryUsecase = ref.read(
+      saveStyleArchiveEntryUsecaseProvider,
+    );
 
     final initial = _buildStateFromCache(const <String, dynamic>{});
     Future.microtask(_initialize);
@@ -72,16 +85,28 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
   Future<void> _loadRemoteDashboardContent() async {
     try {
-      final recommendation = await _dashboardHomeRepository.generateOutfit(
-        occasion: state.aiStyleOfDay.occasion,
-        profileData: state.profileData,
-        preferenceScores: state.stylePreferenceScores,
+      const homeOccasions = ['Weekend', 'Office / Work', 'Party / Club Night'];
+      final recommendations = await Future.wait(
+        homeOccasions.map(
+          (occasion) => _dashboardHome.generateOutfit(
+            occasion: occasion,
+            profileData: state.profileData,
+            preferenceScores: state.stylePreferenceScores,
+          ),
+        ),
       );
-      final trends = await _dashboardHomeRepository.fetchTrends();
+      final recommendation = recommendations.first;
+      final seenImages = <String>{};
+      final distinctRecommendations = recommendations.where((item) {
+        final image = item.imageUrl.trim();
+        if (image.isEmpty || seenImages.add(image)) return true;
+        return false;
+      }).toList(growable: false);
+      final trends = await _dashboardHome.fetchTrends();
       final refreshedList = [
-        recommendation,
+        ...distinctRecommendations,
         ...state.homeRecommendations.where(
-          (item) => item.id != recommendation.id,
+          (item) => !distinctRecommendations.any((fresh) => fresh.id == item.id),
         ),
       ].take(6).toList();
 
@@ -101,7 +126,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
   Future<void> _loadRemoteWardrobeItems() async {
     try {
-      final remoteItems = await _dashboardHomeRepository.fetchWardrobe();
+      final remoteItems = await _dashboardHome.fetchWardrobe();
       if (remoteItems.isEmpty) {
         return;
       }
@@ -126,6 +151,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     final updatedProfile = state.profileData.copyWith(
       displayName: fullName.isEmpty ? 'User' : fullName,
       email: _currentUser!.email,
+      profileImage: _currentUser!.profileImage ?? '',
     );
 
     state = state.copyWith(profileData: updatedProfile);
@@ -153,6 +179,16 @@ class DashboardViewModel extends Notifier<DashboardState> {
   void setIndex(int index) {
     state = state.copyWith(currentIndex: index);
   }
+
+  Future<DashboardRecommendation?> generateRecommendation({
+    required String occasion,
+    required DashboardProfileData profileData,
+    required Map<String, int> preferenceScores,
+  }) => _generateRecommendationUsecase(
+    occasion: occasion,
+    profileData: profileData,
+    preferenceScores: preferenceScores,
+  );
 
   bool _isLiveRecommendation(DashboardRecommendation recommendation) {
     return recommendation.imageUrl.startsWith('/uploads/') ||
@@ -193,19 +229,20 @@ class DashboardViewModel extends Notifier<DashboardState> {
             Map<String, dynamic>.from(cachedData['aiStyleOfDay'] as Map),
           )
         : null;
-    final aiStyleOfDay = cachedAiStyle != null &&
-            _isLiveRecommendation(cachedAiStyle)
+    final aiStyleOfDay =
+        cachedAiStyle != null && _isLiveRecommendation(cachedAiStyle)
         ? cachedAiStyle
         : homeRecommendations.first;
-    final cachedCurrentRecommendation = cachedData['currentRecommendation']
-        is Map
+    final cachedCurrentRecommendation =
+        cachedData['currentRecommendation'] is Map
         ? DashboardRecommendation.fromJson(
             Map<String, dynamic>.from(
               cachedData['currentRecommendation'] as Map,
             ),
           )
         : null;
-    final currentRecommendation = cachedCurrentRecommendation != null &&
+    final currentRecommendation =
+        cachedCurrentRecommendation != null &&
             _isLiveRecommendation(cachedCurrentRecommendation)
         ? cachedCurrentRecommendation
         : aiStyleOfDay;
@@ -351,6 +388,9 @@ class DashboardViewModel extends Notifier<DashboardState> {
       displayName: fullName.isEmpty ? 'User' : fullName,
       email: currentUser?.email ?? (rawProfile?['email']?.toString() ?? ''),
       gender: currentUser?.gender ?? (rawProfile?['gender']?.toString() ?? ''),
+      profileImage:
+          currentUser?.profileImage ??
+          (rawProfile?['profileImage']?.toString() ?? ''),
       heightCm: heightCm,
       weightKg: weightKg,
       styleMood: styleMood,
@@ -367,10 +407,8 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
   Future<bool> pickImage(ImageSource source) async {
     try {
-      final pickedFile = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 85,
-        maxWidth: 1600,
+      final pickedFile = await _imagePicker.pick(
+        useCamera: source == ImageSource.camera,
       );
 
       if (pickedFile == null) {
@@ -530,7 +568,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
       homeRecommendations: refreshedList,
       uploadSucceeded: true,
       aiProcessingMessage: 'Style board updated.',
-      uploadMessage: 'AI refreshed your style recommendation.',
+      uploadMessage: 'Your style recommendation is ready.',
     );
     await _persistState();
     return recommendation;
@@ -631,7 +669,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     }
 
     try {
-      final result = await _dashboardHomeRepository.search(
+      final result = await _dashboardHome.search(
         query: trimmed,
         profileData: state.profileData,
         preferenceScores: state.stylePreferenceScores,
@@ -729,10 +767,8 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
   Future<String?> pickWardrobeItemImage(ImageSource source) async {
     try {
-      final pickedFile = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 85,
-        maxWidth: 1600,
+      final pickedFile = await _imagePicker.pick(
+        useCamera: source == ImageSource.camera,
       );
       return pickedFile?.path;
     } catch (_) {
@@ -784,7 +820,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
     await _persistState();
     try {
-      await _dashboardHomeRepository.createWardrobeItem(newItem);
+      await _dashboardHome.createWardrobeItem(newItem);
       state = state.copyWith(
         uploadMessage: 'Image uploaded and added to your wardrobe.',
         uploadSucceeded: true,
@@ -828,7 +864,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     state = state.copyWith(wardrobeItems: [newItem, ...state.wardrobeItems]);
     await _persistState();
     try {
-      await _dashboardHomeRepository.createWardrobeItem(newItem);
+      await _dashboardHome.createWardrobeItem(newItem);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -865,7 +901,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     state = state.copyWith(wardrobeItems: [newLook, ...state.wardrobeItems]);
     await _persistState();
     try {
-      await _dashboardHomeRepository.createWardrobeItem(newLook);
+      await _dashboardHome.createWardrobeItem(newLook);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -880,7 +916,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
     await _persistState();
     try {
-      await _dashboardHomeRepository.updateWardrobeItem(updatedItem);
+      await _dashboardHome.updateWardrobeItem(updatedItem);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -909,7 +945,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
     await _persistState();
     try {
-      await _dashboardHomeRepository.updateWardrobeItem(updatedItem);
+      await _dashboardHome.updateWardrobeItem(updatedItem);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -923,7 +959,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
     await _persistState();
     try {
-      await _dashboardHomeRepository.deleteWardrobeItem(item.id);
+      await _dashboardHome.deleteWardrobeItem(item.id);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -954,7 +990,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     state = state.copyWith(wardrobeItems: [newItem, ...state.wardrobeItems]);
     await _persistState();
     try {
-      await _dashboardHomeRepository.createWardrobeItem(newItem);
+      await _dashboardHome.createWardrobeItem(newItem);
     } catch (_) {
       await _syncWardrobeWithBackend();
     }
@@ -1019,7 +1055,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     String? analysisSummary;
 
     try {
-      final analysis = await _dashboardHomeRepository.generateProfile(
+      final analysis = await _dashboardHome.generateProfile(
         profileData: state.profileData,
         preferenceScores: state.stylePreferenceScores,
         imageReference: uploadedAssetName,
@@ -1200,6 +1236,33 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
     await _persistState();
     await _syncWardrobeWithBackend();
+    await _archiveTodaysLook(recommendation);
+  }
+
+  /// Records the saved look in the user's Style Archive under today's day
+  /// slot. Best-effort: archiving failures shouldn't disrupt the save flow.
+  Future<void> _archiveTodaysLook(
+    DashboardRecommendation recommendation,
+  ) async {
+    if (!_isLiveRecommendation(recommendation)) {
+      return;
+    }
+    try {
+      final now = DateTime.now();
+      await _saveStyleArchiveEntryUsecase(
+        weekKey: computeWeekKey(now),
+        day: computeDayAbbrev(now),
+        occasion: recommendation.occasion,
+        title: recommendation.title,
+        outfit: recommendation.outfit,
+        imageUrl: recommendation.imageUrl,
+        explanation: recommendation.explanation,
+        paletteLabels: recommendation.paletteLabels,
+        wardrobeItemsUsed: recommendation.wardrobeItemsUsed,
+      );
+    } catch (_) {
+      // Archiving is a secondary effect; ignore failures.
+    }
   }
 
   Future<void> saveCurrentRecommendation() async {
@@ -1220,6 +1283,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
     await _persistState();
     await _syncWardrobeWithBackend();
+    await _archiveTodaysLook(recommendation);
   }
 
   Future<void> dislikeCurrentRecommendation() async {
@@ -1275,7 +1339,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     var isGeneratingPromptLook = false;
 
     try {
-      final response = await _dashboardHomeRepository.chatWithAssistant(
+      final response = await _dashboardHome.chatWithAssistant(
         message: trimmed,
         profileData: state.profileData,
         preferenceScores: state.stylePreferenceScores,
@@ -1283,8 +1347,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         currentRecommendation: state.currentRecommendation,
       );
       final remoteReply = response['reply'] ?? response['text'];
-      reply =
-          (remoteReply is String && remoteReply.trim().isNotEmpty)
+      reply = (remoteReply is String && remoteReply.trim().isNotEmpty)
           ? remoteReply.trim()
           : 'Your AI stylist did not return a message. Please try again.';
 
@@ -1374,9 +1437,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
     DashboardProfileData profileData, {
     bool persistSilhouette = true,
   }) async {
-    state = state.copyWith(
-      profileData: profileData,
-    );
+    state = state.copyWith(profileData: profileData);
 
     if (persistSilhouette) {
       final silhouetteResult = await _getSilhouetteProfileUsecase();
@@ -1394,7 +1455,6 @@ class DashboardViewModel extends Notifier<DashboardState> {
             ),
           ),
         );
-        ref.invalidate(silhouetteProfileProvider);
       });
     }
 
@@ -1492,14 +1552,15 @@ class DashboardViewModel extends Notifier<DashboardState> {
     String? imageReference,
   }) async {
     try {
-      return await _dashboardHomeRepository.generateOutfit(
+      return await _dashboardHome.generateOutfit(
         occasion: occasion,
         profileData: state.profileData,
         preferenceScores: state.stylePreferenceScores,
         source: source,
         imageReference: imageReference,
       );
-    } catch (_) {
+    } catch (error) {
+      debugPrint('AI outfit request failed; using local fallback: $error');
       await Future.delayed(const Duration(milliseconds: 600));
       return fallback();
     }
@@ -1511,7 +1572,39 @@ class DashboardViewModel extends Notifier<DashboardState> {
     required Map<String, int> preferenceScores,
     String excludedCategory = '',
   }) {
-    return DashboardRecommendation.empty(occasion: occasion);
+    final normalizedOccasion = occasion.trim().isEmpty ? 'Weekend' : occasion;
+    final mood = profileData.styleMood.trim().isEmpty
+        ? 'Polished'
+        : profileData.styleMood;
+    final category = switch (normalizedOccasion.toLowerCase()) {
+      'wedding' || 'gala' || 'black tie' => 'Formal',
+      'party' || 'festival' || 'sangeet' => 'Party',
+      'office' => 'Workwear',
+      'beach' || 'summer' => 'Summer',
+      'street style' => 'Streetwear',
+      _ => 'Casual',
+    };
+    final outfit = switch (category) {
+      'Formal' => 'Tailored blazer, satin blouse, wide-leg trousers, and pointed heels',
+      'Party' => 'Statement top, tailored skirt, metallic heels, and a compact clutch',
+      'Workwear' => 'Structured blazer, fitted shirt, straight trousers, and loafers',
+      'Summer' => 'Breathable linen shirt, relaxed trousers, woven sandals, and a tote',
+      'Streetwear' => 'Oversized jacket, clean tee, cargo trousers, and sneakers',
+      _ => 'Relaxed blazer, fitted top, straight trousers, and clean sneakers',
+    };
+    return DashboardRecommendation(
+      id: 'local-${normalizedOccasion.toLowerCase().replaceAll(' ', '-')}',
+      title: '$normalizedOccasion $mood Look',
+      occasion: normalizedOccasion,
+      category: category,
+      mood: mood,
+      imageUrl: '',
+      outfit: outfit,
+      hairstyle: 'Soft layered blowout',
+      explanation: 'A ready-to-wear fallback look for your $normalizedOccasion plans.',
+      palette: _paletteValuesForLabels(const ['Beige', 'Black', 'Olive']),
+      paletteLabels: const ['Beige', 'Black', 'Olive'],
+    );
   }
 
   // Legacy cache migration data; live Discover content comes from the AI API.
@@ -1848,7 +1941,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
 
   Future<void> _syncWardrobeWithBackend() async {
     try {
-      await _dashboardHomeRepository.syncWardrobe(state.wardrobeItems);
+      await _dashboardHome.syncWardrobe(state.wardrobeItems);
     } catch (_) {
       // Keep local state when backend sync is unavailable.
     }

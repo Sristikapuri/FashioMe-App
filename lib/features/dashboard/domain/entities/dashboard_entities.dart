@@ -397,6 +397,7 @@ class DashboardProfileData extends Equatable {
     required this.displayName,
     required this.email,
     this.gender = '',
+    this.profileImage = '',
     required this.heightCm,
     required this.weightKg,
     required this.styleMood,
@@ -412,6 +413,7 @@ class DashboardProfileData extends Equatable {
   final String displayName;
   final String email;
   final String gender;
+  final String profileImage;
   final int heightCm;
   final int weightKg;
   final String styleMood;
@@ -427,6 +429,7 @@ class DashboardProfileData extends Equatable {
     displayName: 'User',
     email: '',
     gender: '',
+    profileImage: '',
     heightCm: 172,
     weightKg: 64,
     styleMood: 'Polished minimal',
@@ -444,6 +447,7 @@ class DashboardProfileData extends Equatable {
       displayName: (json['displayName'] ?? '').toString(),
       email: (json['email'] ?? '').toString(),
       gender: (json['gender'] ?? '').toString(),
+      profileImage: (json['profileImage'] ?? '').toString(),
       heightCm:
           (json['heightCm'] as num?)?.toInt() ??
           (json['height'] as num?)?.toInt() ??
@@ -473,6 +477,7 @@ class DashboardProfileData extends Equatable {
     'displayName': displayName,
     'email': email,
     'gender': gender,
+    'profileImage': profileImage,
     // The backend AI contract uses height/weight. Keep the explicit Cm/Kg
     // keys as well for the Flutter cache and profile UI.
     'height': heightCm,
@@ -493,6 +498,7 @@ class DashboardProfileData extends Equatable {
     String? displayName,
     String? email,
     String? gender,
+    String? profileImage,
     int? heightCm,
     int? weightKg,
     String? styleMood,
@@ -507,6 +513,7 @@ class DashboardProfileData extends Equatable {
     displayName: displayName ?? this.displayName,
     email: email ?? this.email,
     gender: gender ?? this.gender,
+    profileImage: profileImage ?? this.profileImage,
     heightCm: heightCm ?? this.heightCm,
     weightKg: weightKg ?? this.weightKg,
     styleMood: styleMood ?? this.styleMood,
@@ -524,6 +531,7 @@ class DashboardProfileData extends Equatable {
     displayName,
     email,
     gender,
+    profileImage,
     heightCm,
     weightKg,
     styleMood,

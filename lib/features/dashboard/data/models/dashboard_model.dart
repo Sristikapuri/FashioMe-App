@@ -15,6 +15,46 @@ class DashboardModel {
     );
   }
 
+  factory DashboardModel.fromJson(Map<String, dynamic> json) {
+    final recommendations = (json['recommendations'] as List<dynamic>? ?? const [])
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+
+    final occasions = recommendations
+        .where((rec) => (rec['occasion'] ?? '').toString().trim().isNotEmpty)
+        .map(
+          (rec) => OccasionModel(
+            id: (rec['id'] ?? '').toString(),
+            name: (rec['occasion'] ?? '').toString(),
+            imageUrl: (rec['imageUrl'] ?? '').toString(),
+          ),
+        )
+        .toList();
+
+    final seenHairstyles = <String>{};
+    final hairstyles = <HairstyleModel>[];
+    for (final rec in recommendations) {
+      final name = (rec['hairstyle'] ?? '').toString().trim();
+      if (name.isEmpty || !seenHairstyles.add(name)) {
+        continue;
+      }
+      hairstyles.add(
+        HairstyleModel(
+          id: (rec['id'] ?? '').toString(),
+          name: name,
+          imageUrl: (rec['imageUrl'] ?? '').toString(),
+        ),
+      );
+    }
+
+    if (occasions.isEmpty && hairstyles.isEmpty) {
+      return DashboardModel.fromMockData();
+    }
+
+    return DashboardModel(occasions: occasions, hairstyles: hairstyles);
+  }
+
   factory DashboardModel.fromMockData() {
     return DashboardModel(
       occasions: [

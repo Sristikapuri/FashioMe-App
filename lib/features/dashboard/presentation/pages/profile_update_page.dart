@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:fashio_me/app/theme/app_colors.dart';
+import 'package:fashio_me/core/api/api_endpoints.dart';
+import 'package:fashio_me/core/extensions/context_extensions.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_session_providers.dart';
 
 class ProfileUpdatePage extends ConsumerStatefulWidget {
@@ -24,6 +26,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
 
   String? _gender;
   File? _profileImage;
+  String? _existingProfileImageUrl;
   bool _isLoading = false;
   String? _errorMessage;
   String? _successMessage;
@@ -49,6 +52,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
           _usernameController.text = user.username;
           _ageController.text = user.age ?? '';
           _gender = user.gender;
+          _existingProfileImageUrl = user.profileImage;
         });
       },
     );
@@ -94,8 +98,10 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
 
     result.fold(
       (failure) => setState(() => _errorMessage = failure),
-      (user) =>
-          setState(() => _successMessage = 'Profile updated successfully'),
+      (user) => setState(() {
+        _successMessage = 'Profile updated successfully';
+        _existingProfileImageUrl = user.profileImage;
+      }),
     );
   }
 
@@ -152,6 +158,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
     final formProgress = _calculateFormProgress();
 
     return Scaffold(
@@ -255,6 +262,29 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                                 height: 120,
                               ),
                             )
+                          : (_existingProfileImageUrl?.isNotEmpty ?? false)
+                          ? ClipOval(
+                              child: Image.network(
+                                ApiEndpoints.resolveAssetUrl(
+                                  _existingProfileImageUrl!,
+                                ),
+                                fit: BoxFit.cover,
+                                width: 120,
+                                height: 120,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.surface,
+                                      ),
+                                      child: Icon(
+                                        Icons.camera_alt,
+                                        size: 40,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                              ),
+                            )
                           : Container(
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
@@ -280,8 +310,8 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                const Text(
-                  'Personal Information',
+                Text(
+                  strings.personalInformation,
                   style: TextStyle(
                     fontSize: 18,
                     fontFamily: AppFonts.bold,
@@ -291,8 +321,8 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _firstNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'First Name',
+                  decoration: InputDecoration(
+                    labelText: strings.firstName,
                     prefixIcon: Icon(Icons.person_outline),
                     border: OutlineInputBorder(),
                   ),
@@ -306,8 +336,8 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _lastNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Last Name',
+                  decoration: InputDecoration(
+                    labelText: strings.lastName,
                     prefixIcon: Icon(Icons.person_outline),
                     border: OutlineInputBorder(),
                   ),
@@ -321,8 +351,8 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Username',
+                  decoration: InputDecoration(
+                    labelText: strings.username,
                     prefixIcon: Icon(Icons.alternate_email),
                     border: OutlineInputBorder(),
                   ),
@@ -336,15 +366,21 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: _gender,
-                  decoration: const InputDecoration(
-                    labelText: 'Gender',
+                  decoration: InputDecoration(
+                    labelText: strings.gender,
                     prefixIcon: Icon(Icons.wc_outlined),
                     border: OutlineInputBorder(),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'male', child: Text('Male')),
-                    DropdownMenuItem(value: 'female', child: Text('Female')),
-                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                  items: [
+                    DropdownMenuItem(value: 'male', child: Text(strings.male)),
+                    DropdownMenuItem(
+                      value: 'female',
+                      child: Text(strings.female),
+                    ),
+                    DropdownMenuItem(
+                      value: 'other',
+                      child: Text(strings.other),
+                    ),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -355,8 +391,8 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _ageController,
-                  decoration: const InputDecoration(
-                    labelText: 'Age',
+                  decoration: InputDecoration(
+                    labelText: strings.age,
                     prefixIcon: Icon(Icons.cake_outlined),
                     border: OutlineInputBorder(),
                   ),
@@ -377,8 +413,8 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Update Profile',
+                        : Text(
+                            strings.updateProfile,
                             style: TextStyle(
                               fontFamily: AppFonts.bold,
                               fontSize: 16,
@@ -389,8 +425,8 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                 const SizedBox(height: 32),
                 const Divider(),
                 const SizedBox(height: 32),
-                const Text(
-                  'Change Password',
+                Text(
+                  strings.changePassword,
                   style: TextStyle(
                     fontSize: 18,
                     fontFamily: AppFonts.bold,
@@ -402,7 +438,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'New Password',
+                    labelText: strings.newPassword,
                     prefixIcon: const Icon(Icons.lock_outline),
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
@@ -424,7 +460,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
-                    labelText: 'Confirm New Password',
+                    labelText: strings.confirmNewPassword,
                     prefixIcon: const Icon(Icons.lock_outline),
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
@@ -456,8 +492,8 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Update Password',
+                        : Text(
+                            strings.updatePassword,
                             style: TextStyle(
                               fontFamily: AppFonts.bold,
                               fontSize: 16,

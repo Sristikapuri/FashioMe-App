@@ -16,14 +16,53 @@ class DashboardHomeRemoteDataSource {
 
   final ApiClient _apiClient;
 
+  String _occasionFallbackImage(String occasion) {
+    final value = occasion.toLowerCase();
+    if (value.contains('wedding') || value.contains('gala') || value.contains('black tie')) {
+      return 'assets/images/ai_wedding_formal.jpg';
+    }
+    if (value.contains('party') || value.contains('festival') || value.contains('sangeet')) {
+      return 'assets/images/party.jpg';
+    }
+    if (value.contains('office') || value.contains('work')) {
+      return 'assets/images/outfit.jpg';
+    }
+    if (value.contains('brunch') || value.contains('date')) {
+      return 'assets/images/brunch.jpg';
+    }
+    if (value.contains('travel') || value.contains('beach')) {
+      return 'assets/images/travel.jpg';
+    }
+    if (value.contains('winter') || value.contains('monsoon')) {
+      return 'assets/images/weekend.jpg';
+    }
+    return 'assets/images/outfit.jpg';
+  }
+
   List<DiscoverEntry> _parseDiscoverEntries(dynamic data) {
     final payload = data is Map ? data['responseData'] : null;
     if (payload is List) {
+      const fallbackImages = [
+        'assets/images/outfit.jpg',
+        'assets/images/ai_wedding_formal.jpg',
+        'assets/images/wedding.jpg',
+        'assets/images/party.jpg',
+        'assets/images/brunch.jpg',
+        'assets/images/travel.jpg',
+      ];
       return payload
           .whereType<Map>()
-          .map(
-            (item) => DiscoverEntry.fromJson(Map<String, dynamic>.from(item)),
-          )
+          .toList()
+          .asMap()
+          .entries
+          .map((entry) {
+            final json = Map<String, dynamic>.from(entry.value);
+            final imageUrl = (json['imageUrl'] ?? '').toString().trim();
+            if (imageUrl.isEmpty) {
+              json['imageUrl'] = fallbackImages[entry.key % fallbackImages.length];
+            }
+            return DiscoverEntry.fromJson(json);
+          })
           .toList(growable: false);
     }
     throw StateError('Unexpected trends response.');
@@ -64,9 +103,11 @@ class DashboardHomeRemoteDataSource {
     final data = response.data;
     final payload = data is Map ? data['responseData'] : null;
     if (payload is Map) {
-      return DashboardRecommendation.fromJson(
-        Map<String, dynamic>.from(payload),
-      );
+      final json = Map<String, dynamic>.from(payload);
+      if ((json['imageUrl'] ?? '').toString().trim().isEmpty) {
+        json['imageUrl'] = _occasionFallbackImage(occasion);
+      }
+      return DashboardRecommendation.fromJson(json);
     }
     throw StateError('Unexpected generate outfit response.');
   }

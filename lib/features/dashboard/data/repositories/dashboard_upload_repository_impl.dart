@@ -2,18 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/features/dashboard/data/datasources/dashboard_upload_datasource.dart';
-import 'package:fashio_me/features/dashboard/data/datasources/remote/dashboard_upload_remote_datasource.dart';
 import 'package:fashio_me/features/dashboard/domain/repositories/dashboard_upload_repository.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-final dashboardUploadRepositoryProvider = Provider<IDashboardUploadRepository>((
-  ref,
-) {
-  return DashboardUploadRepositoryImpl(
-    remoteDataSource: ref.read(dashboardUploadRemoteDataSourceProvider),
-  );
-});
-
 class DashboardUploadRepositoryImpl implements IDashboardUploadRepository {
   DashboardUploadRepositoryImpl({
     required IDashboardUploadDataSource remoteDataSource,

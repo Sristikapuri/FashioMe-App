@@ -1,18 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:fashio_me/core/error/failures.dart';
-import 'package:fashio_me/features/dashboard/data/datasources/local/dashboard_state_local_datasource.dart';
 import 'package:fashio_me/features/dashboard/data/datasources/dashboard_state_datasource.dart';
 import 'package:fashio_me/features/dashboard/domain/repositories/dashboard_state_repository.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-final dashboardStateRepositoryProvider = Provider<IDashboardStateRepository>((
-  ref,
-) {
-  return DashboardStateRepositoryImpl(
-    localDataSource: ref.read(dashboardStateLocalDataSourceProvider),
-  );
-});
-
 class DashboardStateRepositoryImpl implements IDashboardStateRepository {
   DashboardStateRepositoryImpl({
     required IDashboardStateDataSource localDataSource,

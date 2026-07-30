@@ -8,8 +8,8 @@ final dashboardLocalDataSourceProvider = Provider<IDashboardDataSource>((ref) {
 
 class DashboardLocalDataSource implements IDashboardDataSource {
   @override
-  DashboardModel getDashboardData() {
-    // In a real app, this would fetch from local database/cache
+  Future<DashboardModel> getDashboardData() async {
+    
     return DashboardModel.fromMockData();
   }
 }
