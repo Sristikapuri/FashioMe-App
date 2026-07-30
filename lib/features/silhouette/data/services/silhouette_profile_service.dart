@@ -5,7 +5,7 @@ import 'package:fashio_me/features/silhouette/data/datasources/silhouette_dataso
 import 'package:fashio_me/features/silhouette/data/models/silhouette_profile_model.dart';
 import 'package:fashio_me/features/silhouette/domain/entities/silhouette_profile.dart';
 
-/// Deprecated: use the silhouette feature's domain use cases/repository.
+
 @Deprecated('Use silhouette domain usecases/repository instead.')
 final silhouetteProfileServiceProvider = Provider<SilhouetteProfileService>(
   (ref) {
@@ -15,7 +15,7 @@ final silhouetteProfileServiceProvider = Provider<SilhouetteProfileService>(
   },
 );
 
-/// Deprecated compatibility adapter for older callers.
+
 @Deprecated('Use silhouette domain usecases/repository instead.')
 class SilhouetteProfileService {
   SilhouetteProfileService({required ISilhouetteDataSource localDataSource})

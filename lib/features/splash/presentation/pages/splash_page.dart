@@ -3,9 +3,14 @@ import 'dart:async';
 import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
+import 'package:fashio_me/core/localization/locale_notifier.dart';
+import 'package:fashio_me/core/services/biometric/biometric_auth_service.dart';
+import 'package:fashio_me/core/services/biometric/biometric_settings_notifier.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
+import 'package:fashio_me/features/biometric_lock/presentation/pages/biometric_lock_page.dart';
 import 'package:fashio_me/features/auth/presentation/pages/signup_page.dart';
 import 'package:fashio_me/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:fashio_me/features/language_selection/presentation/pages/language_selection_page.dart';
 import 'package:fashio_me/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:fashio_me/features/silhouette/presentation/pages/silhouette_flow_page.dart';
 import 'package:fashio_me/features/splash/presentation/providers/splash_providers.dart';
@@ -93,6 +98,36 @@ class _SplashPageState extends ConsumerState<SplashPage>
         default:
           targetPage = const OnboardingPage();
       }
+
+      // Returning, already-logged-in user with Face ID enabled: gate the
+      // dashboard behind a biometric prompt. Never applied to a fresh
+      // signup still finishing silhouette setup, and never applied if the
+      // device turns out not to support biometrics after all.
+      if (route == 'dashboard' &&
+          targetPage is DashboardPage &&
+          ref.read(biometricSettingsProvider)) {
+        final biometricSupported = await ref
+            .read(biometricAuthServiceProvider)
+            .isSupported();
+        if (!mounted) return;
+        if (biometricSupported) {
+          targetPage = BiometricLockPage(next: targetPage);
+        }
+      }
+
+      // First-run only: a brand-new/not-yet-logged-in user picks their
+      // language before seeing anything else (onboarding, silhouette setup,
+      // login, signup) — matching how most real apps handle first launch.
+      // A returning, already-logged-in user (route == 'dashboard') is never
+      // interrupted by this. The choice is persisted, so it only ever
+      // appears once; it can still be changed later from Settings.
+      final needsLanguageChoice =
+          route != 'dashboard' &&
+          !ref.read(localeProvider.notifier).hasChosenLocale;
+      if (needsLanguageChoice) {
+        targetPage = LanguageSelectionPage(next: targetPage);
+      }
+
       AppRoutes.pushReplacement(context, targetPage);
       if (mounted) {
         ref.read(splashViewModelProvider.notifier).clearNavigationTarget();

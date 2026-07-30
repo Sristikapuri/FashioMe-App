@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/core/utils/snackbar_utils.dart';
+import 'package:fashio_me/core/extensions/context_extensions.dart';
 import 'package:fashio_me/core/widgets/selected_image.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -107,8 +107,7 @@ class SilhouetteFlowPage extends ConsumerWidget {
                       final picked = await notifier.pickPortrait(source);
                       if (!context.mounted) return;
                       if (!picked) {
-                        showAppSnackBar(
-                          context,
+                        context.showSnackBar(
                           'Unable to upload your portrait right now.',
                           isError: true,
                         );
@@ -129,8 +128,7 @@ class SilhouetteFlowPage extends ConsumerWidget {
 
                 final popped = await Navigator.of(context).maybePop();
                 if (!popped && context.mounted) {
-                  showAppSnackBar(
-                    context,
+                  context.showSnackBar(
                     'Complete your silhouette setup to continue.',
                   );
                 }
@@ -138,8 +136,7 @@ class SilhouetteFlowPage extends ConsumerWidget {
               onPrimaryPressed: () async {
                 if (state.currentStep == 0) {
                   if (!state.canFinishStepOne) {
-                    showAppSnackBar(
-                      context,
+                    context.showSnackBar(
                       'Fill in your body profile details first.',
                       isError: true,
                     );
@@ -151,8 +148,7 @@ class SilhouetteFlowPage extends ConsumerWidget {
 
                 if (state.currentStep == 1) {
                   if (!state.canFinishStepTwo) {
-                    showAppSnackBar(
-                      context,
+                    context.showSnackBar(
                       'Choose a skin tone before continuing.',
                       isError: true,
                     );
@@ -163,8 +159,7 @@ class SilhouetteFlowPage extends ConsumerWidget {
                 }
 
                 if (!state.canFinishStepThree) {
-                  showAppSnackBar(
-                    context,
+                  context.showSnackBar(
                     'Select a face shape or upload a portrait first.',
                     isError: true,
                   );
@@ -175,8 +170,7 @@ class SilhouetteFlowPage extends ConsumerWidget {
                 if (!context.mounted) return;
 
                 if (result == -1) {
-                  showAppSnackBar(
-                    context,
+                  context.showSnackBar(
                     'Unable to save your silhouette profile. Please try again.',
                     isError: true,
                   );
@@ -185,8 +179,7 @@ class SilhouetteFlowPage extends ConsumerWidget {
 
                 if (result == 0) {
                   // Saved locally; warn user that backend sync failed
-                  showAppSnackBar(
-                    context,
+                  context.showSnackBar(
                     'Profile saved on device. It will sync when you reconnect.',
                   );
                 }
@@ -248,7 +241,7 @@ class _ProgressHeader extends StatelessWidget {
                 : step == 1
                 ? 'Choose your skin tone\nfor perfect color matching'
                 : 'Discover your\nperfect fit',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            style: context.textTheme.headlineMedium?.copyWith(
               color: AppColors.textPrimary,
               fontSize: 20,
               height: 1.15,
@@ -261,7 +254,7 @@ class _ProgressHeader extends StatelessWidget {
                 : step == 1
                 ? 'Our AI uses this to curate high-end fashion suggestions that complement your natural radiance.'
                 : 'Step 3 of 3: Select your face shape or upload a portrait for AI-powered personalization.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: context.textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
               height: 1.4,
             ),
@@ -337,14 +330,14 @@ class _StepOneView extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: '${state.heightCm}',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    style: context.textTheme.headlineMedium?.copyWith(
                       color: AppColors.primary,
                       fontSize: 20,
                     ),
                   ),
                   TextSpan(
                     text: ' cm',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    style: context.textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -398,7 +391,7 @@ class _StepOneView extends StatelessWidget {
             children: [
               Text(
                 'CURRENT WEIGHT',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                style: context.textTheme.labelSmall?.copyWith(
                   color: AppColors.textSecondary,
                   letterSpacing: 1.3,
                 ),
@@ -409,12 +402,12 @@ class _StepOneView extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: '${state.weightKg}',
-                      style: Theme.of(context).textTheme.headlineLarge
+                      style: context.textTheme.headlineLarge
                           ?.copyWith(fontSize: 28, color: AppColors.primary),
                     ),
                     TextSpan(
                       text: ' Kilograms',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      style: context.textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -518,7 +511,7 @@ class _StepOneView extends StatelessWidget {
                 bottom: 16,
                 child: Text(
                   'We curate based on your unique proportions.',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: context.textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     height: 1.35,
                   ),
@@ -579,7 +572,7 @@ class _StepTwoView extends StatelessWidget {
                       children: [
                         Text(
                           tone.title,
-                          style: Theme.of(context).textTheme.labelSmall
+                          style: context.textTheme.labelSmall
                               ?.copyWith(
                                 color: Colors.white,
                                 letterSpacing: 1.2,
@@ -588,7 +581,7 @@ class _StepTwoView extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           tone.label,
-                          style: Theme.of(context).textTheme.headlineMedium
+                          style: context.textTheme.headlineMedium
                               ?.copyWith(color: Colors.white, fontSize: 24),
                         ),
                       ],
@@ -691,7 +684,7 @@ class _StepThreeView extends StatelessWidget {
                 const SizedBox(height: 14),
                 Text(
                   'Upload Your Portrait',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  style: context.textTheme.titleLarge?.copyWith(
                     fontSize: 20,
                     color: AppColors.textPrimary,
                   ),
@@ -699,7 +692,7 @@ class _StepThreeView extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'AI analysis for best results',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  style: context.textTheme.labelSmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -726,7 +719,7 @@ class _StepThreeView extends StatelessWidget {
                 const SizedBox(height: 14),
                 Text(
                   'Portrait ready for analysis',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: context.textTheme.titleMedium?.copyWith(
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -788,7 +781,7 @@ class _StepThreeView extends StatelessWidget {
         const SizedBox(height: 26),
         Text(
           'Manual Selection',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: context.textTheme.titleLarge?.copyWith(
             color: AppColors.textPrimary,
             fontSize: 18,
           ),
@@ -851,7 +844,7 @@ class _StepThreeView extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       item.$2,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      style: context.textTheme.labelSmall?.copyWith(
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -953,7 +946,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+      style: context.textTheme.labelSmall?.copyWith(
         color: AppColors.accent,
         letterSpacing: 1.4,
       ),
@@ -993,7 +986,7 @@ class _ChoiceCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              style: context.textTheme.labelSmall?.copyWith(
                 color: selected ? Colors.white : AppColors.textPrimary,
               ),
             ),
@@ -1043,7 +1036,7 @@ class _ChoicePill extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              style: context.textTheme.labelSmall?.copyWith(
                 color: selected ? Colors.white : AppColors.textPrimary,
                 fontSize: 9,
                 letterSpacing: 0.8,

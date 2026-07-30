@@ -1,21 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:fashio_me/app/di/providers.dart';
+import 'package:fashio_me/core/services/media/image_picker_service.dart';
 import 'package:fashio_me/features/dashboard/domain/usecases/upload_item_photo_usecase.dart';
 import 'package:fashio_me/features/silhouette/presentation/state/silhouette_flow_state.dart';
 import 'package:fashio_me/features/silhouette/domain/usecases/get_silhouette_profile_usecase.dart';
 import 'package:fashio_me/features/silhouette/domain/usecases/save_silhouette_profile_usecase.dart';
-import 'package:fashio_me/features/silhouette/presentation/providers/silhouette_profile_providers.dart';
 
 class SilhouetteFlowViewModel extends Notifier<SilhouetteFlowState> {
   late final GetSilhouetteProfileUsecase _getProfileUsecase;
   late final SaveSilhouetteProfileUsecase _saveProfileUsecase;
   late final UploadItemPhotoUsecase _uploadItemPhotoUsecase;
-  final ImagePicker _imagePicker = ImagePicker();
+  late final ImagePickerService _imagePicker;
 
   @override
   SilhouetteFlowState build() {
+    _imagePicker = ref.read(imagePickerServiceProvider);
     _getProfileUsecase = ref.read(getSilhouetteProfileUsecaseProvider);
     _saveProfileUsecase = ref.read(saveSilhouetteProfileUsecaseProvider);
     _uploadItemPhotoUsecase = ref.read(uploadItemPhotoUsecaseProvider);
@@ -75,10 +77,8 @@ class SilhouetteFlowViewModel extends Notifier<SilhouetteFlowState> {
   Future<bool> pickPortrait(ImageSource source) async {
     try {
       state = state.copyWith(isSaving: true);
-      final pickedFile = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 90,
-        maxWidth: 1400,
+      final pickedFile = await _imagePicker.pick(
+        useCamera: source == ImageSource.camera,
       );
       if (pickedFile == null) {
         state = state.copyWith(isSaving: false);
@@ -127,7 +127,6 @@ class SilhouetteFlowViewModel extends Notifier<SilhouetteFlowState> {
       },
       (savedToBackend) {
         state = state.copyWith(isSaving: false);
-        ref.invalidate(silhouetteProfileProvider);
         // true  = backend confirmed  → 1
         // false = local-only fallback → 0
         return savedToBackend ? 1 : 0;

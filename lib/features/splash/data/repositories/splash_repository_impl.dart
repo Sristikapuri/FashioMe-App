@@ -1,20 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:fashio_me/core/error/failures.dart';
-import 'package:fashio_me/features/splash/data/datasources/local/splash_local_datasource.dart';
-import 'package:fashio_me/features/splash/data/datasources/remote/splash_remote_datasource.dart';
 import 'package:fashio_me/features/splash/data/datasources/splash_datasource.dart';
 import 'package:fashio_me/features/splash/domain/repositories/splash_repository.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-final splashRepositoryProvider = Provider<ISplashRepository>((ref) {
-  final remoteDataSource = SplashRemoteDataSource();
-  final localDataSource = ref.read(splashLocalDataSourceProvider);
-  return SplashRepositoryImpl(
-    remoteDataSource: remoteDataSource,
-    localDataSource: localDataSource,
-  );
-});
-
 class SplashRepositoryImpl implements ISplashRepository {
   final ISplashDataSource _remoteDataSource;
   final ISplashDataSource _localDataSource;
