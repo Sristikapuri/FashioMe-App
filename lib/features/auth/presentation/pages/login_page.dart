@@ -1,6 +1,6 @@
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/core/utils/snackbar_utils.dart';
+import 'package:fashio_me/core/extensions/context_extensions.dart';
 import 'package:fashio_me/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:fashio_me/features/auth/presentation/pages/signup_page.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_view_model_providers.dart';
@@ -100,8 +100,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 const SizedBox(height: 32),
 
                 /// title
-                const Text(
-                  'Welcome Back',
+                Text(
+                  context.strings.welcomeBack,
                   style: TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
@@ -112,7 +112,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 const SizedBox(height: 10),
 
                 Text(
-                  'Sign in to continue your style journey.',
+                  context.strings.signInToContinue,
                   style: const TextStyle(
                     fontSize: 16,
                     color: AppColors.textSecondary,
@@ -123,18 +123,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                 /// email field
                 buildTextField(
-                  label: 'Email Address',
+                  label: context.strings.emailAddress,
                   hint: 'aria@fashiome.com',
                   controller: emailController,
                   icon: Icons.email_outlined,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Email is required.';
+                      return context.strings.emailRequired;
                     }
                     if (!RegExp(
                       r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
                     ).hasMatch(value.trim())) {
-                      return 'Enter a valid email address.';
+                      return context.strings.invalidEmail;
                     }
                     return null;
                   },
@@ -173,8 +173,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       );
                     },
 
-                    child: const Text(
-                      'Forgot Password?',
+                    child: Text(
+                      context.strings.forgotPassword,
                       style: TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600,
@@ -210,8 +210,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Sign In',
+                        : Text(
+                            context.strings.signIn,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -244,8 +244,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       AppRoutes.push(context, const SignupPage());
                     },
 
-                    child: const Text(
-                      'Create New Account',
+                    child: Text(
+                      context.strings.createNewAccount,
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
@@ -280,7 +280,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     } else {
       final message = ref.read(loginViewModelProvider).errorMessage;
       if (message != null) {
-        showAppSnackBar(context, message);
+        context.showSnackBar(message);
       }
     }
   }
@@ -349,8 +349,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'PASSWORD',
+        Text(
+          context.strings.password.toUpperCase(),
 
           style: TextStyle(
             fontSize: 12,
@@ -367,11 +367,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           obscureText: obscurePassword,
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'Password is required.';
+              return context.strings.passwordRequired;
             }
             final trimmed = value.trim();
             if (trimmed.length < 6) {
-              return 'Password must be at least 6 characters.';
+              return context.strings.passwordTooShort;
             }
             return null;
           },

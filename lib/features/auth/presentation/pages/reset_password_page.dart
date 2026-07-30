@@ -1,6 +1,6 @@
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/core/utils/snackbar_utils.dart';
+import 'package:fashio_me/core/extensions/context_extensions.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart';
 import 'package:flutter/material.dart';
@@ -56,8 +56,8 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
 
     try {
       final result = await ref
-          .read(authRepositoryProvider)
-          .resetPassword(
+          .read(resetPasswordUsecaseProvider)
+          .call(
             email: _emailController.text.trim(),
             token: _tokenController.text.trim(),
             password: _passwordController.text.trim(),
@@ -69,15 +69,13 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       }
       if (!mounted) return;
 
-      showAppSnackBar(
-        context,
+      context.showSnackBar(
         'Password has been reset successfully. Please sign in again.',
       );
       AppRoutes.pushAndRemoveUntil(context, const LoginPage());
     } catch (error) {
       if (!mounted) return;
-      showAppSnackBar(
-        context,
+      context.showSnackBar(
         error.toString().replaceFirst('Exception: ', ''),
         isError: true,
       );

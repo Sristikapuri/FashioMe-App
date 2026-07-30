@@ -1,6 +1,6 @@
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/core/utils/snackbar_utils.dart';
+import 'package:fashio_me/core/extensions/context_extensions.dart';
 import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_view_model_providers.dart';
 import 'package:flutter/material.dart';
@@ -425,12 +425,12 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         );
     if (!mounted) return;
     if (success) {
-      showAppSnackBar(context, 'Account created successfully!', isError: false);
+      context.showSnackBar('Account created successfully!');
       AppRoutes.pushAndRemoveUntil(context, const LoginPage());
     } else {
       final message = ref.read(signupViewModelProvider).errorMessage;
       if (message != null) {
-        showAppSnackBar(context, message);
+        context.showSnackBar(message);
       }
     }
   }

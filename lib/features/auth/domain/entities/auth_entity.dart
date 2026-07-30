@@ -44,5 +44,6 @@ class AuthEntity extends Equatable {
     gender,
     age,
     role,
+    profileImage,
   ];
 }

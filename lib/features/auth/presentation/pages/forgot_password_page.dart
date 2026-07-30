@@ -1,6 +1,6 @@
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/core/utils/snackbar_utils.dart';
+import 'package:fashio_me/core/extensions/context_extensions.dart';
 import 'package:fashio_me/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart';
 import 'package:flutter/material.dart';
@@ -44,8 +44,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
     try {
       final result = await ref
-          .read(authRepositoryProvider)
-          .forgotPassword(_emailController.text.trim());
+          .read(forgotPasswordUsecaseProvider)
+          .call(_emailController.text.trim());
       if (result.isLeft()) {
         throw Exception(
           result.fold((failure) => failure.message, (_) => 'Request failed.'),
@@ -53,8 +53,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       }
       if (!mounted) return;
 
-      showAppSnackBar(
-        context,
+      context.showSnackBar(
         'If the email is registered, an OTP has been sent.',
       );
 
@@ -64,8 +63,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       );
     } catch (error) {
       if (!mounted) return;
-      showAppSnackBar(
-        context,
+      context.showSnackBar(
         error.toString().replaceFirst('Exception: ', ''),
         isError: true,
       );

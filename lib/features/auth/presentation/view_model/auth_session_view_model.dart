@@ -2,7 +2,8 @@ import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
-import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart';
+import 'package:fashio_me/features/auth/domain/entities/uploaded_file.dart';
+import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:fashio_me/features/auth/domain/usecases/delete_account_usecase.dart';
 import 'package:fashio_me/features/auth/domain/usecases/logout_usecase.dart';
@@ -86,7 +87,7 @@ class AuthSessionViewModel extends Notifier<AuthSessionState> {
         username: username,
         gender: gender,
         age: age,
-        profileImage: profileImage,
+        profileImage: profileImage == null ? null : UploadedFile(profileImage.path),
         password: password,
       ),
     );

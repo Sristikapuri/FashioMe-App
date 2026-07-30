@@ -1,7 +1,7 @@
-import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
+import 'package:fashio_me/features/auth/domain/entities/uploaded_file.dart';
 
 abstract interface class IAuthRepository {
   Future<Either<Failure, AuthEntity>> register(AuthEntity entity);
@@ -21,7 +21,7 @@ abstract interface class IAuthRepository {
     String? username,
     String? gender,
     int? age,
-    File? profileImage,
+    UploadedFile? profileImage,
     String? password,
   });
   Future<Either<Failure, bool>> logout();

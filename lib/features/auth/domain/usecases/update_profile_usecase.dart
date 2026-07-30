@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/core/usecases/app_usecase.dart';
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
+import 'package:fashio_me/features/auth/domain/entities/uploaded_file.dart';
 import 'package:fashio_me/features/auth/domain/repositories/auth_repository.dart';
 
 class UpdateProfileUsecaseParams {
@@ -11,7 +11,7 @@ class UpdateProfileUsecaseParams {
   final String? username;
   final String? gender;
   final int? age;
-  final File? profileImage;
+  final UploadedFile? profileImage;
   final String? password;
 
   const UpdateProfileUsecaseParams({

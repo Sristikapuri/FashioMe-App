@@ -2,17 +2,10 @@ import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:fashio_me/core/error/failures.dart';
 import 'package:fashio_me/features/auth/data/datasources/auth_datasource.dart';
-import 'package:fashio_me/features/auth/data/datasources/remote/auth_remote_datasource.dart';
 import 'package:fashio_me/features/auth/data/models/auth_model.dart';
 import 'package:fashio_me/features/auth/domain/entities/auth_entity.dart';
+import 'package:fashio_me/features/auth/domain/entities/uploaded_file.dart';
 import 'package:fashio_me/features/auth/domain/repositories/auth_repository.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-final authRepositoryProvider = Provider<IAuthRepository>((ref) {
-  final authDataSource = ref.read(authRemoteDatasourceProvider);
-  return AuthRepository(authDataSource: authDataSource);
-});
-
 class AuthRepository implements IAuthRepository {
   AuthRepository({required IAuthDataSource authDataSource})
     : _authDataSource = authDataSource;
@@ -143,7 +136,7 @@ class AuthRepository implements IAuthRepository {
     String? username,
     String? gender,
     int? age,
-    File? profileImage,
+    UploadedFile? profileImage,
     String? password,
   }) async {
     try {
@@ -153,7 +146,7 @@ class AuthRepository implements IAuthRepository {
         username: username,
         gender: gender,
         age: age,
-        profileImage: profileImage,
+        profileImage: profileImage == null ? null : File(profileImage.path),
         password: password,
       );
       if (user == null) {

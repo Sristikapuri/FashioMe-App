@@ -121,12 +121,22 @@ class AuthRemoteDatasource implements IAuthDataSource {
 
   @override
   Future<bool> register(AuthModel model) async {
-    final response = await _apiClient.post(
-      ApiEndpoints.authRegister,
-      data: model.toJson(),
-    );
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.authRegister,
+        data: model.toJson(),
+      );
 
-    return _isSuccessful(response.data);
+      if (!_isSuccessful(response.data)) {
+        throw Exception(
+          _extractMessage(response.data, fallback: 'Registration failed.'),
+        );
+      }
+
+      return true;
+    } catch (e) {
+      throw Exception(_readErrorMessage(e, fallback: 'Registration failed.'));
+    }
   }
 
   @override

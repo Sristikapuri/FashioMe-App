@@ -1,4 +1,4 @@
-import 'package:fashio_me/features/auth/presentation/providers/auth_providers.dart';
+import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/features/auth/domain/usecases/register_usecase.dart';
 import 'package:fashio_me/features/auth/presentation/state/signup_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

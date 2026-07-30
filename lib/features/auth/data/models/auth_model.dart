@@ -10,6 +10,7 @@ class AuthModel {
   final String? age;
   final String? role;
   final String? password;
+  final String? profileImage;
 
   AuthModel({
     this.authId,
@@ -21,6 +22,7 @@ class AuthModel {
     this.age,
     this.role,
     this.password,
+    this.profileImage,
   });
 
   String get fullName {
@@ -68,6 +70,7 @@ class AuthModel {
       age: entity.age,
       role: entity.role,
       password: entity.password,
+      profileImage: entity.profileImage,
     );
   }
 
@@ -82,6 +85,7 @@ class AuthModel {
       age: age,
       role: role,
       password: password,
+      profileImage: profileImage,
     );
   }
 
@@ -125,6 +129,7 @@ class AuthModel {
     String? age,
     String? role,
     String? password,
+    String? profileImage,
   }) {
     return AuthModel(
       authId: authId ?? this.authId,
@@ -136,6 +141,7 @@ class AuthModel {
       age: age ?? this.age,
       role: role ?? this.role,
       password: password ?? this.password,
+      profileImage: profileImage ?? this.profileImage,
     );
   }
 
@@ -177,6 +183,9 @@ class AuthModel {
       age: _nullableStringValue(userData['age'] ?? json['age']),
       role: _nullableStringValue(userData['role'] ?? json['role']),
       password: _nullableStringValue(userData['password'] ?? json['password']),
+      profileImage: _nullableStringValue(
+        userData['profileImage'] ?? json['profileImage'],
+      ),
     );
   }
 }
