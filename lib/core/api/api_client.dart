@@ -1,13 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fashio_me/core/api/api_endpoints.dart';
+import 'package:fashio_me/core/navigation/app_navigator.dart';
 import 'package:fashio_me/core/providers/storage_provider.dart';
 import 'package:fashio_me/core/services/storage/token_service.dart';
+import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
-// Provider for ApiClient
+
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient(tokenService: ref.read(tokenServiceProvider));
 });
@@ -30,9 +33,8 @@ class ApiClient {
       ),
     );
 
-    // Add interceptors
-    _dio.interceptors.add(_AuthInterceptor(tokenService: _tokenService));
 
+    _dio.interceptors.add(_AuthInterceptor(tokenService: _tokenService));
 
     _dio.interceptors.add(
       RetryInterceptor(
@@ -44,7 +46,6 @@ class ApiClient {
           Duration(seconds: 3),
         ],
         retryEvaluator: (error, attempt) {
-        
           return error.type == DioExceptionType.connectionTimeout ||
               error.type == DioExceptionType.sendTimeout ||
               error.type == DioExceptionType.receiveTimeout ||
@@ -52,7 +53,6 @@ class ApiClient {
         },
       ),
     );
-
 
     if (kDebugMode) {
       _dio.interceptors.add(
@@ -94,7 +94,6 @@ class ApiClient {
     );
   }
 
-
   Future<Response> put(
     String path, {
     dynamic data,
@@ -108,7 +107,6 @@ class ApiClient {
       options: options,
     );
   }
-
 
   Future<Response> patch(
     String path, {
@@ -124,7 +122,6 @@ class ApiClient {
     );
   }
 
-
   Future<Response> delete(
     String path, {
     dynamic data,
@@ -138,7 +135,6 @@ class ApiClient {
       options: options,
     );
   }
-
 
   Future<Response> uploadFile(
     String path, {
@@ -168,13 +164,20 @@ class _AuthInterceptor extends Interceptor {
     : _tokenService = tokenService;
 
   final TokenService _tokenService;
+  bool _isRedirectingToLogin = false;
+
+  static final _authEndpoints = [
+    ApiEndpoints.authLogin,
+    ApiEndpoints.authRegister,
+    ApiEndpoints.authForgotPassword,
+    ApiEndpoints.authResetPassword,
+  ];
 
   @override
   void onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-
     final publicEndpoints = [ApiEndpoints.authLogin];
 
     final isPublicGet =
@@ -197,12 +200,28 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-  
-    if (err.response?.statusCode == 401) {
+    final isAuthEndpoint = _authEndpoints.any(
+      (endpoint) => err.requestOptions.path == endpoint,
+    );
 
+    if (err.response?.statusCode == 401 && !isAuthEndpoint) {
       _tokenService.clearToken();
-
+      _redirectToLogin();
     }
     handler.next(err);
+  }
+
+  void _redirectToLogin() {
+    if (_isRedirectingToLogin) return;
+    final navigator = rootNavigatorKey.currentState;
+    if (navigator == null) return;
+
+    _isRedirectingToLogin = true;
+    navigator
+        .pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        )
+        .whenComplete(() => _isRedirectingToLogin = false);
   }
 }

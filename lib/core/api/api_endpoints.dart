@@ -3,9 +3,7 @@ import 'package:flutter/foundation.dart';
 class ApiEndpoints {
   ApiEndpoints._();
 
-  // Base URL helpers for local backend development.
-  // Recommended for physical device:
-  // flutter run --dart-define=API_BASE_URL=http://192.168.x.x:8089/api/v1
+
   static const String configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: '',
@@ -47,10 +45,10 @@ class ApiEndpoints {
 
   static const String users = '/users';
   static String userById(String id) => '/users/$id';
+  static const String userStyleArchive = '/users/style-archive';
 
 
   static const String itemUploadPhoto = '/upload/upload-photo';
-  static const String itemUploadVideo = '/upload/upload-video';
 
  
   static const String onboardingStatus = '/onboarding/status';
@@ -74,6 +72,10 @@ class ApiEndpoints {
   static const String cart = '/cart';
   static const String orders = '/orders';
   static const String myOrders = '/orders/me';
+  static const String wishlist = '/users/wishlist';
+  static String wishlistItem(String id) => '/users/wishlist/$id';
+  static String orderById(String id) => '/orders/$id';
+  static String cancelOrder(String id) => '/orders/$id/cancel';
   static const String esewaPaymentUrl = '/esewa/payment-url';
   static const String esewaVerify = '/esewa/verify';
 
