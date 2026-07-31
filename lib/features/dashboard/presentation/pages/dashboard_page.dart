@@ -86,7 +86,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           if (value == 'New Inspiration') {
             await notifier.generateHomeRecommendation(
               occasion:
-                  '${_selectedEvent} in $_selectedWeather with a $_selectedVibe vibe',
+                  '$_selectedEvent in $_selectedWeather with a $_selectedVibe vibe',
               syncCurrentRecommendation: true,
               source: value,
             );

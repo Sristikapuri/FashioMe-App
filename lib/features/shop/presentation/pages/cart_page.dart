@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/core/extensions/context_extensions.dart';
 import 'package:fashio_me/core/services/deep_link/deep_link_service.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
 import 'package:fashio_me/features/shop/presentation/pages/order_history_page.dart';

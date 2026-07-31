@@ -37,7 +37,8 @@ class UserSessionService {
   // Session keys
   static const String _keyUserId = 'user_id';
   static const String _keyIsLoggedIn = 'is_logged_in';
-  static const String _keyOnboardingCompleted = 'onboarding_completed';
+  static const String _keyOnboardingVersion = 'onboarding_version';
+  static const int _currentOnboardingVersion = 1;
   static const String _keyFirstName = 'first_name';
   static const String _keyLastName = 'last_name';
   static const String _keyUsername = 'username';
@@ -127,16 +128,16 @@ class UserSessionService {
 
   // Mark onboarding as completed
   Future<void> completeOnboarding() async {
-    await _prefs.setBool(_keyOnboardingCompleted, true);
+    await _prefs.setInt(_keyOnboardingVersion, _currentOnboardingVersion);
   }
 
   // Check if onboarding is completed
   bool hasCompletedOnboarding() {
-    return _prefs.getBool(_keyOnboardingCompleted) ?? false;
+    return _prefs.getInt(_keyOnboardingVersion) == _currentOnboardingVersion;
   }
 
   // Clear onboarding status
   Future<void> clearOnboarding() async {
-    await _prefs.remove(_keyOnboardingCompleted);
+    await _prefs.remove(_keyOnboardingVersion);
   }
 }
