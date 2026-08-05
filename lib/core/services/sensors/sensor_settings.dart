@@ -12,7 +12,7 @@ class SensorGesturesNotifier extends Notifier<bool> {
   @override
   bool build() => ref
       .read(sharedPreferencesProvider)
-      .getBool(sensorGesturesEnabledKey) ?? false;
+      .getBool(sensorGesturesEnabledKey) ?? true;
 
   Future<void> setEnabled(bool enabled) async {
     state = enabled;

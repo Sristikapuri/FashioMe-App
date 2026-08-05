@@ -25,16 +25,39 @@ class AuthLocalDataSource implements IAuthDataSource {
 
   @override
   Future<bool> register(AuthModel model) async {
-    final authId = DateTime.now().millisecondsSinceEpoch.toString();
+    final authId = (model.authId != null && model.authId!.isNotEmpty)
+        ? model.authId!
+        : DateTime.now().millisecondsSinceEpoch.toString();
     final authHiveModel = AuthHiveModel(
       authId: authId,
       fullName: model.fullName,
-      email: model.email,
+      email: model.email.trim().toLowerCase(),
       password: model.password ?? '',
     );
     await _hiveService.registerUser(authHiveModel);
-    // Save session after registration
-    await saveSession(authId);
+
+    final nameParts = model.fullName.split(' ');
+    final firstName = model.firstName.isNotEmpty
+        ? model.firstName
+        : (nameParts.isNotEmpty ? nameParts.first : '');
+    final lastName = model.lastName.isNotEmpty
+        ? model.lastName
+        : (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '');
+    final username = model.username.isNotEmpty
+        ? model.username
+        : model.email.split('@').first;
+
+    await _userSessionService.saveUser(
+      SessionUser(
+        userId: authId,
+        email: model.email.trim().toLowerCase(),
+        firstName: firstName,
+        lastName: lastName,
+        username: username,
+        gender: model.gender,
+        age: model.age,
+      ),
+    );
     return true;
   }
 
@@ -43,15 +66,29 @@ class AuthLocalDataSource implements IAuthDataSource {
     final authHiveModel = await _hiveService.loginUser(email, password);
     if (authHiveModel == null) return null;
 
-    // Save session after successful login
-    await saveSession(authHiveModel.authId);
+    final nameParts = authHiveModel.fullName.split(' ');
+    final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+    final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+    final username = authHiveModel.email.split('@').first;
 
-    return AuthModel.fromJson({
-      'authId': authHiveModel.authId,
-      'fullName': authHiveModel.fullName,
-      'email': authHiveModel.email,
-      'password': authHiveModel.password,
-    });
+    await _userSessionService.saveUser(
+      SessionUser(
+        userId: authHiveModel.authId,
+        email: authHiveModel.email,
+        firstName: firstName,
+        lastName: lastName,
+        username: username,
+      ),
+    );
+
+    return AuthModel(
+      authId: authHiveModel.authId,
+      firstName: firstName,
+      lastName: lastName,
+      username: username,
+      email: authHiveModel.email,
+      password: authHiveModel.password,
+    );
   }
 
   @override
@@ -59,7 +96,7 @@ class AuthLocalDataSource implements IAuthDataSource {
     final authId = _userSessionService.getUserId();
     if (authId == null) return null;
 
-    final authHiveModel = _hiveService.getCurrentUser(authId);
+    final authHiveModel = await _hiveService.getCurrentUser(authId);
     if (authHiveModel == null) return null;
 
     return AuthModel.fromJson({
@@ -77,7 +114,7 @@ class AuthLocalDataSource implements IAuthDataSource {
 
   @override
   Future<void> forgotPassword(String email) async {
-    final exists = _hiveService.isEmailExist(email);
+    final exists = await _hiveService.isEmailExist(email);
     if (!exists) {
       throw Exception('No account found for that email.');
     }
@@ -114,7 +151,7 @@ class AuthLocalDataSource implements IAuthDataSource {
     final authId = _userSessionService.getUserId();
     if (authId == null) return null;
 
-    final authHiveModel = _hiveService.getCurrentUser(authId);
+    final authHiveModel = await _hiveService.getCurrentUser(authId);
     if (authHiveModel == null) return null;
 
     final updatedModel = AuthHiveModel(
@@ -152,7 +189,7 @@ class AuthLocalDataSource implements IAuthDataSource {
 
   @override
   Future<bool> isEmailExists(String email) async {
-    return _hiveService.isEmailExist(email);
+    return await _hiveService.isEmailExist(email);
   }
 
   @override

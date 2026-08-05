@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +8,7 @@ import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/core/api/api_endpoints.dart';
 import 'package:fashio_me/core/extensions/context_extensions.dart';
 import 'package:fashio_me/features/auth/presentation/providers/auth_session_providers.dart';
+import 'package:fashio_me/features/dashboard/presentation/providers/dashboard_providers.dart';
 
 class ProfileUpdatePage extends ConsumerStatefulWidget {
   const ProfileUpdatePage({super.key});
@@ -96,12 +98,17 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
       _isLoading = false;
     });
 
-    result.fold(
-      (failure) => setState(() => _errorMessage = failure),
-      (user) => setState(() {
-        _successMessage = 'Profile updated successfully';
-        _existingProfileImageUrl = user.profileImage;
-      }),
+    await result.fold(
+      (failure) async => setState(() => _errorMessage = failure),
+      (user) async {
+        setState(() {
+          _successMessage = 'Profile updated successfully';
+          _existingProfileImageUrl = user.profileImage;
+        });
+        await ref
+            .read(dashboardViewModelProvider.notifier)
+            .refreshFromSession();
+      },
     );
   }
 
@@ -264,16 +271,19 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                             )
                           : (_existingProfileImageUrl?.isNotEmpty ?? false)
                           ? ClipOval(
-                              child: Image.network(
-                                ApiEndpoints.resolveAssetUrl(
+                              child: CachedNetworkImage(
+                                imageUrl: ApiEndpoints.resolveAssetUrl(
                                   _existingProfileImageUrl!,
                                 ),
                                 fit: BoxFit.cover,
                                 width: 120,
                                 height: 120,
-                                errorBuilder: (context, error, stackTrace) =>
+                                placeholder: (context, url) => const Center(
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                errorWidget: (context, url, error) =>
                                     Container(
-                                      decoration: BoxDecoration(
+                                      decoration: const BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: AppColors.surface,
                                       ),

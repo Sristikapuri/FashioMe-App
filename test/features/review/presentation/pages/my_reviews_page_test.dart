@@ -14,7 +14,9 @@ class FakeReviewRepository implements ReviewRepository {
   FakeReviewRepository(this.reviews);
 
   @override
-  Future<Either<Failure, List<Review>>> getReviewsByClothe(String clotheId) async => Right(reviews);
+  Future<Either<Failure, List<Review>>> getReviewsByClothe(
+    String clotheId,
+  ) async => Right(reviews);
 
   @override
   Future<Either<Failure, List<Review>>> getMyReviews() async => Right(reviews);
@@ -65,14 +67,18 @@ void main() {
     );
   }
 
-  testWidgets('shows the empty state when the user has no reviews', (tester) async {
+  testWidgets('shows the empty state when the user has no reviews', (
+    tester,
+  ) async {
     await tester.pumpWidget(wrap(FakeReviewRepository([])));
     await tester.pumpAndSettle();
 
     expect(find.text("You haven't written any reviews yet."), findsOneWidget);
   });
 
-  testWidgets('lists a review and deletes it via the confirm dialog', (tester) async {
+  testWidgets('lists a review and deletes it via the confirm dialog', (
+    tester,
+  ) async {
     final repository = FakeReviewRepository([_review()]);
     await tester.pumpWidget(wrap(repository));
     await tester.pumpAndSettle();

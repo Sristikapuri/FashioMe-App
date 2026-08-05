@@ -43,19 +43,51 @@ class LoginViewModel extends Notifier<LoginState> {
 
     state = state.copyWith(isLoading: true, clearError: true);
 
-    final result = await _loginUsecase(
-      LoginUsecaseParams(email: trimmedEmail, password: trimmedPassword),
-    );
+    try {
+      final result = await _loginUsecase(
+        LoginUsecaseParams(email: trimmedEmail, password: trimmedPassword),
+      );
 
-    return result.fold(
-      (failure) {
-        state = state.copyWith(isLoading: false, errorMessage: failure.message);
-        return false;
-      },
-      (_) {
-        state = state.copyWith(isLoading: false);
-        return true;
-      },
-    );
+      return result.fold(
+        (failure) {
+          state = state.copyWith(
+            isLoading: false,
+            errorMessage: _sanitizeErrorMessage(failure.message),
+          );
+          return false;
+        },
+        (_) {
+          state = state.copyWith(isLoading: false);
+          return true;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _sanitizeErrorMessage(
+          e.toString().replaceAll('Exception: ', '').trim(),
+        ),
+      );
+      return false;
+    }
+  }
+
+  /// Replaces raw Dio / Socket / network error messages with a clean
+  /// user-friendly message so connection errors never leak to the UI.
+  static String _sanitizeErrorMessage(String msg) {
+    if (msg.isEmpty) return 'Login failed. Please try again.';
+    final lower = msg.toLowerCase();
+    if (lower.contains('connection errored') ||
+        lower.contains('connection failed') ||
+        lower.contains('socketexception') ||
+        lower.contains('no route to host') ||
+        lower.contains('network is unreachable') ||
+        lower.contains('dioexception') ||
+        lower.contains('connection error') ||
+        lower.contains('connection timeout') ||
+        lower.contains('cannot be solved by the library')) {
+      return 'You are offline. Please connect to Wi-Fi or try again later.';
+    }
+    return msg;
   }
 }

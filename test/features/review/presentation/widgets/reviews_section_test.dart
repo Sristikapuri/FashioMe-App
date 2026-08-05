@@ -15,7 +15,9 @@ class FakeReviewRepository implements ReviewRepository {
   int _nextId = 1;
 
   @override
-  Future<Either<Failure, List<Review>>> getReviewsByClothe(String clotheId) async {
+  Future<Either<Failure, List<Review>>> getReviewsByClothe(
+    String clotheId,
+  ) async {
     return Right(reviews.where((r) => r.clotheId == clotheId).toList());
   }
 
@@ -99,18 +101,24 @@ void main() {
     prefs = await SharedPreferences.getInstance();
   });
 
-  testWidgets('shows empty state and a write-a-review button when there are no reviews', (
+  testWidgets(
+    'shows empty state and a write-a-review button when there are no reviews',
+    (tester) async {
+      await tester.pumpWidget(wrap(const ReviewsSection(clotheId: 'clothe-1')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reviews'), findsOneWidget);
+      expect(
+        find.text('No reviews yet. Be the first to share your thoughts.'),
+        findsOneWidget,
+      );
+      expect(find.text('Write a review'), findsOneWidget);
+    },
+  );
+
+  testWidgets('submitting the review form adds the review to the list', (
     tester,
   ) async {
-    await tester.pumpWidget(wrap(const ReviewsSection(clotheId: 'clothe-1')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Reviews'), findsOneWidget);
-    expect(find.text('No reviews yet. Be the first to share your thoughts.'), findsOneWidget);
-    expect(find.text('Write a review'), findsOneWidget);
-  });
-
-  testWidgets('submitting the review form adds the review to the list', (tester) async {
     await tester.pumpWidget(wrap(const ReviewsSection(clotheId: 'clothe-1')));
     await tester.pumpAndSettle();
 
@@ -120,13 +128,22 @@ void main() {
     expect(find.text('Write a review'), findsWidgets);
     expect(find.byType(TextField), findsNWidgets(2));
 
-    await tester.enterText(find.byType(TextField).last, 'Fits perfectly and great quality.');
+    await tester.enterText(
+      find.byType(TextField).last,
+      'Fits perfectly and great quality.',
+    );
     await tester.tap(find.text('Submit review'));
     await tester.pumpAndSettle();
 
     expect(fakeRepository.reviews, hasLength(1));
-    expect(fakeRepository.reviews.single.comment, 'Fits perfectly and great quality.');
+    expect(
+      fakeRepository.reviews.single.comment,
+      'Fits perfectly and great quality.',
+    );
     expect(find.text('Fits perfectly and great quality.'), findsOneWidget);
-    expect(find.text('No reviews yet. Be the first to share your thoughts.'), findsNothing);
+    expect(
+      find.text('No reviews yet. Be the first to share your thoughts.'),
+      findsNothing,
+    );
   });
 }

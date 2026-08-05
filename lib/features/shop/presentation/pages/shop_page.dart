@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -52,20 +53,32 @@ class _ShopPageState extends ConsumerState<ShopPage> {
   StreamSubscription<void>? _shakeSubscription;
   StreamSubscription<TiltDirection>? _tiltSubscription;
   bool _isRefreshingFromShake = false;
+  ProviderSubscription<bool>? _sensorGesturesSubscription;
+  // Cached instead of re-read via `ref` in dispose(): Riverpod disallows
+  // `ref.read` once the widget is being torn down ("Cannot use ref after
+  // the widget was disposed"), which _stopSensorListeners hits every time
+  // it's called from dispose().
+  late final ShakeDetectorService _shakeService;
+  late final TiltDetectorService _tiltService;
 
   @override
   void initState() {
     super.initState();
+    _shakeService = ref.read(shakeDetectorServiceProvider);
+    _tiltService = ref.read(tiltDetectorServiceProvider);
     final currentUser = ref.read(authSessionViewModelProvider).user;
     final userGender = currentUser?.gender?.toLowerCase();
     if (userGender == 'female' || userGender == 'male') {
       ref.read(shopViewModelProvider.notifier).setGender(userGender!);
     }
     _setSensorListenersEnabled(ref.read(sensorGesturesEnabledProvider));
-    ref.listen<bool>(sensorGesturesEnabledProvider, (previous, enabled) {
-      if (previous == enabled) return;
-      _setSensorListenersEnabled(enabled);
-    });
+    _sensorGesturesSubscription = ref.listenManual<bool>(
+      sensorGesturesEnabledProvider,
+      (previous, enabled) {
+        if (previous == enabled) return;
+        _setSensorListenersEnabled(enabled);
+      },
+    );
   }
 
   void _setSensorListenersEnabled(bool enabled) {
@@ -79,15 +92,13 @@ class _ShopPageState extends ConsumerState<ShopPage> {
   void _startSensorListeners() {
     if (_shakeSubscription != null || _tiltSubscription != null) return;
 
-    final shakeService = ref.read(shakeDetectorServiceProvider);
-    shakeService.start();
-    _shakeSubscription = shakeService.shakeStream.listen((_) {
+    _shakeService.start();
+    _shakeSubscription = _shakeService.shakeStream.listen((_) {
       _onShakeDetected();
     });
 
-    final tiltService = ref.read(tiltDetectorServiceProvider);
-    tiltService.start();
-    _tiltSubscription = tiltService.tiltStream.listen((direction) {
+    _tiltService.start();
+    _tiltSubscription = _tiltService.tiltStream.listen((direction) {
       _onTiltDetected(direction);
     });
   }
@@ -97,8 +108,8 @@ class _ShopPageState extends ConsumerState<ShopPage> {
     _shakeSubscription = null;
     _tiltSubscription?.cancel();
     _tiltSubscription = null;
-    ref.read(shakeDetectorServiceProvider).stop();
-    ref.read(tiltDetectorServiceProvider).stop();
+    _shakeService.stop();
+    _tiltService.stop();
   }
 
   Future<void> _onShakeDetected() async {
@@ -106,6 +117,9 @@ class _ShopPageState extends ConsumerState<ShopPage> {
     // guard additionally prevents overlapping refresh calls while one is
     // still in flight.
     if (_isRefreshingFromShake) return;
+    // Do not refresh if another page (e.g. CartPage) is on top of ShopPage.
+    if (!mounted) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
     _isRefreshingFromShake = true;
     try {
       await ref.read(shopViewModelProvider.notifier).refresh();
@@ -117,6 +131,9 @@ class _ShopPageState extends ConsumerState<ShopPage> {
   }
 
   void _onTiltDetected(TiltDirection direction) {
+    // Do not apply tilt filter if another page is on top of ShopPage.
+    if (!mounted) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
     ref
         .read(shopViewModelProvider.notifier)
         .setLowStockOnly(direction == TiltDirection.right);
@@ -126,6 +143,7 @@ class _ShopPageState extends ConsumerState<ShopPage> {
   void dispose() {
     _searchController.dispose();
     _stopSensorListeners();
+    _sensorGesturesSubscription?.close();
     super.dispose();
   }
 
@@ -269,7 +287,7 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                             ),
                             const SizedBox(height: 12),
                             SizedBox(
-                              height: 180,
+                              height: 300,
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: state.featuredDeals.length,
@@ -291,9 +309,7 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                             const SizedBox(height: 22),
                           ],
                           Text(
-                            state.showLowStockOnly
-                                ? 'Low Stock'
-                                : 'All Items',
+                            state.showLowStockOnly ? 'Low Stock' : 'All Items',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -322,8 +338,11 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                                 return _ProductCard(
                                   item: item,
                                   onAdd: () => notifier.addToBag(item),
-                                  isWishlisted: state.wishlistIds.contains(item.id),
-                                  onWishlist: () => notifier.toggleWishlist(item.id),
+                                  isWishlisted: state.wishlistIds.contains(
+                                    item.id,
+                                  ),
+                                  onWishlist: () =>
+                                      notifier.toggleWishlist(item.id),
                                   onTap: () => AppRoutes.push(
                                     context,
                                     ShopDetailPage(itemId: item.id),
@@ -425,11 +444,14 @@ class _FeaturedCard extends StatelessWidget {
             Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  item.imageUrl,
+                child: CachedNetworkImage(
+                  imageUrl: item.imageUrl,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  errorWidget: (context, url, error) => Container(
                     color: AppColors.surfaceMuted,
                     alignment: Alignment.center,
                     child: const Icon(Icons.image_not_supported_outlined),
@@ -520,16 +542,31 @@ class _ProductCard extends StatelessWidget {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    child: Image.network(item.imageUrl, width: double.infinity, fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(color: AppColors.surfaceMuted, alignment: Alignment.center, child: const Icon(Icons.image_not_supported_outlined))),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                    child: CachedNetworkImage(
+                      imageUrl: item.imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: AppColors.surfaceMuted,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.image_not_supported_outlined),
+                      ),
+                    ),
                   ),
                   Positioned(
                     top: 8,
                     right: 8,
                     child: IconButton.filledTonal(
                       onPressed: onWishlist,
-                      icon: Icon(isWishlisted ? Icons.favorite : Icons.favorite_border),
+                      icon: Icon(
+                        isWishlisted ? Icons.favorite : Icons.favorite_border,
+                      ),
                     ),
                   ),
                 ],
@@ -659,7 +696,7 @@ class _BagBar extends StatelessWidget {
           const SizedBox(height: 12),
           if (bagItems.isNotEmpty)
             SizedBox(
-              height: 92,
+              height: 104,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: bagItems.length,
@@ -678,11 +715,24 @@ class _BagBar extends StatelessWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            item.$1.imageUrl,
+                          child: CachedNetworkImage(
+                            imageUrl: item.$1.imageUrl,
                             width: 58,
                             height: 58,
                             fit: BoxFit.cover,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              width: 58,
+                              height: 58,
+                              color: AppColors.surfaceMuted,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.image_not_supported_outlined,
+                                size: 20,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),

@@ -541,21 +541,28 @@ class DashboardViewModel extends Notifier<DashboardState> {
     );
 
     final selectedOccasion = occasion ?? state.aiStyleOfDay.occasion;
+    final occasionList = _generateOccasionRecommendationsList(
+      selectedOccasion,
+      state.profileData,
+      state.stylePreferenceScores,
+    );
+
+    // Pick a fresh, non-duplicate recommendation different from the currently shown one
+    final currentId = state.currentRecommendation.id;
+    final unusedList = occasionList.where((item) => item.id != currentId).toList();
+    final freshRecommendation = unusedList.isNotEmpty
+        ? unusedList[_random.nextInt(unusedList.length)]
+        : occasionList[_random.nextInt(occasionList.length)];
+
     final recommendation = await _generateRecommendationFromBackend(
       occasion: selectedOccasion,
       source: source,
-      fallback: () => _generateRecommendation(
-        occasion: selectedOccasion,
-        profileData: state.profileData,
-        preferenceScores: state.stylePreferenceScores,
-        excludedCategory: '',
-      ),
+      fallback: () => freshRecommendation,
     );
+
     final refreshedList = [
       recommendation,
-      ...state.homeRecommendations.where(
-        (item) => item.id != recommendation.id,
-      ),
+      ...occasionList.where((item) => item.id != recommendation.id),
     ].take(6).toList();
 
     state = state.copyWith(
@@ -567,8 +574,8 @@ class DashboardViewModel extends Notifier<DashboardState> {
           : state.currentRecommendation,
       homeRecommendations: refreshedList,
       uploadSucceeded: true,
-      aiProcessingMessage: 'Style board updated.',
-      uploadMessage: 'Your style recommendation is ready.',
+      aiProcessingMessage: 'Style board updated for $selectedOccasion.',
+      uploadMessage: 'Your $selectedOccasion style recommendations are ready.',
     );
     await _persistState();
     return recommendation;
@@ -668,6 +675,52 @@ class DashboardViewModel extends Notifier<DashboardState> {
       return;
     }
 
+    final lower = trimmed.toLowerCase();
+
+    // 1. Check if search query matches an occasion (e.g. "wedding", "party", "formal", "casual", "sangeet", etc.)
+    final knownOccasions = [
+      'Wedding',
+      'Sangeet',
+      'Party',
+      'Formal',
+      'Office',
+      'Casual',
+      'Festival',
+      'Date Night',
+      'Travel',
+      'Gala',
+      'Street Style',
+      'Beach',
+      'Brunch',
+      'Black Tie',
+    ];
+
+    final matchedOccasion = knownOccasions.firstWhere(
+      (occ) => occ.toLowerCase() == lower || lower.contains(occ.toLowerCase()),
+      orElse: () => '',
+    );
+
+    if (matchedOccasion.isNotEmpty) {
+      final occasionList = _generateOccasionRecommendationsList(
+        matchedOccasion,
+        state.profileData,
+        state.stylePreferenceScores,
+      );
+      final topRec = occasionList.first;
+
+      state = state.copyWith(
+        currentIndex: state.currentIndex == 4 ? 0 : state.currentIndex,
+        aiStyleOfDay: topRec,
+        currentRecommendation: topRec,
+        homeRecommendations: occasionList,
+        uploadMessage: 'Showing $matchedOccasion recommendations.',
+        uploadSucceeded: true,
+      );
+      await _persistState();
+      return;
+    }
+
+    // 2. Search remote backend
     try {
       final result = await _dashboardHome.search(
         query: trimmed,
@@ -709,8 +762,11 @@ class DashboardViewModel extends Notifier<DashboardState> {
                 .toList(growable: false)
           : state.wardrobeItems;
 
+      // Stay on current tab (Home/Discover/Wardrobe) – NEVER jump to Profile (index 4)
+      final targetIndex = state.currentIndex == 4 ? 3 : state.currentIndex;
+
       state = state.copyWith(
-        currentIndex: 4,
+        currentIndex: targetIndex,
         discoverFilter: 'Trending',
         discoverItems: discoverItems.isEmpty
             ? state.discoverItems
@@ -732,7 +788,6 @@ class DashboardViewModel extends Notifier<DashboardState> {
         uploadSucceeded: true,
       );
     } catch (_) {
-      final lower = trimmed.toLowerCase();
       final localDiscover = state.discoverItems
           .where(
             (item) =>
@@ -750,8 +805,12 @@ class DashboardViewModel extends Notifier<DashboardState> {
           )
           .toList();
 
+      final targetIndex = state.currentIndex == 4
+          ? (localWardrobe.isNotEmpty ? 2 : 3)
+          : state.currentIndex;
+
       state = state.copyWith(
-        currentIndex: localWardrobe.isNotEmpty ? 2 : 4,
+        currentIndex: targetIndex,
         discoverItems: localDiscover.isEmpty
             ? state.discoverItems
             : localDiscover,
@@ -1319,6 +1378,11 @@ class DashboardViewModel extends Notifier<DashboardState> {
     await _persistState();
   }
 
+  /// Clears the AI stylist chat history.
+  void clearChatMessages() {
+    state = state.copyWith(chatMessages: []);
+  }
+
   Future<void> sendChatMessage(
     String message, {
     String source = 'My Wardrobe',
@@ -1363,7 +1427,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
       }
     } catch (_) {
       reply =
-          'I could not reach the AI styling service right now. Please check your connection and try again.';
+          '✈️ You\'re offline right now. Connect to WiFi to chat with your AI stylist. Your previous style recommendations are still available above!';
     }
 
     // The assistant endpoint is responsible for the conversation, but it can
@@ -1566,45 +1630,778 @@ class DashboardViewModel extends Notifier<DashboardState> {
     }
   }
 
+  /// Returns true when the user's profile gender is explicitly set to male.
+  /// Empty / unset / female defaults to false so existing female outfits are preserved.
+  bool _isMale(DashboardProfileData profileData) {
+    final g = profileData.gender.trim().toLowerCase();
+    return g == 'male' || g == 'm';
+  }
+
+  List<DashboardRecommendation> _generateOccasionRecommendationsList(
+    String occasion,
+    DashboardProfileData profileData,
+    Map<String, int> preferenceScores,
+  ) {
+    final lower = occasion.trim().toLowerCase();
+    final male = _isMale(profileData);
+
+    // ── WEDDING ────────────────────────────────────────────────────────────
+    if (lower.contains('wedding') || lower.contains('shaadi') || lower.contains('marriage')) {
+      if (male) {
+        return [
+          DashboardRecommendation(
+            id: 'wedding-m1',
+            title: 'Classic Ivory Sherwani & Churidar',
+            occasion: 'Wedding',
+            category: 'Traditional',
+            mood: 'Regal & Royal',
+            imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&q=80',
+            outfit: 'Ivory raw-silk sherwani with gold zari embroidery, matching churidar, embroidered waistcoat & leather Mojris',
+            hairstyle: 'Neatly styled with light pomade; trimmed beard',
+            explanation: 'The quintessential groom & wedding-guest sherwani — timeless and commanding.',
+            palette: _paletteValuesForLabels(const ['Ivory', 'Gold', 'Deep Maroon']),
+            paletteLabels: const ['Ivory', 'Gold', 'Deep Maroon'],
+          ),
+          DashboardRecommendation(
+            id: 'wedding-m2',
+            title: 'Embroidered Bandhgala Suit',
+            occasion: 'Wedding',
+            category: 'Traditional',
+            mood: 'Classic Elegance',
+            imageUrl: 'https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=400&q=80',
+            outfit: 'Nehru-collar bandhgala jacket with intricate threadwork, slim trousers & pocket square',
+            hairstyle: 'Side-parted clean cut',
+            explanation: 'A refined Indian formal jacket that exudes heritage charm at wedding functions.',
+            palette: _paletteValuesForLabels(const ['Royal Blue', 'Gold', 'Ivory']),
+            paletteLabels: const ['Royal Blue', 'Gold', 'Ivory'],
+          ),
+          DashboardRecommendation(
+            id: 'wedding-m3',
+            title: 'Silk Kurta & Dhoti Ensemble',
+            occasion: 'Wedding',
+            category: 'Traditional',
+            mood: 'Graceful & Festive',
+            imageUrl: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400&q=80',
+            outfit: 'Pure silk embroidered kurta, silk dhoti with gold border, stole draped & Kolhapuri sandals',
+            hairstyle: 'Traditional oiled neat look',
+            explanation: 'Authentic South-Indian inspired silk kurta-dhoti for traditional wedding ceremonies.',
+            palette: _paletteValuesForLabels(const ['Deep Crimson', 'Gold', 'Emerald']),
+            paletteLabels: const ['Deep Crimson', 'Gold', 'Emerald'],
+          ),
+          DashboardRecommendation(
+            id: 'wedding-m4',
+            title: 'Indo-Western Tuxedo Sherwani',
+            occasion: 'Wedding',
+            category: 'Indo-Western',
+            mood: 'Modern Royal',
+            imageUrl: 'https://images.unsplash.com/photo-1627225925004-2f69684e93c1?w=400&q=80',
+            outfit: 'Structured tuxedo-lapel sherwani over straight-cut trousers, embroidered pocket square & black Mojris',
+            hairstyle: 'Textured pompadour / side part',
+            explanation: 'Modern fusion sherwani blending tuxedo sophistication with Indian craftsmanship.',
+            palette: _paletteValuesForLabels(const ['Champagne', 'Black', 'Gold']),
+            paletteLabels: const ['Champagne', 'Black', 'Gold'],
+          ),
+          DashboardRecommendation(
+            id: 'wedding-m5',
+            title: 'Jodhpuri Suit with Contrast Piping',
+            occasion: 'Wedding',
+            category: 'Ethnic Fusion',
+            mood: 'Vibrant & Festive',
+            imageUrl: 'https://images.unsplash.com/photo-1593032465175-481ac7f401a0?w=400&q=80',
+            outfit: 'Jodhpuri bundi jacket with contrast piping over slim trousers, kurta shirt & leather shoes',
+            hairstyle: 'Clean fade with side part',
+            explanation: 'Heritage Jodhpuri design elevated with modern tailoring for wedding receptions.',
+            palette: _paletteValuesForLabels(const ['Emerald Green', 'Gold', 'Ivory']),
+            paletteLabels: const ['Emerald Green', 'Gold', 'Ivory'],
+          ),
+          DashboardRecommendation(
+            id: 'wedding-m6',
+            title: 'Velvet Sherwani with Embroidered Stole',
+            occasion: 'Wedding',
+            category: 'Couture',
+            mood: 'Glamorous',
+            imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+            outfit: 'Midnight-blue velvet sherwani, gold embroidered stole, slim pants & stone-studded Mojris',
+            hairstyle: 'Slicked back with beard',
+            explanation: 'Ultra-rich velvet sherwani for evening galas and high-profile wedding receptions.',
+            palette: _paletteValuesForLabels(const ['Midnight Blue', 'Gold', 'Pearl']),
+            paletteLabels: const ['Midnight Blue', 'Gold', 'Pearl'],
+          ),
+        ];
+      }
+      return [
+        DashboardRecommendation(
+          id: 'wedding-1',
+          title: 'Royal Velvet Embroidered Lehenga',
+          occasion: 'Wedding',
+          category: 'Traditional',
+          mood: 'Regal & Royal',
+          imageUrl: 'https://images.unsplash.com/photo-1610189352649-1a7b2d7e9be5?w=400&q=80',
+          outfit: 'Heavy velvet lehenga in deep crimson with gold zari embroidery, silk blouse & sheer net dupatta',
+          hairstyle: 'Traditional braided bun with fresh jasmine flowers',
+          explanation: 'A grand traditional ensemble perfect for main wedding ceremonies and royal receptions.',
+          palette: _paletteValuesForLabels(const ['Deep Crimson', 'Gold', 'Emerald']),
+          paletteLabels: const ['Deep Crimson', 'Gold', 'Emerald'],
+        ),
+        DashboardRecommendation(
+          id: 'wedding-2',
+          title: 'Banarasi Silk Heritage Saree',
+          occasion: 'Wedding',
+          category: 'Traditional',
+          mood: 'Classic Elegance',
+          imageUrl: 'https://images.unsplash.com/photo-1571290274554-6a2eaa771e5f?w=400&q=80',
+          outfit: 'Pure Banarasi silk saree with gold zari woven floral motifs, elbow-sleeve blouse & Kundan choker set',
+          hairstyle: 'Sleek low bun with statement jhumkas',
+          explanation: 'Timeless Indian heritage saree crafted for traditional wedding rituals and family celebrations.',
+          palette: _paletteValuesForLabels(const ['Ruby Red', 'Gold', 'Ivory']),
+          paletteLabels: const ['Ruby Red', 'Gold', 'Ivory'],
+        ),
+        DashboardRecommendation(
+          id: 'wedding-3',
+          title: 'Pastel Floral Anarkali Suit',
+          occasion: 'Wedding',
+          category: 'Ethnic Fusion',
+          mood: 'Graceful & Dreamy',
+          imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4b3d21?w=400&q=80',
+          outfit: 'Floor-length silk Anarkali suit with Gota Patti work, organza dupatta & pearl Chandbali earrings',
+          hairstyle: 'Soft romantic waves with side pin-up',
+          explanation: 'Lightweight yet luxurious Anarkali suit ideal for day weddings and daytime functions.',
+          palette: _paletteValuesForLabels(const ['Blush Pink', 'Rose Gold', 'Ivory']),
+          paletteLabels: const ['Blush Pink', 'Rose Gold', 'Ivory'],
+        ),
+        DashboardRecommendation(
+          id: 'wedding-4',
+          title: 'Regal Indo-Western Sherwani Jacket Set',
+          occasion: 'Wedding',
+          category: 'Indo-Western',
+          mood: 'Modern Royal',
+          imageUrl: 'https://images.unsplash.com/photo-1628191013085-990d39ec25b4?w=400&q=80',
+          outfit: 'Embroidered silk sherwani jacket over tailored trousers, paired with leather Mojris & pocket square',
+          hairstyle: 'Textured pompadour / side part',
+          explanation: 'Sophisticated fusion outerwear designed for high-profile wedding receptions.',
+          palette: _paletteValuesForLabels(const ['Royal Blue', 'Champagne', 'Gold']),
+          paletteLabels: const ['Royal Blue', 'Champagne', 'Gold'],
+        ),
+        DashboardRecommendation(
+          id: 'wedding-5',
+          title: 'Georgette Mirror Work Sharara Set',
+          occasion: 'Wedding',
+          category: 'Traditional',
+          mood: 'Vibrant & Festive',
+          imageUrl: 'https://images.unsplash.com/photo-1609209035942-1d1e1d53f98e?w=400&q=80',
+          outfit: 'Tiered georgette sharara pants with mirror-work short kurti, net dupatta & Maang Tikka',
+          hairstyle: 'Half-up braided crown',
+          explanation: 'Flowy, celebratory sharara set crafted for movement and dancing during wedding celebrations.',
+          palette: _paletteValuesForLabels(const ['Emerald Green', 'Gold', 'Lime']),
+          paletteLabels: const ['Emerald Green', 'Gold', 'Lime'],
+        ),
+        DashboardRecommendation(
+          id: 'wedding-6',
+          title: 'Embellished Organza Saree & Pearl Corset',
+          occasion: 'Wedding',
+          category: 'Couture',
+          mood: 'Glamorous',
+          imageUrl: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=400&q=80',
+          outfit: 'Hand-embellished champagne organza saree with a pearl corset blouse & crystal clutch',
+          hairstyle: 'Glamorous Hollywood waves',
+          explanation: 'Ultra-modern wedding couture saree for evening galas and cocktail receptions.',
+          palette: _paletteValuesForLabels(const ['Champagne', 'Silver', 'Pearl']),
+          paletteLabels: const ['Champagne', 'Silver', 'Pearl'],
+        ),
+      ];
+    }
+
+    // ── SANGEET / MEHENDI ──────────────────────────────────────────────────
+    if (lower.contains('sangeet') || lower.contains('mehendi')) {
+      if (male) {
+        return [
+          DashboardRecommendation(
+            id: 'sangeet-m1',
+            title: 'Embroidered Kurta & Patiala Set',
+            occasion: 'Sangeet',
+            category: 'Festive Ethnic',
+            mood: 'Dazzling',
+            imageUrl: 'https://images.unsplash.com/photo-1519657306-a8d6a4bc0a5e?w=400&q=80',
+            outfit: 'Floral-embroidered silk kurta with Patiala salwar, embroidered Nehru waistcoat & beaded Juttis',
+            hairstyle: 'Textured slick back',
+            explanation: 'Vibrant kurta-Patiala set designed for high-energy Sangeet dance performances.',
+            palette: _paletteValuesForLabels(const ['Sparkling Yellow', 'Orange', 'Gold']),
+            paletteLabels: const ['Sparkling Yellow', 'Orange', 'Gold'],
+          ),
+          DashboardRecommendation(
+            id: 'sangeet-m2',
+            title: 'Mirror Work Bandhgala & Slim Trousers',
+            occasion: 'Sangeet',
+            category: 'Indo-Western',
+            mood: 'Contemporary Chic',
+            imageUrl: 'https://images.unsplash.com/photo-1617196034176-5e80c4d01432?w=400&q=80',
+            outfit: 'Short mirror-embellished bandhgala jacket over white kurta & slim-fit cream trousers',
+            hairstyle: 'Neat side part with beard',
+            explanation: 'Glam Indo-Western bandhgala perfect for toasts and festive group dances.',
+            palette: _paletteValuesForLabels(const ['Magenta', 'Gold', 'Ivory']),
+            paletteLabels: const ['Magenta', 'Gold', 'Ivory'],
+          ),
+          DashboardRecommendation(
+            id: 'sangeet-m3',
+            title: 'Sequined Nehru Jacket Set',
+            occasion: 'Sangeet',
+            category: 'Party Ethnic',
+            mood: 'Midnight Sparkle',
+            imageUrl: 'https://images.unsplash.com/photo-1631281956016-3cdc1b2fe5fb?w=400&q=80',
+            outfit: 'Sequined royal-blue Nehru jacket over silk kurta, straight trousers & metallic Mojris',
+            hairstyle: 'Quiffed with trimmed beard',
+            explanation: 'Sparkling Nehru jacket that catches every spotlight on the Sangeet dance floor.',
+            palette: _paletteValuesForLabels(const ['Royal Blue', 'Silver', 'Gold']),
+            paletteLabels: const ['Royal Blue', 'Silver', 'Gold'],
+          ),
+          DashboardRecommendation(
+            id: 'sangeet-m4',
+            title: 'Printed Indo-Western Jacket & Slim Pants',
+            occasion: 'Sangeet',
+            category: 'Ethnic Fusion',
+            mood: 'Edgy & Bold',
+            imageUrl: 'https://images.unsplash.com/photo-1578932750294-f5075e85f44a?w=400&q=80',
+            outfit: 'Block-printed structured jacket, kurta shirt & straight-fit slim trousers with leather loafers',
+            hairstyle: 'Fade cut with styled top',
+            explanation: 'Bold printed fusion jacket blending traditional block prints with modern tailoring.',
+            palette: _paletteValuesForLabels(const ['Electric Blue', 'Saffron', 'Black']),
+            paletteLabels: const ['Electric Blue', 'Saffron', 'Black'],
+          ),
+        ];
+      }
+      return [
+        DashboardRecommendation(
+          id: 'sangeet-1',
+          title: 'Sparkling Mirror Crop Top & Lehenga',
+          occasion: 'Sangeet',
+          category: 'Festive Glam',
+          mood: 'Dazzling',
+          imageUrl: 'https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=400&q=80',
+          outfit: 'All-over mirror-work crop top with a twirl-ready georgette lehenga & lightweight ruffled dupatta',
+          hairstyle: 'High voluminous ponytail',
+          explanation: 'Designed for high-energy dance performances and evening Sangeet festivities.',
+          palette: _paletteValuesForLabels(const ['Sparkling Lavender', 'Silver', 'Plum']),
+          paletteLabels: const ['Sparkling Lavender', 'Silver', 'Plum'],
+        ),
+        DashboardRecommendation(
+          id: 'sangeet-2',
+          title: 'Indo-Western Cape Suit & Tulip Pants',
+          occasion: 'Sangeet',
+          category: 'Indo-Western',
+          mood: 'Contemporary Chic',
+          imageUrl: 'https://images.unsplash.com/photo-1596993100471-c3905dafa78e?w=400&q=80',
+          outfit: 'Embroidered sheer cape over a strapless bustier & draped tulip trousers',
+          hairstyle: 'Sleek straight hair with middle part',
+          explanation: 'Modern Indo-Western cape set offering maximum comfort and high fashion impact.',
+          palette: _paletteValuesForLabels(const ['Magenta', 'Gold', 'Bronze']),
+          paletteLabels: const ['Magenta', 'Gold', 'Bronze'],
+        ),
+        DashboardRecommendation(
+          id: 'sangeet-3',
+          title: 'Sequined Net Cocktail Saree',
+          occasion: 'Sangeet',
+          category: 'Party Wear',
+          mood: 'Midnight Sparkle',
+          imageUrl: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?w=400&q=80',
+          outfit: 'Gradient sequined net saree with sleeveless designer blouse & drop earrings',
+          hairstyle: 'Side-swept curls',
+          explanation: 'A glamorous party saree that catches every light on the Sangeet dance floor.',
+          palette: _paletteValuesForLabels(const ['Midnight Blue', 'Silver', 'Navy']),
+          paletteLabels: const ['Midnight Blue', 'Silver', 'Navy'],
+        ),
+        DashboardRecommendation(
+          id: 'sangeet-4',
+          title: 'Dhoti Pants & Metallic Jacket Set',
+          occasion: 'Sangeet',
+          category: 'Ethnic Fusion',
+          mood: 'Edgy & Bold',
+          imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
+          outfit: 'Silk dhoti pants with a structured metallic embroidered jacket & heeled sandals',
+          hairstyle: 'Braided crown updos',
+          explanation: 'Edgy fusion outfit blending traditional dhoti draping with modern tailoring.',
+          palette: _paletteValuesForLabels(const ['Electric Blue', 'Silver', 'Black']),
+          paletteLabels: const ['Electric Blue', 'Silver', 'Black'],
+        ),
+      ];
+    }
+
+    // ── PARTY ──────────────────────────────────────────────────────────────
+    if (lower.contains('party') || lower.contains('club') || lower.contains('cocktail')) {
+      if (male) {
+        return [
+          DashboardRecommendation(
+            id: 'party-m1',
+            title: 'Slim-Fit Black Suit & Turtleneck',
+            occasion: 'Party',
+            category: 'Evening Wear',
+            mood: 'Sleek & Sophisticated',
+            imageUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80',
+            outfit: 'Slim-fit black suit, fitted black turtleneck, leather Derby shoes & silver watch',
+            hairstyle: 'Textured undercut or slick back',
+            explanation: 'A modern monochromatic party look that never goes out of style.',
+            palette: _paletteValuesForLabels(const ['Jet Black', 'Charcoal', 'Silver']),
+            paletteLabels: const ['Jet Black', 'Charcoal', 'Silver'],
+          ),
+          DashboardRecommendation(
+            id: 'party-m2',
+            title: 'Printed Cuban Shirt & Tailored Chinos',
+            occasion: 'Party',
+            category: 'Smart Casual',
+            mood: 'Relaxed & Cool',
+            imageUrl: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&q=80',
+            outfit: 'Open-collar printed Cuban shirt, slim-fit chinos, suede loafers & minimal chain necklace',
+            hairstyle: 'Messy textured crop',
+            explanation: 'Effortlessly cool party look balancing print and tailoring.',
+            palette: _paletteValuesForLabels(const ['Cobalt Blue', 'Cream', 'Tan']),
+            paletteLabels: const ['Cobalt Blue', 'Cream', 'Tan'],
+          ),
+          DashboardRecommendation(
+            id: 'party-m3',
+            title: 'Monochrome Coord Set',
+            occasion: 'Party',
+            category: 'Street Glam',
+            mood: 'Bold & Confident',
+            imageUrl: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=400&q=80',
+            outfit: 'Matching oversized shirt & wide-leg trousers in one tone, clean sneakers & minimalist watch',
+            hairstyle: 'Fade cut with styled top',
+            explanation: 'Head-to-toe monochrome coord set for a powerful, fashion-forward party statement.',
+            palette: _paletteValuesForLabels(const ['Caramel', 'Sand', 'Off-White']),
+            paletteLabels: const ['Caramel', 'Sand', 'Off-White'],
+          ),
+          DashboardRecommendation(
+            id: 'party-m4',
+            title: 'Velvet Blazer & Dark Jeans',
+            occasion: 'Party',
+            category: 'Smart Glam',
+            mood: 'Edgy & Refined',
+            imageUrl: 'https://images.unsplash.com/photo-1610047802551-1e8e7c51d776?w=400&q=80',
+            outfit: 'Rich velvet blazer in burgundy, dark slim jeans, white shirt & Chelsea boots',
+            hairstyle: 'Side-swept voluminous',
+            explanation: 'Luxury velvet blazer adds evening drama to classic denim for parties.',
+            palette: _paletteValuesForLabels(const ['Burgundy', 'Black', 'White']),
+            paletteLabels: const ['Burgundy', 'Black', 'White'],
+          ),
+        ];
+      }
+      return [
+        DashboardRecommendation(
+          id: 'party-1',
+          title: 'Sequined Cocktail Mini Dress',
+          occasion: 'Party',
+          category: 'Evening Wear',
+          mood: 'Glamorous',
+          imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&q=80',
+          outfit: 'All-over sequined bodycon mini dress with metallic ankle-strap heels & compact clutch',
+          hairstyle: 'Sleek high ponytail',
+          explanation: 'Turn heads at any night-out party or celebration with this shimmering look.',
+          palette: _paletteValuesForLabels(const ['Midnight Black', 'Silver', 'Gunmetal']),
+          paletteLabels: const ['Midnight Black', 'Silver', 'Gunmetal'],
+        ),
+        DashboardRecommendation(
+          id: 'party-2',
+          title: 'Emerald Satin Slip Maxi Dress',
+          occasion: 'Party',
+          category: 'Chic',
+          mood: 'Seductive & Elegant',
+          imageUrl: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&q=80',
+          outfit: 'Cowl-neck satin maxi slip dress, layered gold necklaces & stiletto heels',
+          hairstyle: 'Loose textured beach waves',
+          explanation: 'Effortlessly chic satin slip dress for upscale lounge parties and dinners.',
+          palette: _paletteValuesForLabels(const ['Emerald Green', 'Gold', 'Black']),
+          paletteLabels: const ['Emerald Green', 'Gold', 'Black'],
+        ),
+        DashboardRecommendation(
+          id: 'party-3',
+          title: 'Velvet Corset & Oversized Blazer',
+          occasion: 'Party',
+          category: 'Smart Glam',
+          mood: 'Bold & Confident',
+          imageUrl: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400&q=80',
+          outfit: 'Structured velvet corset top, tailored wide-leg trousers & oversized silk blazer',
+          hairstyle: 'Sharp bob / sleek straight',
+          explanation: 'A powerful party look combining tailored masculine cuts with feminine velvet detail.',
+          palette: _paletteValuesForLabels(const ['Burgundy', 'Black', 'Gold']),
+          paletteLabels: const ['Burgundy', 'Black', 'Gold'],
+        ),
+        DashboardRecommendation(
+          id: 'party-4',
+          title: 'Leather Trousers & Sheer Sparkle Top',
+          occasion: 'Party',
+          category: 'Street Glam',
+          mood: 'Edgy & Cool',
+          imageUrl: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&q=80',
+          outfit: 'High-waisted faux leather trousers, sheer embellished turtleneck & pointed boots',
+          hairstyle: 'Messy bun with face-framing strands',
+          explanation: 'Urban night-out outfit balancing edgy leather textures with sparkle.',
+          palette: _paletteValuesForLabels(const ['Black', 'Charcoal', 'Silver']),
+          paletteLabels: const ['Black', 'Charcoal', 'Silver'],
+        ),
+      ];
+    }
+
+    // ── FORMAL ─────────────────────────────────────────────────────────────
+    if (lower.contains('formal') || lower.contains('gala') || lower.contains('black tie')) {
+      if (male) {
+        return [
+          DashboardRecommendation(
+            id: 'formal-m1',
+            title: 'Classic Charcoal Three-Piece Suit',
+            occasion: 'Formal',
+            category: 'Formal',
+            mood: 'Majestic & Sophisticated',
+            imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+            outfit: 'Charcoal three-piece suit, crisp white dress shirt, silk tie, pocket square & Oxford shoes',
+            hairstyle: 'Neatly combed side part',
+            explanation: 'The gold-standard men\'s formal look for galas, award nights & black-tie events.',
+            palette: _paletteValuesForLabels(const ['Charcoal', 'White', 'Silver']),
+            paletteLabels: const ['Charcoal', 'White', 'Silver'],
+          ),
+          DashboardRecommendation(
+            id: 'formal-m2',
+            title: 'Navy Double-Breasted Blazer',
+            occasion: 'Formal',
+            category: 'Tailored',
+            mood: 'Power Elegance',
+            imageUrl: 'https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=400&q=80',
+            outfit: 'Navy double-breasted blazer, light grey trousers, white spread-collar shirt & burgundy loafers',
+            hairstyle: 'Clean taper fade',
+            explanation: 'Bold double-breasted tailoring for high-profile corporate dinners and galas.',
+            palette: _paletteValuesForLabels(const ['Navy Blue', 'Grey', 'Burgundy']),
+            paletteLabels: const ['Navy Blue', 'Grey', 'Burgundy'],
+          ),
+          DashboardRecommendation(
+            id: 'formal-m3',
+            title: 'Classic Black Tuxedo & Bow Tie',
+            occasion: 'Formal',
+            category: 'Black Tie',
+            mood: 'Timeless Luxe',
+            imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80',
+            outfit: 'Classic black tuxedo with satin lapel, white dress shirt, black bow tie & patent Oxford shoes',
+            hairstyle: 'Slick back with pomade',
+            explanation: 'The ultimate black-tie ensemble for red-carpet evenings and prestige events.',
+            palette: _paletteValuesForLabels(const ['Jet Black', 'White', 'Ivory']),
+            paletteLabels: const ['Jet Black', 'White', 'Ivory'],
+          ),
+        ];
+      }
+      return [
+        DashboardRecommendation(
+          id: 'formal-1',
+          title: 'Floor-Length Satin Evening Gown',
+          occasion: 'Formal',
+          category: 'Formal',
+          mood: 'Majestic & Sophisticated',
+          imageUrl: 'https://images.unsplash.com/photo-1605763240000-7e93b172d754?w=400&q=80',
+          outfit: 'Floor-length heavy satin gown with a subtle leg slit, diamond drop earrings & satin clutch',
+          hairstyle: 'Chignon low bun',
+          explanation: 'Classic formal elegance for black-tie galas and prestigious award nights.',
+          palette: _paletteValuesForLabels(const ['Navy Blue', 'Silver', 'Sapphire']),
+          paletteLabels: const ['Navy Blue', 'Silver', 'Sapphire'],
+        ),
+        DashboardRecommendation(
+          id: 'formal-2',
+          title: 'Tailored Velvet Tuxedo Suit Set',
+          occasion: 'Formal',
+          category: 'Tailored',
+          mood: 'Power Elegance',
+          imageUrl: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80',
+          outfit: 'Double-breasted velvet tuxedo blazer, silk lapel, cigarette pants & pointed pumps',
+          hairstyle: 'Sleek backcomb wet look',
+          explanation: 'A high-fashion alternative to evening dresses for formal corporate galas.',
+          palette: _paletteValuesForLabels(const ['Classic Black', 'White', 'Gold']),
+          paletteLabels: const ['Classic Black', 'White', 'Gold'],
+        ),
+        DashboardRecommendation(
+          id: 'formal-3',
+          title: 'One-Shoulder Draped Crepe Gown',
+          occasion: 'Formal',
+          category: 'Haute Couture',
+          mood: 'Minimalist Luxe',
+          imageUrl: 'https://images.unsplash.com/photo-1617922001439-4a2e6562f328?w=400&q=80',
+          outfit: 'Asymmetric one-shoulder crepe gown with structured cape detail & crystal bangles',
+          hairstyle: 'Asymmetric side bun',
+          explanation: 'Architectural formal gown designed for red-carpet events and gala dinners.',
+          palette: _paletteValuesForLabels(const ['Deep Plum', 'Rose Gold', 'Black']),
+          paletteLabels: const ['Deep Plum', 'Rose Gold', 'Black'],
+        ),
+      ];
+    }
+
+    // ── OFFICE / WORK ──────────────────────────────────────────────────────
+    if (lower.contains('office') || lower.contains('work')) {
+      if (male) {
+        return [
+          DashboardRecommendation(
+            id: 'office-m1',
+            title: 'Linen Blazer & Slim Chinos',
+            occasion: 'Office',
+            category: 'Workwear',
+            mood: 'Professional & Polished',
+            imageUrl: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=400&q=80',
+            outfit: 'Unstructured linen blazer, slim chinos, tucked Oxford shirt & leather loafers',
+            hairstyle: 'Neat side part',
+            explanation: 'Breathable smart-casual office look for productive all-day meetings.',
+            palette: _paletteValuesForLabels(const ['Camel', 'Navy', 'White']),
+            paletteLabels: const ['Camel', 'Navy', 'White'],
+          ),
+          DashboardRecommendation(
+            id: 'office-m2',
+            title: 'Oxford Shirt & Suit Trousers',
+            occasion: 'Office',
+            category: 'Corporate',
+            mood: 'Sleek Executive',
+            imageUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80',
+            outfit: 'Crisp Oxford button-down, slim-fit suit trousers, leather belt & Derby shoes',
+            hairstyle: 'Combed-back clean look',
+            explanation: 'Timeless shirt-and-trousers corporate look for boardrooms and client meetings.',
+            palette: _paletteValuesForLabels(const ['Light Blue', 'Charcoal', 'White']),
+            paletteLabels: const ['Light Blue', 'Charcoal', 'White'],
+          ),
+          DashboardRecommendation(
+            id: 'office-m3',
+            title: 'Smart Casual Kurta & Formal Pants',
+            occasion: 'Office',
+            category: 'Ethnic Smart Casual',
+            mood: 'Modern Power',
+            imageUrl: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400&q=80',
+            outfit: 'Mandarin-collar cotton kurta, straight formal trousers & clean leather loafers',
+            hairstyle: 'Neatly groomed with trimmed beard',
+            explanation: 'Indian ethnic office wear balancing cultural roots with corporate presentation.',
+            palette: _paletteValuesForLabels(const ['Slate Grey', 'White', 'Black']),
+            paletteLabels: const ['Slate Grey', 'White', 'Black'],
+          ),
+        ];
+      }
+      return [
+        DashboardRecommendation(
+          id: 'office-1',
+          title: 'Linen Blazer & High-Waist Trousers',
+          occasion: 'Office',
+          category: 'Workwear',
+          mood: 'Professional & Polished',
+          imageUrl: 'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=400&q=80',
+          outfit: 'Single-breasted linen blazer, silk camisole, high-waisted wide-leg trousers & leather loafers',
+          hairstyle: 'Neat low ponytail',
+          explanation: 'Comfortable, breathable executive office attire suited for all-day meetings.',
+          palette: _paletteValuesForLabels(const ['Camel', 'Ivory', 'Beige']),
+          paletteLabels: const ['Camel', 'Ivory', 'Beige'],
+        ),
+        DashboardRecommendation(
+          id: 'office-2',
+          title: 'Tailored Shift Dress & Trench Coat',
+          occasion: 'Office',
+          category: 'Corporate',
+          mood: 'Sleek Executive',
+          imageUrl: 'https://images.unsplash.com/photo-1580913428023-02c695666d61?w=400&q=80',
+          outfit: 'Structured knee-length shift dress, classic midi trench coat & leather tote bag',
+          hairstyle: 'Soft blowout',
+          explanation: 'Sharp corporate dress ensemble that seamlessly transitions from desk to dinner.',
+          palette: _paletteValuesForLabels(const ['Navy', 'Beige', 'White']),
+          paletteLabels: const ['Navy', 'Beige', 'White'],
+        ),
+        DashboardRecommendation(
+          id: 'office-3',
+          title: 'Plaid Suit Set & Leather Oxfords',
+          occasion: 'Office',
+          category: 'Tailored',
+          mood: 'Modern Power',
+          imageUrl: 'https://images.unsplash.com/photo-1548778943-5bbeeb1ba6c1?w=400&q=80',
+          outfit: 'Checked plaid blazer and cropped trousers with crisp white shirt & leather oxfords',
+          hairstyle: 'Sleek middle-parted bob',
+          explanation: 'Smart-casual office suit set offering contemporary power dressing.',
+          palette: _paletteValuesForLabels(const ['Grey Plaid', 'White', 'Black']),
+          paletteLabels: const ['Grey Plaid', 'White', 'Black'],
+        ),
+      ];
+    }
+
+    // ── FESTIVAL ───────────────────────────────────────────────────────────
+    if (lower.contains('festival') || lower.contains('diwali') || lower.contains('eid') || lower.contains('dashain') || lower.contains('tihar')) {
+      if (male) {
+        return [
+          DashboardRecommendation(
+            id: 'festival-m1',
+            title: 'Embroidered Silk Kurta & Pyjama',
+            occasion: 'Festival',
+            category: 'Ethnic',
+            mood: 'Joyful & Traditional',
+            imageUrl: 'https://images.unsplash.com/photo-1519657306-a8d6a4bc0a5e?w=400&q=80',
+            outfit: 'Vibrant silk embroidered kurta with printed pyjama, embroidered Nehru waistcoat & Kolhapuri sandals',
+            hairstyle: 'Neatly oiled & groomed',
+            explanation: 'Festive kurta-pyjama ensemble crafted for traditional family gatherings and pujas.',
+            palette: _paletteValuesForLabels(const ['Mustard Yellow', 'Maroon', 'Gold']),
+            paletteLabels: const ['Mustard Yellow', 'Maroon', 'Gold'],
+          ),
+          DashboardRecommendation(
+            id: 'festival-m2',
+            title: 'Nehru Jacket & Cotton Kurta Set',
+            occasion: 'Festival',
+            category: 'Handcrafted',
+            mood: 'Serene & Festive',
+            imageUrl: 'https://images.unsplash.com/photo-1617196034176-5e80c4d01432?w=400&q=80',
+            outfit: 'Block-printed Nehru jacket over plain cotton kurta, matching trousers & embroidered Juttis',
+            hairstyle: 'Natural with light styling',
+            explanation: 'Heritage-inspired Nehru jacket over festive cotton kurta — perfect for Diwali & Eid.',
+            palette: _paletteValuesForLabels(const ['Mint Green', 'Ivory', 'Gold']),
+            paletteLabels: const ['Mint Green', 'Ivory', 'Gold'],
+          ),
+          DashboardRecommendation(
+            id: 'festival-m3',
+            title: 'Silk Dhoti Kurta & Temple Jewelry',
+            occasion: 'Festival',
+            category: 'Traditional',
+            mood: 'Sacred & Festive',
+            imageUrl: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400&q=80',
+            outfit: 'Pure silk kurta with dhoti, angavastram draped over shoulder & traditional rudraksha jewelry',
+            hairstyle: 'Traditional clean look with tilak',
+            explanation: 'Authentic temple-style silk kurta-dhoti ensemble for religious festivals and rituals.',
+            palette: _paletteValuesForLabels(const ['Ruby Red', 'Gold', 'Saffron']),
+            paletteLabels: const ['Ruby Red', 'Gold', 'Saffron'],
+          ),
+        ];
+      }
+      return [
+        DashboardRecommendation(
+          id: 'festival-1',
+          title: 'Chanderi Silk Kurta & Palazzo Set',
+          occasion: 'Festival',
+          category: 'Ethnic',
+          mood: 'Joyful & Traditional',
+          imageUrl: 'https://images.unsplash.com/photo-1610189352649-1a7b2d7e9be5?w=400&q=80',
+          outfit: 'Woven Chanderi silk straight kurta, embroidered dupatta, palazzo pants & embroidered Juttis',
+          hairstyle: 'Traditional braid with parandi',
+          explanation: 'Vibrant festive kurta set designed for traditional family pujas and festival gatherings.',
+          palette: _paletteValuesForLabels(const ['Mustard Yellow', 'Maroon', 'Gold']),
+          paletteLabels: const ['Mustard Yellow', 'Maroon', 'Gold'],
+        ),
+        DashboardRecommendation(
+          id: 'festival-2',
+          title: 'Hand-Embroidered Chikankari Anarkali',
+          occasion: 'Festival',
+          category: 'Handcrafted',
+          mood: 'Serene & Graceful',
+          imageUrl: 'https://images.unsplash.com/photo-1596177267006-04e3a93c2d1b?w=400&q=80',
+          outfit: 'Pure cotton Chikankari hand-embroidered Anarkali suit with organza dupatta & silver oxidised jewelry',
+          hairstyle: 'Soft open hair with maang tikka',
+          explanation: 'Ethereal handcrafted Anarkali suit perfect for festive daytime celebrations.',
+          palette: _paletteValuesForLabels(const ['Mint Green', 'Silver', 'Ivory']),
+          paletteLabels: const ['Mint Green', 'Silver', 'Ivory'],
+        ),
+        DashboardRecommendation(
+          id: 'festival-3',
+          title: 'Traditional Kanjeevaram Heritage Saree',
+          occasion: 'Festival',
+          category: 'Traditional',
+          mood: 'Sacred & Festive',
+          imageUrl: 'https://images.unsplash.com/photo-1571290274554-6a2eaa771e5f?w=400&q=80',
+          outfit: 'Heavy Kanjeevaram silk saree with zari border, brocade blouse & temple jewelry set',
+          hairstyle: 'Classic bun with gajra',
+          explanation: 'Authentic Indian heritage saree crafted for festival mornings and auspicious rituals.',
+          palette: _paletteValuesForLabels(const ['Ruby Red', 'Gold', 'Emerald']),
+          paletteLabels: const ['Ruby Red', 'Gold', 'Emerald'],
+        ),
+      ];
+    }
+
+    // ── CASUAL FALLBACK (Weekend / Travel / Beach / Street Style) ──────────
+    if (male) {
+      return [
+        DashboardRecommendation(
+          id: '$lower-m1',
+          title: '$occasion Relaxed Jeans & Polo',
+          occasion: occasion,
+          category: 'Casual',
+          mood: 'Relaxed & Cool',
+          imageUrl: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&q=80',
+          outfit: 'Slim-fit jeans, classic polo shirt, clean white sneakers & minimal watch',
+          hairstyle: 'Effortless natural style',
+          explanation: 'A versatile everyday casual look tailored for your $occasion plans.',
+          palette: _paletteValuesForLabels(const ['Denim', 'Navy', 'White']),
+          paletteLabels: const ['Denim', 'Navy', 'White'],
+        ),
+        DashboardRecommendation(
+          id: '$lower-m2',
+          title: '$occasion Linen Shirt & Shorts',
+          occasion: occasion,
+          category: 'Summer Casual',
+          mood: 'Fresh & Breezy',
+          imageUrl: 'https://images.unsplash.com/photo-1542060748-10c28b62716f?w=400&q=80',
+          outfit: 'Relaxed linen shirt, tailored shorts, canvas sneakers & crossbody bag',
+          hairstyle: 'Tousled casual',
+          explanation: 'Airy linen combination ideal for warm days and relaxed $occasion outings.',
+          palette: _paletteValuesForLabels(const ['Sand', 'Sky Blue', 'Off-White']),
+          paletteLabels: const ['Sand', 'Sky Blue', 'Off-White'],
+        ),
+        DashboardRecommendation(
+          id: '$lower-m3',
+          title: '$occasion Cargo Pants & Oversized Hoodie',
+          occasion: occasion,
+          category: 'Street Casual',
+          mood: 'Urban & Comfortable',
+          imageUrl: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=400&q=80',
+          outfit: 'Utility cargo pants, oversized graphic hoodie, chunky sneakers & cap',
+          hairstyle: 'Cap on; natural underneath',
+          explanation: 'Urban streetwear layering that keeps you comfortable and stylish all day.',
+          palette: _paletteValuesForLabels(const ['Olive', 'Grey', 'Cream']),
+          paletteLabels: const ['Olive', 'Grey', 'Cream'],
+        ),
+      ];
+    }
+    return [
+      DashboardRecommendation(
+        id: '$lower-1',
+        title: '$occasion Straight Denim & Bodysuit',
+        occasion: occasion,
+        category: 'Casual',
+        mood: 'Relaxed & Chic',
+        imageUrl: 'https://images.unsplash.com/photo-1536243298747-ea8874136d64?w=400&q=80',
+        outfit: 'High-waisted straight jeans, fitted ribbed bodysuit, lightweight trench coat & leather sneakers',
+        hairstyle: 'Effortless top knot',
+        explanation: 'A versatile, stylish outfit tailored for your $occasion plans.',
+        palette: _paletteValuesForLabels(const ['Denim', 'Off-White', 'Camel']),
+        paletteLabels: const ['Denim', 'Off-White', 'Camel'],
+      ),
+      DashboardRecommendation(
+        id: '$lower-2',
+        title: '$occasion Floral Linen Sundress',
+        occasion: occasion,
+        category: 'Summer Casual',
+        mood: 'Fresh & Airy',
+        imageUrl: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&q=80',
+        outfit: 'Midi floral linen sundress, woven straw tote bag & leather slide sandals',
+        hairstyle: 'Soft beachy waves',
+        explanation: 'Breezy linen dress ideal for warm sunny days and casual outings.',
+        palette: _paletteValuesForLabels(const ['Pastel Floral', 'Straw', 'White']),
+        paletteLabels: const ['Pastel Floral', 'Straw', 'White'],
+      ),
+      DashboardRecommendation(
+        id: '$lower-3',
+        title: '$occasion Slouchy Knit & Satin Skirt',
+        occasion: occasion,
+        category: 'Elevated Casual',
+        mood: 'Cozy Glam',
+        imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80',
+        outfit: 'Oversized slouchy knit sweater, satin midi skirt & clean white leather sneakers',
+        hairstyle: 'Messy low bun',
+        explanation: 'A chic blend of cozy knit textures and sleek satin for daytime gatherings.',
+        palette: _paletteValuesForLabels(const ['Cream', 'Sage', 'Gold']),
+        paletteLabels: const ['Cream', 'Sage', 'Gold'],
+      ),
+    ];
+  }
+
   DashboardRecommendation _generateRecommendation({
     required String occasion,
     required DashboardProfileData profileData,
     required Map<String, int> preferenceScores,
     String excludedCategory = '',
   }) {
-    final normalizedOccasion = occasion.trim().isEmpty ? 'Weekend' : occasion;
-    final mood = profileData.styleMood.trim().isEmpty
-        ? 'Polished'
-        : profileData.styleMood;
-    final category = switch (normalizedOccasion.toLowerCase()) {
-      'wedding' || 'gala' || 'black tie' => 'Formal',
-      'party' || 'festival' || 'sangeet' => 'Party',
-      'office' => 'Workwear',
-      'beach' || 'summer' => 'Summer',
-      'street style' => 'Streetwear',
-      _ => 'Casual',
-    };
-    final outfit = switch (category) {
-      'Formal' => 'Tailored blazer, satin blouse, wide-leg trousers, and pointed heels',
-      'Party' => 'Statement top, tailored skirt, metallic heels, and a compact clutch',
-      'Workwear' => 'Structured blazer, fitted shirt, straight trousers, and loafers',
-      'Summer' => 'Breathable linen shirt, relaxed trousers, woven sandals, and a tote',
-      'Streetwear' => 'Oversized jacket, clean tee, cargo trousers, and sneakers',
-      _ => 'Relaxed blazer, fitted top, straight trousers, and clean sneakers',
-    };
-    return DashboardRecommendation(
-      id: 'local-${normalizedOccasion.toLowerCase().replaceAll(' ', '-')}',
-      title: '$normalizedOccasion $mood Look',
-      occasion: normalizedOccasion,
-      category: category,
-      mood: mood,
-      imageUrl: '',
-      outfit: outfit,
-      hairstyle: 'Soft layered blowout',
-      explanation: 'A ready-to-wear fallback look for your $normalizedOccasion plans.',
-      palette: _paletteValuesForLabels(const ['Beige', 'Black', 'Olive']),
-      paletteLabels: const ['Beige', 'Black', 'Olive'],
+    final list = _generateOccasionRecommendationsList(
+      occasion,
+      profileData,
+      preferenceScores,
     );
+    return list.first;
   }
 
   // Legacy cache migration data; live Discover content comes from the AI API.
@@ -1615,7 +2412,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-1',
         title: 'Soft Tailoring',
         category: 'Trending',
-        imageUrl: 'assets/images/ai_wedding_formal.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1548778943-5bbeeb1ba6c1?w=400&q=80',
         caption: 'Fluid neutrals with a polished silhouette.',
         height: 252,
       ),
@@ -1623,7 +2420,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-2',
         title: 'Cafe Casual',
         category: 'Casual',
-        imageUrl: 'assets/images/brunch.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1542060748-10c28b62716f?w=400&q=80',
         caption: 'Easy layers and warm everyday tones.',
         height: 188,
       ),
@@ -1631,7 +2428,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-3',
         title: 'Modern Evening',
         category: 'Formal',
-        imageUrl: 'assets/images/wedding.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1605763240000-7e93b172d754?w=400&q=80',
         caption: 'Minimal glamour with clean lines.',
         height: 226,
       ),
@@ -1639,7 +2436,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-4',
         title: 'After Dark',
         category: 'Party',
-        imageUrl: 'assets/images/party.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&q=80',
         caption: 'Berry accents and sleek structure.',
         height: 210,
       ),
@@ -1647,7 +2444,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-5',
         title: 'Weekend Layers',
         category: 'Casual',
-        imageUrl: 'assets/images/weekend.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1536243298747-ea8874136d64?w=400&q=80',
         caption: 'Relaxed pieces that still feel editorial.',
         height: 244,
       ),
@@ -1655,7 +2452,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-6',
         title: 'Editorial Neutrals',
         category: 'Trending',
-        imageUrl: 'assets/images/outfit.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80',
         caption: 'Soft pinks, stone, and cocoa tones.',
         height: 196,
       ),
@@ -1663,7 +2460,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-7',
         title: 'Street Essentials',
         category: 'Streetwear',
-        imageUrl: 'assets/images/travel.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=400&q=80',
         caption: 'Relaxed silhouettes with an elevated edge.',
         height: 212,
       ),
@@ -1671,7 +2468,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-8',
         title: 'Sport Luxe',
         category: 'Athleisure',
-        imageUrl: 'assets/images/weekend.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80',
         caption: 'Performance textures styled for the city.',
         height: 238,
       ),
@@ -1679,7 +2476,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-9',
         title: 'Vintage Denim',
         category: 'Vintage',
-        imageUrl: 'assets/images/outfit.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1475180098004-ca77a66827be?w=400&q=80',
         caption: 'Classic washes and timeless layering.',
         height: 192,
       ),
@@ -1687,7 +2484,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-10',
         title: 'Monochrome Minimal',
         category: 'Minimal',
-        imageUrl: 'assets/images/ai_wedding_formal.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80',
         caption: 'Clean lines, quiet texture, sharp finish.',
         height: 224,
       ),
@@ -1695,7 +2492,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-11',
         title: 'Night Street',
         category: 'Streetwear',
-        imageUrl: 'assets/images/party.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
         caption: 'Dark layers and confident proportions.',
         height: 206,
       ),
@@ -1703,7 +2500,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-12',
         title: 'Off-Duty Set',
         category: 'Athleisure',
-        imageUrl: 'assets/images/travel.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1580913428023-02c695666d61?w=400&q=80',
         caption: 'Matching sets that look intentional.',
         height: 200,
       ),
@@ -1711,7 +2508,7 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-13',
         title: 'Retro Knit',
         category: 'Vintage',
-        imageUrl: 'assets/images/brunch.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&q=80',
         caption: 'Warm tones with a throwback mood.',
         height: 236,
       ),
@@ -1719,12 +2516,13 @@ class DashboardViewModel extends Notifier<DashboardState> {
         id: 'discover-14',
         title: 'Soft Structure',
         category: 'Minimal',
-        imageUrl: 'assets/images/wedding.jpg',
+        imageUrl: 'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=400&q=80',
         caption: 'Neutral palette with tailored restraint.',
         height: 188,
       ),
     ];
   }
+
 
   // Kept as a migration reference; sendChatMessage never uses local replies.
   // ignore: unused_element

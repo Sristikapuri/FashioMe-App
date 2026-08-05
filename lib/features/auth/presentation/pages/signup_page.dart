@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/core/extensions/context_extensions.dart';
@@ -81,10 +82,14 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.network(
-                          'https://images.unsplash.com/photo-1496747611176-843222e1e57c',
+                        CachedNetworkImage(
+                          imageUrl:
+                              'https://images.unsplash.com/photo-1496747611176-843222e1e57c',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          errorWidget: (context, url, error) =>
                               Container(color: AppColors.surfaceSoft),
                         ),
                         Container(

@@ -16,6 +16,7 @@ class SessionUser {
   final String? gender;
   final String? age;
   final String? role;
+  final String? profileImage;
 
   const SessionUser({
     required this.userId,
@@ -26,6 +27,7 @@ class SessionUser {
     this.gender,
     this.age,
     this.role,
+    this.profileImage,
   });
 }
 
@@ -46,6 +48,7 @@ class UserSessionService {
   static const String _keyGender = 'gender';
   static const String _keyAge = 'age';
   static const String _keyRole = 'role';
+  static const String _keyProfileImage = 'profile_image';
 
   // Save user session
   Future<void> saveSession(String userId) async {
@@ -81,6 +84,12 @@ class UserSessionService {
     } else {
       await _prefs.remove(_keyRole);
     }
+
+    if (user.profileImage != null && user.profileImage!.isNotEmpty) {
+      await _prefs.setString(_keyProfileImage, user.profileImage!);
+    } else {
+      await _prefs.remove(_keyProfileImage);
+    }
   }
 
   SessionUser? getCurrentUser() {
@@ -100,6 +109,7 @@ class UserSessionService {
       gender: _prefs.getString(_keyGender),
       age: _prefs.getString(_keyAge),
       role: _prefs.getString(_keyRole),
+      profileImage: _prefs.getString(_keyProfileImage),
     );
   }
 
@@ -123,6 +133,7 @@ class UserSessionService {
     await _prefs.remove(_keyGender);
     await _prefs.remove(_keyAge);
     await _prefs.remove(_keyRole);
+    await _prefs.remove(_keyProfileImage);
     await _prefs.setBool(_keyIsLoggedIn, false);
   }
 

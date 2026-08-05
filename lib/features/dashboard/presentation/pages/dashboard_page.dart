@@ -65,13 +65,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         state: state,
         selectedEvent: _selectedEvent,
         events: _events,
-          onEventTap: (value) async {
-            setState(() => _selectedEvent = value);
-            await notifier.generateHomeRecommendation(
-              occasion: value,
-              syncCurrentRecommendation: true,
-            );
-          },
+        onEventTap: (value) async {
+          setState(() => _selectedEvent = value);
+          await notifier.generateHomeRecommendation(
+            occasion: value,
+            syncCurrentRecommendation: true,
+          );
+        },
       ),
       AiStylistTab(
         state: state,
@@ -157,125 +157,131 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.cardBackground,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.strings.menuTitle,
-                style: const TextStyle(
-                  color: AppColors.primaryDark,
-                  fontSize: 22,
-                  fontFamily: AppFonts.bold,
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.strings.menuTitle,
+                  style: const TextStyle(
+                    color: AppColors.primaryDark,
+                    fontSize: 22,
+                    fontFamily: AppFonts.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(
-                  Icons.home_outlined,
-                  color: AppColors.primary,
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(
+                    Icons.home_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(context.strings.navHome),
+                  onTap: () {
+                    Navigator.pop(context);
+                    notifier.setIndex(0);
+                  },
                 ),
-                title: Text(context.strings.navHome),
-                onTap: () {
-                  Navigator.pop(context);
-                  notifier.setIndex(0);
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.auto_awesome_outlined,
-                  color: AppColors.primary,
+                ListTile(
+                  leading: const Icon(
+                    Icons.auto_awesome_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(context.strings.navAiStylist),
+                  onTap: () {
+                    Navigator.pop(context);
+                    notifier.setIndex(1);
+                  },
                 ),
-                title: Text(context.strings.navAiStylist),
-                onTap: () {
-                  Navigator.pop(context);
-                  notifier.setIndex(1);
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.checkroom_outlined,
-                  color: AppColors.primary,
+                ListTile(
+                  leading: const Icon(
+                    Icons.checkroom_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(context.strings.navMyWardrobe),
+                  onTap: () {
+                    Navigator.pop(context);
+                    notifier.setIndex(2);
+                  },
                 ),
-                title: Text(context.strings.navMyWardrobe),
-                onTap: () {
-                  Navigator.pop(context);
-                  notifier.setIndex(2);
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.storefront_outlined,
-                  color: AppColors.primary,
+                ListTile(
+                  leading: const Icon(
+                    Icons.storefront_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(context.strings.navShopCatalog),
+                  onTap: () {
+                    Navigator.pop(context);
+                    notifier.setIndex(3);
+                  },
                 ),
-                title: Text(context.strings.navShopCatalog),
-                onTap: () {
-                  Navigator.pop(context);
-                  notifier.setIndex(3);
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.explore_outlined,
-                  color: AppColors.primary,
+                ListTile(
+                  leading: const Icon(
+                    Icons.explore_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(context.strings.navDiscoverTrends),
+                  onTap: () {
+                    Navigator.pop(context);
+                    notifier.setIndex(3);
+                  },
                 ),
-                title: Text(context.strings.navDiscoverTrends),
-                onTap: () {
-                  Navigator.pop(context);
-                  notifier.setIndex(3);
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.shopping_bag_outlined,
-                  color: AppColors.primary,
+                ListTile(
+                  leading: const Icon(
+                    Icons.shopping_bag_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(context.strings.navMyOrders),
+                  onTap: () {
+                    Navigator.pop(context);
+                    AppRoutes.toOrderHistory(context);
+                  },
                 ),
-                title: Text(context.strings.navMyOrders),
-                onTap: () {
-                  Navigator.pop(context);
-                  AppRoutes.toOrderHistory(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.star_outline,
-                  color: AppColors.primary,
+                ListTile(
+                  leading: const Icon(
+                    Icons.star_outline,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(context.strings.navMyReviews),
+                  onTap: () {
+                    Navigator.pop(context);
+                    AppRoutes.toMyReviews(context);
+                  },
                 ),
-                title: Text(context.strings.navMyReviews),
-                onTap: () {
-                  Navigator.pop(context);
-                  AppRoutes.toMyReviews(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.calendar_month_outlined,
-                  color: AppColors.primary,
+                ListTile(
+                  leading: const Icon(
+                    Icons.calendar_month_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(context.strings.navStyleArchive),
+                  onTap: () {
+                    Navigator.pop(context);
+                    AppRoutes.toStyleArchive(context);
+                  },
                 ),
-                title: Text(context.strings.navStyleArchive),
-                onTap: () {
-                  Navigator.pop(context);
-                  AppRoutes.toStyleArchive(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.person_outline,
-                  color: AppColors.primary,
+                ListTile(
+                  leading: const Icon(
+                    Icons.person_outline,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(context.strings.navMyProfile),
+                  onTap: () {
+                    Navigator.pop(context);
+                    notifier.setIndex(3);
+                  },
                 ),
-                title: Text(context.strings.navMyProfile),
-                onTap: () {
-                  Navigator.pop(context);
-                  notifier.setIndex(3);
-                },
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -306,7 +312,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           child: Row(
             children: [
               Expanded(
-                child: DashboardDarkTextField(controller: controller, label: 'Search'),
+                child: DashboardDarkTextField(
+                  controller: controller,
+                  label: 'Search',
+                ),
               ),
               const SizedBox(width: 8),
               DashboardTopIconButton(
@@ -324,7 +333,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   Future<void> _showAddItemSheet(BuildContext context) async {
-    final notifier = ref.read(dashboardViewModelProvider.notifier);
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.cardBackground,

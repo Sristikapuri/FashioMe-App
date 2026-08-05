@@ -1,10 +1,14 @@
+import 'dart:async';
+
+import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/features/onboarding/domain/entities/onboarding_item.dart';
 import 'package:fashio_me/features/onboarding/presentation/providers/onboarding_providers.dart';
-import 'package:fashio_me/features/silhouette/presentation/pages/silhouette_flow_page.dart';
+import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
 import 'package:fashio_me/core/extensions/context_extensions.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
@@ -18,12 +22,20 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final PageController _pageController = PageController();
 
   @override
-  void initState() {
-    super.initState();
-
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
-  Future<void> nextPage() async {
+  void _navigateToLogin() {
+    // Persist onboarding completion in background without blocking UI transition
+    unawaited(
+      ref.read(onboardingViewModelProvider.notifier).completeOnboarding(),
+    );
+    AppRoutes.pushReplacement(context, const LoginPage());
+  }
+
+  void nextPage() {
     final onboardingState = ref.read(onboardingViewModelProvider);
     if (onboardingState.currentIndex < kOnboardingItems.length - 1) {
       _pageController.nextPage(
@@ -31,12 +43,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         curve: Curves.easeInOut,
       );
     } else {
-
-      final completed = await ref
-          .read(onboardingViewModelProvider.notifier)
-          .completeOnboarding();
-      if (!mounted || !completed) return;
-      AppRoutes.pushReplacement(context, const SilhouetteFlowPage());
+      _navigateToLogin();
     }
   }
 
@@ -51,19 +58,32 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
           children: [
             const SizedBox(height: 18),
 
-            /// logo
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'FashioMe',
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryDark,
+            /// header with logo and skip button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'FashioMe',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
-                ),
+                  TextButton(
+                    onPressed: _navigateToLogin,
+                    child: const Text(
+                      'Skip',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -131,11 +151,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                 ),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(24),
-                                  child: Image.network(
-                                    data.imageUrl,
+                                  child: CachedNetworkImage(
+                                    imageUrl: data.imageUrl,
                                     fit: BoxFit.cover,
                                     width: double.infinity,
-                                    errorBuilder: (_, _, _) =>
+                                    placeholder: (context, url) => const Center(
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    errorWidget: (context, url, error) =>
                                         Container(color: AppColors.surfaceSoft),
                                   ),
                                 ),
@@ -248,28 +271,17 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            onPressed: onboardingState.isCompleting
-                                ? null
-                                : nextPage,
-                            child: onboardingState.isCompleting
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    currentIndex == kOnboardingItems.length - 1
-                                        ? strings.getStarted
-                                        : strings.next,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                            onPressed: nextPage,
+                            child: Text(
+                              currentIndex == kOnboardingItems.length - 1
+                                  ? strings.getStarted
+                                  : strings.next,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
 

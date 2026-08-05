@@ -11,58 +11,91 @@ final shakeDetectorServiceProvider = Provider<ShakeDetectorService>((ref) {
   return service;
 });
 
-
-
-/// Call [start] to begin listening and [stop] to release the platform
-/// sensor subscription (e.g. from a page's initState/dispose). The
-/// broadcast [shakeStream] survives stop/start cycles; only [dispose]
-/// (called automatically when the owning provider is torn down) closes
-/// it for good.
+/// Listens to device accelerometer events to detect shake gestures.
+///
+/// Uses [userAccelerometerEventStream] (which filters out gravity baseline)
+/// for high accuracy, falling back to [accelerometerEventStream] if needed.
 class ShakeDetectorService {
   ShakeDetectorService({
-    this.shakeThreshold = 22.0,
-    this.cooldown = const Duration(milliseconds: 1500),
+    this.userShakeThreshold = 3.2,
+    this.fallbackShakeThreshold = 12.0,
+    this.cooldown = const Duration(milliseconds: 1200),
   });
 
+  /// Acceleration threshold for userAccelerometer (without gravity).
+  final double userShakeThreshold;
 
-  final double shakeThreshold;
+  /// Acceleration threshold for raw accelerometer (including gravity).
+  final double fallbackShakeThreshold;
 
   final Duration cooldown;
 
   final StreamController<void> _controller = StreamController<void>.broadcast();
-  StreamSubscription<AccelerometerEvent>? _subscription;
+  StreamSubscription<dynamic>? _subscription;
   DateTime? _lastShakeAt;
   bool _isSupported = true;
 
-
   Stream<void> get shakeStream => _controller.stream;
-
 
   bool get isSupported => _isSupported;
 
   void start() {
     if (_subscription != null || _controller.isClosed) return;
-    _subscription = accelerometerEventStream().listen(
-      _onEvent,
-      onError: (Object error, StackTrace _) {
 
-        _isSupported = false;
-        _subscription?.cancel();
-        _subscription = null;
-        if (kDebugMode) {
-          debugPrint('ShakeDetectorService: accelerometer unavailable ($error)');
-        }
-      },
-      cancelOnError: true,
-    );
+    try {
+      _subscription = userAccelerometerEventStream().listen(
+        _onUserEvent,
+        onError: (Object error, StackTrace _) {
+          if (kDebugMode) {
+            debugPrint('ShakeDetectorService: userAccelerometer error, falling back ($error)');
+          }
+          _startFallbackStream();
+        },
+        cancelOnError: true,
+      );
+    } catch (_) {
+      _startFallbackStream();
+    }
   }
 
-  void _onEvent(AccelerometerEvent event) {
+  void _startFallbackStream() {
+    _subscription?.cancel();
+    try {
+      _subscription = accelerometerEventStream().listen(
+        _onFallbackEvent,
+        onError: (Object error, StackTrace _) {
+          _isSupported = false;
+          _subscription?.cancel();
+          _subscription = null;
+          if (kDebugMode) {
+            debugPrint('ShakeDetectorService: accelerometer unavailable ($error)');
+          }
+        },
+        cancelOnError: true,
+      );
+    } catch (e) {
+      _isSupported = false;
+      _subscription = null;
+    }
+  }
+
+  void _onUserEvent(UserAccelerometerEvent event) {
     final magnitude = math.sqrt(
       event.x * event.x + event.y * event.y + event.z * event.z,
     );
-    if (magnitude < shakeThreshold) return;
+    if (magnitude < userShakeThreshold) return;
+    _triggerShake();
+  }
 
+  void _onFallbackEvent(AccelerometerEvent event) {
+    final magnitude = math.sqrt(
+      event.x * event.x + event.y * event.y + event.z * event.z,
+    );
+    if (magnitude < fallbackShakeThreshold) return;
+    _triggerShake();
+  }
+
+  void _triggerShake() {
     final now = DateTime.now();
     if (_lastShakeAt != null && now.difference(_lastShakeAt!) < cooldown) {
       return;
@@ -73,7 +106,6 @@ class ShakeDetectorService {
     }
   }
 
-  /// [start] 
   void stop() {
     _subscription?.cancel();
     _subscription = null;

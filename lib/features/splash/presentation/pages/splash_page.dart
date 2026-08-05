@@ -1,19 +1,21 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:fashio_me/app/di/providers.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/core/localization/locale_notifier.dart';
+import 'package:fashio_me/core/api/api_client.dart';
+import 'package:fashio_me/core/providers/shared_prefs_provider.dart';
 import 'package:fashio_me/core/services/biometric/biometric_auth_service.dart';
 import 'package:fashio_me/core/services/biometric/biometric_settings_notifier.dart';
-import 'package:fashio_me/features/auth/presentation/pages/login_page.dart';
+import 'package:fashio_me/core/services/network/backend_discovery_service.dart';
+import 'package:fashio_me/core/services/storage/user_session_service.dart';
 import 'package:fashio_me/features/biometric_lock/presentation/pages/biometric_lock_page.dart';
-import 'package:fashio_me/features/auth/presentation/pages/signup_page.dart';
 import 'package:fashio_me/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:fashio_me/features/language_selection/presentation/pages/language_selection_page.dart';
 import 'package:fashio_me/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:fashio_me/features/silhouette/presentation/pages/silhouette_flow_page.dart';
-import 'package:fashio_me/features/splash/presentation/providers/splash_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,6 +31,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  bool _navigated = false;
 
   @override
   void initState() {
@@ -49,90 +52,86 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
     _animationController.forward();
 
-    Timer(const Duration(seconds: 4), _onSplashFinished);
+    // Run UDP backend discovery in parallel with the 2-second animation.
+    // Results are applied before navigation so the first API call already
+    // uses the correct server IP.
+    _runDiscovery();
+
+    // Navigate after splash animation completes (2 seconds)
+    Timer(const Duration(seconds: 2), _navigate);
   }
 
-  Future<void> _onSplashFinished() async {
-    if (!mounted) return;
+  Future<void> _runDiscovery() async {
+    try {
+      final discovery = ref.read(backendDiscoveryServiceProvider);
+      final url = await discovery.resolveBackendUrl();
+      ApiConfig.setBaseUrl(url);
+      // Also update the live Dio client so any in-flight requests use the new URL
+      ref.read(apiClientProvider).updateBaseUrl(url);
+    } catch (e) {
+      debugPrint('[Splash] Discovery error (non-fatal): $e');
+    }
+  }
 
-    // Resolve the initial route
-    await ref.read(splashViewModelProvider.notifier).resolveInitialRoute();
+  Future<void> _navigate() async {
+    // Prevent double-navigation
+    if (_navigated || !mounted) return;
+    _navigated = true;
 
-    if (!mounted) return;
+    Widget targetPage;
 
-    await Future.delayed(const Duration(milliseconds: 100));
+    try {
+      // Read session directly from SharedPreferences – no network calls
+      final prefs = ref.read(sharedPreferencesProvider);
+      final session = UserSessionService(prefs: prefs);
 
-    if (!mounted) return;
+      final isLoggedIn = session.isLoggedIn();
 
-    final state = ref.read(splashViewModelProvider);
-    final route = state.targetRoute;
-
-    if (route != null && mounted) {
-      final hasCompletedResult = await ref.read(
-        hasCompletedSilhouetteProfileUsecaseProvider,
-      )();
-      if (!mounted) return;
-      final hasCompletedSilhouette = hasCompletedResult.fold(
-        (_) => false,
-        (value) => value,
-      );
-      Widget targetPage;
-      switch (route) {
-        case 'onboarding':
-          targetPage = const OnboardingPage();
-          break;
-        case 'silhouette':
-          targetPage = const SilhouetteFlowPage();
-          break;
-        case 'login':
-          targetPage = const LoginPage();
-          break;
-        case 'signup':
-          targetPage = const SignupPage();
-          break;
-        case 'dashboard':
-          targetPage = hasCompletedSilhouette
-              ? const DashboardPage()
-              : const SilhouetteFlowPage();
-          break;
-        default:
-          targetPage = const OnboardingPage();
-      }
-
-      // Returning, already-logged-in user with Face ID enabled: gate the
-      // dashboard behind a biometric prompt. Never applied to a fresh
-      // signup still finishing silhouette setup, and never applied if the
-      // device turns out not to support biometrics after all.
-      if (route == 'dashboard' &&
-          targetPage is DashboardPage &&
-          ref.read(biometricSettingsProvider)) {
-        final biometricSupported = await ref
-            .read(biometricAuthServiceProvider)
-            .isSupported();
-        if (!mounted) return;
-        if (biometricSupported) {
-          targetPage = BiometricLockPage(next: targetPage);
+      if (isLoggedIn) {
+        // Returning user: try to verify token quickly (3s cap)
+        Widget dashboardOrSilhouette = const DashboardPage();
+        try {
+          final hasCompletedResult = await ref
+              .read(hasCompletedSilhouetteProfileUsecaseProvider)()
+              .timeout(const Duration(seconds: 3));
+          final done = hasCompletedResult.fold((_) => false, (v) => v);
+          dashboardOrSilhouette =
+              done ? const DashboardPage() : const SilhouetteFlowPage();
+        } catch (_) {
+          dashboardOrSilhouette = const DashboardPage();
         }
+
+        targetPage = dashboardOrSilhouette;
+
+        // Biometric lock for returning logged-in users
+        if (targetPage is DashboardPage && ref.read(biometricSettingsProvider)) {
+          try {
+            final supported = await ref
+                .read(biometricAuthServiceProvider)
+                .isSupported()
+                .timeout(const Duration(seconds: 2));
+            if (supported) {
+              targetPage = BiometricLockPage(next: targetPage);
+            }
+          } catch (_) {}
+        }
+      } else {
+        // New / logged-out user: go straight to onboarding → login
+        targetPage = const OnboardingPage();
       }
 
-      // First-run only: a brand-new/not-yet-logged-in user picks their
-      // language before seeing anything else (onboarding, silhouette setup,
-      // login, signup) — matching how most real apps handle first launch.
-      // A returning, already-logged-in user (route == 'dashboard') is never
-      // interrupted by this. The choice is persisted, so it only ever
-      // appears once; it can still be changed later from Settings.
-      final needsLanguageChoice =
-          route != 'dashboard' &&
-          !ref.read(localeProvider.notifier).hasChosenLocale;
-      if (needsLanguageChoice) {
+      // Language selection intercept on very first launch
+      final needsLang = prefs.getInt('language_selection_version') == null;
+      if (needsLang) {
         targetPage = LanguageSelectionPage(next: targetPage);
       }
-
-      AppRoutes.pushReplacement(context, targetPage);
-      if (mounted) {
-        ref.read(splashViewModelProvider.notifier).clearNavigationTarget();
-      }
+    } catch (e) {
+      debugPrint('Splash nav error: $e');
+      targetPage = const OnboardingPage();
     }
+
+    if (!mounted) return;
+    AppRoutes.pushReplacement(context, targetPage);
   }
 
   @override
@@ -153,16 +152,21 @@ class _SplashPageState extends ConsumerState<SplashPage>
             Positioned.fill(
               child: Opacity(
                 opacity: 0.08,
-                child: Image.network(
-                  'https://images.unsplash.com/photo-1521572267360-ee0c2909d518',
+                child: CachedNetworkImage(
+                  imageUrl:
+                      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518',
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox.expand(),
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  errorWidget: (context, url, error) =>
+                      const SizedBox.expand(),
                 ),
               ),
             ),
 
             /// subtle overlay lines
-            Positioned.fill(child: CustomPaint(painter: GridPainter())),
+            Positioned.fill(child: CustomPaint(painter: _GridPainter())),
 
             /// center content
             Center(
@@ -248,7 +252,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
   }
 }
 
-class GridPainter extends CustomPainter {
+class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -269,7 +273,5 @@ class GridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

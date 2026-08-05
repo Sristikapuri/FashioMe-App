@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fashio_me/core/api/api_endpoints.dart';
 import 'package:flutter/material.dart';
 
@@ -10,9 +11,13 @@ Widget buildSelectedImage(
     return Image.asset(imagePath, fit: fit, errorBuilder: errorBuilder);
   }
 
-  return Image.network(
-    ApiEndpoints.resolveAssetUrl(imagePath),
+  return CachedNetworkImage(
+    imageUrl: ApiEndpoints.resolveAssetUrl(imagePath),
     fit: fit,
-    errorBuilder: errorBuilder,
+    placeholder: (context, url) => const Center(
+      child: CircularProgressIndicator(strokeWidth: 2),
+    ),
+    errorWidget: (context, url, error) =>
+        errorBuilder(context, error, StackTrace.empty),
   );
 }

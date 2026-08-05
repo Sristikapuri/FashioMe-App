@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fashio_me/core/api/api_endpoints.dart';
 import 'package:flutter/material.dart';
 
@@ -21,10 +22,21 @@ Widget buildSelectedImage(
 
   if (resolvedImagePath.startsWith('http://') ||
       resolvedImagePath.startsWith('https://')) {
-    return Image.network(
-      resolvedImagePath,
+    return CachedNetworkImage(
+      imageUrl: resolvedImagePath,
       fit: fit,
-      errorBuilder: errorBuilder,
+      placeholder: (context, url) => Container(
+        color: Colors.grey[200],
+        child: const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ),
+      errorWidget: (context, url, error) =>
+          errorBuilder(context, error, StackTrace.empty),
     );
   }
 

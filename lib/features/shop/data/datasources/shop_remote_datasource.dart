@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fashio_me/core/api/api_client.dart';
@@ -139,6 +140,133 @@ class ShopRemoteDataSource {
     return payload is Map ? payload['verified'] == true : false;
   }
 
+  String _extractMessage(dynamic data, {required String fallback}) {
+    if (data is Map<String, dynamic>) {
+      final message = data['responseMessage'] ?? data['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return message.trim();
+      }
+    }
+    return fallback;
+  }
+
+  String _readErrorMessage(Object error, {required String fallback}) {
+    if (error is DioException) {
+      final extracted = _extractMessage(error.response?.data, fallback: '');
+      if (extracted.isNotEmpty) return extracted;
+      if (error.message != null && error.message!.isNotEmpty) {
+        return error.message!;
+      }
+    }
+    if (error is Exception) {
+      final msg = error.toString();
+      if (msg.startsWith('Exception: ')) {
+        final trimmed = msg.substring('Exception: '.length).trim();
+        if (trimmed.isNotEmpty) return trimmed;
+      }
+      return msg;
+    }
+    return fallback;
+  }
+
+  Future<String> getKhaltiPaymentUrl({
+    required double amount,
+    required String orderId,
+  }) async {
+    try {
+      final response = await _apiClient.get(
+        ApiEndpoints.khaltiPaymentUrl,
+        queryParameters: {
+          'amount': amount,
+          'orderId': orderId,
+          // Tells the backend whether the Khalti return_url should hand back
+          // to this app via a custom URL scheme (mobile) or to the web
+          // dashboard (web build).
+          'platform': kIsWeb ? 'web' : 'mobile',
+        },
+      );
+
+      final data = response.data;
+      final payload = data is Map ? data['responseData'] : null;
+      final paymentUrl = payload is Map
+          ? payload['paymentUrl']?.toString()
+          : null;
+
+      if (paymentUrl == null || paymentUrl.isEmpty) {
+        throw Exception(
+          _extractMessage(data, fallback: 'Failed to generate payment URL.'),
+        );
+      }
+      return paymentUrl;
+    } catch (e) {
+      throw Exception(
+        _readErrorMessage(e, fallback: 'Failed to generate payment URL.'),
+      );
+    }
+  }
+
+  Future<bool> verifyKhaltiPayment({required String orderId}) async {
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.khaltiVerify,
+        data: {'orderId': orderId},
+      );
+
+      final data = response.data;
+      final payload = data is Map ? data['responseData'] : null;
+      return payload is Map ? payload['verified'] == true : false;
+    } catch (e) {
+      throw Exception(
+        _readErrorMessage(e, fallback: 'Failed to verify Khalti payment.'),
+      );
+    }
+  }
+
+  Future<Map<String, String>> createStripePaymentIntent({
+    required double amount,
+    required String orderId,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.stripePaymentIntent,
+        data: {'amount': amount, 'orderId': orderId},
+      );
+
+      final data = response.data;
+      final payload = data is Map ? data['responseData'] : null;
+      final clientSecret = payload is Map ? payload['clientSecret']?.toString() : null;
+      final paymentIntentId = payload is Map ? payload['paymentIntentId']?.toString() : null;
+
+      if (clientSecret == null || clientSecret.isEmpty) {
+        throw Exception(
+          _extractMessage(data, fallback: 'Failed to create Stripe payment intent.'),
+        );
+      }
+      return {'clientSecret': clientSecret, 'paymentIntentId': paymentIntentId ?? ''};
+    } catch (e) {
+      throw Exception(
+        _readErrorMessage(e, fallback: 'Failed to create Stripe payment intent.'),
+      );
+    }
+  }
+
+  Future<bool> verifyStripePayment({required String orderId}) async {
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.stripeVerify,
+        data: {'orderId': orderId},
+      );
+
+      final data = response.data;
+      final payload = data is Map ? data['responseData'] : null;
+      return payload is Map ? payload['verified'] == true : false;
+    } catch (e) {
+      throw Exception(
+        _readErrorMessage(e, fallback: 'Failed to verify Stripe payment.'),
+      );
+    }
+  }
+
   Future<List<Map<String, dynamic>>> fetchMyOrders() async {
     final response = await _apiClient.get(ApiEndpoints.myOrders);
     final data = response.data;
@@ -171,7 +299,9 @@ class ShopRemoteDataSource {
     final data = response.data;
     final payload = data is Map<String, dynamic> ? data['responseData'] : null;
     final order = payload is Map<String, dynamic> ? payload['order'] : null;
-    if (order is! Map<String, dynamic>) throw StateError('Unable to cancel order');
+    if (order is! Map<String, dynamic>) {
+      throw StateError('Unable to cancel order');
+    }
     return order;
   }
 

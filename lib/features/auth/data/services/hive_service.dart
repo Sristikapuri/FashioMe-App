@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive/hive.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:fashio_me/features/auth/data/services/hive_table_constant.dart';
 import 'package:fashio_me/features/auth/data/models/auth_hive_model.dart';
@@ -11,9 +10,7 @@ final hiveServiceProvider = Provider<HiveService>((ref) {
 
 class HiveService {
   Future<void> init() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final path = '${directory.path}/${HiveTableConstant.dbName}';
-    Hive.init(path);
+    await Hive.initFlutter();
     _registerAdapter();
     await openBoxes();
   }
@@ -25,35 +22,53 @@ class HiveService {
   }
 
   Future<void> openBoxes() async {
-    await Hive.openBox<AuthHiveModel>(HiveTableConstant.authTable);
+    _registerAdapter();
+    if (!Hive.isBoxOpen(HiveTableConstant.authTable)) {
+      await Hive.openBox<AuthHiveModel>(HiveTableConstant.authTable);
+    }
   }
 
   Future<void> close() async {
     await Hive.close();
   }
 
-  Box<AuthHiveModel> get _authBox =>
-      Hive.box<AuthHiveModel>(HiveTableConstant.authTable);
+  Future<Box<AuthHiveModel>> _getAuthBox() async {
+    _registerAdapter();
+    if (!Hive.isBoxOpen(HiveTableConstant.authTable)) {
+      return await Hive.openBox<AuthHiveModel>(HiveTableConstant.authTable);
+    }
+    return Hive.box<AuthHiveModel>(HiveTableConstant.authTable);
+  }
 
   Future<AuthHiveModel> registerUser(AuthHiveModel model) async {
-    await _authBox.put(model.authId, model);
+    final box = await _getAuthBox();
+    await box.put(model.authId, model);
     return model;
   }
 
   Future<AuthHiveModel?> loginUser(String email, String password) async {
-    final auths = _authBox.values.where(
-      (auth) => auth.email == email && auth.password == password,
+    final box = await _getAuthBox();
+    final cleanEmail = email.trim().toLowerCase();
+    final auths = box.values.where(
+      (auth) =>
+          auth.email.trim().toLowerCase() == cleanEmail &&
+          auth.password == password,
     );
     return auths.isEmpty ? null : auths.first;
   }
 
   Future<void> logoutUser() async {}
 
-  AuthHiveModel? getCurrentUser(String authId) {
-    return _authBox.get(authId);
+  Future<AuthHiveModel?> getCurrentUser(String authId) async {
+    final box = await _getAuthBox();
+    return box.get(authId);
   }
 
-  bool isEmailExist(String email) {
-    return _authBox.values.any((auth) => auth.email == email);
+  Future<bool> isEmailExist(String email) async {
+    final box = await _getAuthBox();
+    final cleanEmail = email.trim().toLowerCase();
+    return box.values.any(
+      (auth) => auth.email.trim().toLowerCase() == cleanEmail,
+    );
   }
 }

@@ -39,17 +39,17 @@ class ApiClient {
     _dio.interceptors.add(
       RetryInterceptor(
         dio: _dio,
-        retries: 3,
+        retries: 2,
         retryDelays: const [
           Duration(seconds: 1),
           Duration(seconds: 2),
-          Duration(seconds: 3),
         ],
         retryEvaluator: (error, attempt) {
+          // Do not retry on instant connection errors (e.g. no network / no route to host).
+          // Fails immediately so the app can use local Hive storage offline without delay.
           return error.type == DioExceptionType.connectionTimeout ||
               error.type == DioExceptionType.sendTimeout ||
-              error.type == DioExceptionType.receiveTimeout ||
-              error.type == DioExceptionType.connectionError;
+              error.type == DioExceptionType.receiveTimeout;
         },
       ),
     );
@@ -69,6 +69,13 @@ class ApiClient {
   }
 
   Dio get dio => _dio;
+
+  /// Called once after backend discovery resolves the real IP.
+  /// Updates the Dio base URL so all subsequent requests use the new address.
+  void updateBaseUrl(String newBaseUrl) {
+    _dio.options.baseUrl = newBaseUrl;
+    debugPrint('[ApiClient] Base URL updated to: $newBaseUrl');
+  }
 
   // GET request
   Future<Response> get(

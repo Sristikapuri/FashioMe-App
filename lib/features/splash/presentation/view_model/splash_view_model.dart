@@ -30,4 +30,16 @@ class SplashViewModel extends Notifier<SplashState> {
   void clearNavigationTarget() {
     state = state.copyWith(clearRoute: true);
   }
+
+  /// Called when the overall splash timeout fires and [resolveInitialRoute]
+  /// did not complete in time. Sets a safe fallback so the UI can still
+  /// navigate away instead of remaining stuck on the splash screen.
+  void forceFallbackRoute() {
+    // If we already have a resolved route (race condition), keep it.
+    if (state.targetRoute != null) return;
+    state = state.copyWith(
+      isResolvingRoute: false,
+      targetRoute: 'onboarding',
+    );
+  }
 }

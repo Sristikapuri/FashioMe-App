@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -166,10 +167,13 @@ class _ArchiveEntryCard extends StatelessWidget {
                       alignment: Alignment.center,
                       child: const Icon(Icons.checkroom_outlined),
                     )
-                  : Image.network(
-                      entry.imageUrl,
+                  : CachedNetworkImage(
+                      imageUrl: entry.imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      errorWidget: (context, url, error) => Container(
                         color: AppColors.surfaceMuted,
                         alignment: Alignment.center,
                         child: const Icon(Icons.image_not_supported_outlined),

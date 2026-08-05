@@ -215,6 +215,28 @@ class ShopViewModel extends Notifier<ShopState> {
     );
   }
 
+  Future<String> getKhaltiPaymentUrl({
+    required double amount,
+    required String orderId,
+  }) {
+    return _shop.getKhaltiPaymentUrl(amount: amount, orderId: orderId);
+  }
+
+  Future<bool> verifyKhaltiPayment({required String orderId}) {
+    return _shop.verifyKhaltiPayment(orderId: orderId);
+  }
+
+  Future<Map<String, String>> createStripePaymentIntent({
+    required double amount,
+    required String orderId,
+  }) {
+    return _shop.createStripePaymentIntent(amount: amount, orderId: orderId);
+  }
+
+  Future<bool> verifyStripePayment({required String orderId}) {
+    return _shop.verifyStripePayment(orderId: orderId);
+  }
+
   Future<ShopItem> fetchItem(String id) => _shop.fetchShopItemById(id);
 
   Future<List<ShopOrder>> fetchMyOrders() => _shop.fetchMyOrders();

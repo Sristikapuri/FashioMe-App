@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fashio_me/app/routes/app_routes.dart';
@@ -49,7 +50,7 @@ class ProfileTab extends ConsumerWidget {
                   backgroundColor: DashboardPalette.cardAlt,
                   backgroundImage: state.profileData.profileImage.isEmpty
                       ? null
-                      : NetworkImage(
+                      : CachedNetworkImageProvider(
                           ApiEndpoints.resolveAssetUrl(
                             state.profileData.profileImage,
                           ),
@@ -494,79 +495,85 @@ void _showSavedLooksSheet(
 void _showMeasurementsSheet(BuildContext context, DashboardState state) {
   showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     backgroundColor: AppColors.cardBackground,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (context) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Measurements & Fit Profile',
-              style: TextStyle(
-                color: AppColors.primaryDark,
-                fontSize: 22,
-                fontFamily: AppFonts.bold,
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Measurements & Fit Profile',
+                style: TextStyle(
+                  color: AppColors.primaryDark,
+                  fontSize: 22,
+                  fontFamily: AppFonts.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            DashboardMeasurementRow(
-              label: 'Height',
-              value: '${state.profileData.heightCm} cm',
-            ),
-            DashboardMeasurementRow(
-              label: 'Weight',
-              value: '${state.profileData.weightKg} kg',
-            ),
-            DashboardMeasurementRow(
-              label: 'Body Build',
-              value: state.profileData.bodyType,
-            ),
-            DashboardMeasurementRow(
-              label: 'Face Shape',
-              value: state.profileData.faceShape,
-            ),
-            DashboardMeasurementRow(
-              label: 'Skin Tone',
-              value: state.profileData.skinTone,
-            ),
-            DashboardMeasurementRow(
-              label: 'Style Mood',
-              value: state.profileData.styleMood,
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 16),
+              DashboardMeasurementRow(
+                label: 'Height',
+                value: '${state.profileData.heightCm} cm',
+              ),
+              DashboardMeasurementRow(
+                label: 'Weight',
+                value: '${state.profileData.weightKg} kg',
+              ),
+              DashboardMeasurementRow(
+                label: 'Body Build',
+                value: state.profileData.bodyType,
+              ),
+              DashboardMeasurementRow(
+                label: 'Face Shape',
+                value: state.profileData.faceShape,
+              ),
+              DashboardMeasurementRow(
+                label: 'Skin Tone',
+                value: state.profileData.skinTone,
+              ),
+              DashboardMeasurementRow(
+                label: 'Style Mood',
+                value: state.profileData.styleMood,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ProfileUpdatePage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text(
+                    'Edit Measurements',
+                    style: TextStyle(fontFamily: AppFonts.bold),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ProfileUpdatePage(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text(
-                  'Edit Measurements',
-                  style: TextStyle(fontFamily: AppFonts.bold),
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     },
@@ -629,186 +636,202 @@ void _showSettingsSheet(BuildContext context, WidgetRef ref) {
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: AppColors.cardBackground,
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (context) {
       final strings = context.strings;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              strings.settingsTitle,
-              style: const TextStyle(
-                color: AppColors.primaryDark,
-                fontSize: 22,
-                fontFamily: AppFonts.bold,
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                strings.settingsTitle,
+                style: const TextStyle(
+                  color: AppColors.primaryDark,
+                  fontSize: 22,
+                  fontFamily: AppFonts.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(
-                Icons.refresh_rounded,
-                color: AppColors.primary,
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(
+                  Icons.refresh_rounded,
+                  color: AppColors.primary,
+                ),
+                title: Text(strings.settingsRefreshCache),
+                subtitle: Text(strings.settingsRefreshCacheSubtitle),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await ref
+                      .read(dashboardViewModelProvider.notifier)
+                      .clearCacheAndRefresh();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Dashboard cache cleared and synced!'),
+                      ),
+                    );
+                  }
+                },
               ),
-              title: Text(strings.settingsRefreshCache),
-              subtitle: Text(strings.settingsRefreshCacheSubtitle),
-              onTap: () async {
-                Navigator.pop(context);
-                await ref
-                    .read(dashboardViewModelProvider.notifier)
-                    .clearCacheAndRefresh();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Dashboard cache cleared and synced!'),
+              Consumer(
+                builder: (context, ref, _) {
+                  final isNepali = ref.watch(
+                    localeProvider.select(
+                      (locale) => locale.languageCode == 'ne',
                     ),
                   );
-                }
-              },
-            ),
-            Consumer(
-              builder: (context, ref, _) {
-                final isNepali = ref.watch(
-                  localeProvider.select(
-                    (locale) => locale.languageCode == 'ne',
-                  ),
-                );
-                return ListTile(
-                  leading: const Icon(
-                    Icons.language_outlined,
-                    color: AppColors.primary,
-                  ),
-                  title: Text(strings.settingsLanguage),
-                  subtitle: Text(
-                    isNepali ? strings.languageNepali : strings.languageEnglish,
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showLanguagePicker(context, ref);
-                  },
-                );
-              },
-            ),
-            Consumer(
-              builder: (context, ref, _) {
-                final enabled = ref.watch(sensorGesturesEnabledProvider);
-                return SwitchListTile(
-                  activeThumbColor: AppColors.primary,
-                  secondary: const Icon(
-                    Icons.screen_rotation_alt_outlined,
-                    color: AppColors.primary,
-                  ),
-                  title: const Text('Sensor gestures'),
-                  subtitle: Text(
-                    enabled
-                        ? 'Shake to refresh; tilt to filter shop items'
-                        : 'Enable shake and tilt shortcuts in Shop',
-                  ),
-                  value: enabled,
-                  onChanged: (value) => ref
-                      .read(sensorGesturesEnabledProvider.notifier)
-                      .setEnabled(value),
-                );
-              },
-            ),
-            Consumer(
-              builder: (context, ref, _) {
-                final biometricEnabled = ref.watch(biometricSettingsProvider);
-                return FutureBuilder<bool>(
-                  future: ref.read(biometricAuthServiceProvider).isSupported(),
-                  builder: (context, snapshot) {
-                    final supported = snapshot.data ?? false;
-                    return SwitchListTile(
-                      activeThumbColor: AppColors.primary,
-                      secondary: const Icon(
-                        Icons.fingerprint,
-                        color: AppColors.primary,
-                      ),
-                      title: Text(strings.settingsBiometric),
-                      subtitle: Text(
-                        !supported
-                            ? strings.settingsBiometricUnavailable
-                            : (biometricEnabled
-                                  ? strings.settingsBiometricSubtitleOn
-                                  : strings.settingsBiometricSubtitleOff),
-                      ),
-                      value: biometricEnabled && supported,
-                      onChanged: !supported
-                          ? null
-                          : (value) async {
-                              if (value) {
-                                // Verify biometric actually works on this
-                                // device before turning the lock on, so the
-                                // user can never lock themselves out.
-                                final verified = await ref
-                                    .read(biometricAuthServiceProvider)
-                                    .authenticate(
-                                      reason: strings.biometricPromptReason,
-                                    );
-                                if (!verified) return;
-                              }
-                              await ref
-                                  .read(biometricSettingsProvider.notifier)
-                                  .setEnabled(value);
-                            },
-                    );
-                  },
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.lock_outline, color: AppColors.primary),
-              title: Text(strings.settingsPrivacyPolicy),
-              subtitle: Text(strings.settingsPrivacyPolicySubtitle),
-              onTap: () {
-                Navigator.pop(context);
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text(strings.settingsPrivacyPolicy),
-                    content: const Text(
-                      'FashioMe respects your privacy. All style measurements and uploaded images are processed securely to provide personalized fashion recommendations.',
+                  return ListTile(
+                    leading: const Icon(
+                      Icons.language_outlined,
+                      color: AppColors.primary,
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(strings.close),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.info_outline, color: AppColors.primary),
-              title: Text(strings.settingsAbout),
-              subtitle: Text(strings.settingsAboutSubtitle),
-              onTap: () {
-                Navigator.pop(context);
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text(strings.settingsAbout),
-                    content: const Text(
-                      'FashioMe is your luxury AI stylist — personalized outfit recommendations, '
-                      'a smart digital wardrobe, and curated shopping, all in one app.\n\n'
-                      'Version 1.0.0',
+                    title: Text(strings.settingsLanguage),
+                    subtitle: Text(
+                      isNepali
+                          ? strings.languageNepali
+                          : strings.languageEnglish,
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(strings.close),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showLanguagePicker(context, ref);
+                    },
+                  );
+                },
+              ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final enabled = ref.watch(sensorGesturesEnabledProvider);
+                  return SwitchListTile(
+                    activeThumbColor: AppColors.primary,
+                    secondary: const Icon(
+                      Icons.screen_rotation_alt_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: const Text('Sensor gestures'),
+                    subtitle: Text(
+                      enabled
+                          ? 'Shake to refresh; tilt to filter shop items'
+                          : 'Enable shake and tilt shortcuts in Shop',
+                    ),
+                    value: enabled,
+                    onChanged: (value) => ref
+                        .read(sensorGesturesEnabledProvider.notifier)
+                        .setEnabled(value),
+                  );
+                },
+              ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final biometricEnabled = ref.watch(biometricSettingsProvider);
+                  return FutureBuilder<bool>(
+                    future: ref
+                        .read(biometricAuthServiceProvider)
+                        .isSupported(),
+                    builder: (context, snapshot) {
+                      final supported = snapshot.data ?? false;
+                      return SwitchListTile(
+                        activeThumbColor: AppColors.primary,
+                        secondary: const Icon(
+                          Icons.fingerprint,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(strings.settingsBiometric),
+                        subtitle: Text(
+                          !supported
+                              ? strings.settingsBiometricUnavailable
+                              : (biometricEnabled
+                                    ? strings.settingsBiometricSubtitleOn
+                                    : strings.settingsBiometricSubtitleOff),
+                        ),
+                        value: biometricEnabled && supported,
+                        onChanged: !supported
+                            ? null
+                            : (value) async {
+                                if (value) {
+                                  // Verify biometric actually works on this
+                                  // device before turning the lock on, so the
+                                  // user can never lock themselves out.
+                                  final verified = await ref
+                                      .read(biometricAuthServiceProvider)
+                                      .authenticate(
+                                        reason: strings.biometricPromptReason,
+                                      );
+                                  if (!verified) return;
+                                }
+                                await ref
+                                    .read(biometricSettingsProvider.notifier)
+                                    .setEnabled(value);
+                              },
+                      );
+                    },
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.lock_outline,
+                  color: AppColors.primary,
+                ),
+                title: Text(strings.settingsPrivacyPolicy),
+                subtitle: Text(strings.settingsPrivacyPolicySubtitle),
+                onTap: () {
+                  Navigator.pop(context);
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(strings.settingsPrivacyPolicy),
+                      content: const Text(
+                        'FashioMe respects your privacy. All style measurements and uploaded images are processed securely to provide personalized fashion recommendations.',
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(strings.close),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.info_outline,
+                  color: AppColors.primary,
+                ),
+                title: Text(strings.settingsAbout),
+                subtitle: Text(strings.settingsAboutSubtitle),
+                onTap: () {
+                  Navigator.pop(context);
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(strings.settingsAbout),
+                      content: const Text(
+                        'FashioMe is your luxury AI stylist — personalized outfit recommendations, '
+                        'a smart digital wardrobe, and curated shopping, all in one app.\n\n'
+                        'Version 1.0.0',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(strings.close),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       );
     },
@@ -818,53 +841,62 @@ void _showSettingsSheet(BuildContext context, WidgetRef ref) {
 void _showSecuritySheet(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     backgroundColor: AppColors.cardBackground,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (context) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Privacy & Security',
-              style: TextStyle(
-                color: AppColors.primaryDark,
-                fontSize: 22,
-                fontFamily: AppFonts.bold,
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Privacy & Security',
+                style: TextStyle(
+                  color: AppColors.primaryDark,
+                  fontSize: 22,
+                  fontFamily: AppFonts.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.lock_outline, color: AppColors.primary),
-              title: const Text('Change password'),
-              subtitle: const Text(
-                'Update your login password from the edit profile page',
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(
+                  Icons.lock_outline,
+                  color: AppColors.primary,
+                ),
+                title: const Text('Change password'),
+                subtitle: const Text(
+                  'Update your login password from the edit profile page',
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileUpdatePage(),
+                    ),
+                  );
+                },
               ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProfileUpdatePage(),
-                  ),
-                );
-              },
-            ),
-            const ListTile(
-              leading: Icon(
-                Icons.check_circle_outline,
-                color: AppColors.primary,
+              const ListTile(
+                leading: Icon(
+                  Icons.check_circle_outline,
+                  color: AppColors.primary,
+                ),
+                title: Text('Security status'),
+                subtitle: Text(
+                  'Your account is currently protected with standard login security.',
+                ),
               ),
-              title: Text('Security status'),
-              subtitle: Text(
-                'Your account is currently protected with standard login security.',
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     },
@@ -874,113 +906,119 @@ void _showSecuritySheet(BuildContext context) {
 void _showSubscriptionSheet(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     backgroundColor: AppColors.cardBackground,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (context) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Subscription',
-              style: TextStyle(
-                color: AppColors.primaryDark,
-                fontSize: 22,
-                fontFamily: AppFonts.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.25),
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Subscription',
+                style: TextStyle(
+                  color: AppColors.primaryDark,
+                  fontSize: 22,
+                  fontFamily: AppFonts.bold,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
-                        'Free',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: AppFonts.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        '\$0',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: AppFonts.bold,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.25),
                   ),
-                  const SizedBox(height: 12),
-                  for (final feature in const [
-                    'AI chat styling',
-                    'Outfit generation',
-                    'Wardrobe storage',
-                    'Limited image generation',
-                  ])
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check_circle_outline,
-                            size: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          'Free',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontFamily: AppFonts.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          '\$0',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontFamily: AppFonts.bold,
                             color: AppColors.primary,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            feature,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    for (final feature in const [
+                      'AI chat styling',
+                      'Outfit generation',
+                      'Wardrobe storage',
+                      'Limited image generation',
+                    ])
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle_outline,
+                              size: 16,
+                              color: AppColors.primary,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              feature,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        'Current plan',
+                        style: TextStyle(
+                          fontFamily: AppFonts.bold,
+                          color: AppColors.primaryDark,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Text(
-                      'Current plan',
-                      style: TextStyle(
-                        fontFamily: AppFonts.bold,
-                        color: AppColors.primaryDark,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Paid subscriptions are not enabled yet. This screen will show upgrade options when billing is connected.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            ),
-          ],
+              const SizedBox(height: 16),
+              const Text(
+                'Paid subscriptions are not enabled yet. This screen will show upgrade options when billing is connected.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+            ],
+          ),
         ),
       );
     },
@@ -990,87 +1028,103 @@ void _showSubscriptionSheet(BuildContext context) {
 void showDashboardNotificationsSheet(BuildContext context, WidgetRef ref) {
   showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     backgroundColor: AppColors.cardBackground,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (context) {
-      final enabled = ref.read(dashboardViewModelProvider).profileData.notificationsEnabled;
+      final enabled = ref
+          .read(dashboardViewModelProvider)
+          .profileData
+          .notificationsEnabled;
       bool dailyOutfit = enabled;
       bool orderStatus = enabled;
       bool trendAlerts = false;
 
       return StatefulBuilder(
         builder: (context, setSheetState) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Notification Preferences',
-                  style: TextStyle(
-                    color: AppColors.primaryDark,
-                    fontSize: 22,
-                    fontFamily: AppFonts.bold,
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Notification Preferences',
+                    style: TextStyle(
+                      color: AppColors.primaryDark,
+                      fontSize: 22,
+                      fontFamily: AppFonts.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  activeThumbColor: AppColors.primary,
-                  title: const Text('Daily Outfit Suggestion'),
-                  subtitle: const Text('Receive a fresh AI look every morning'),
-                  value: dailyOutfit,
-                  onChanged: (v) => setSheetState(() => dailyOutfit = v),
-                ),
-                SwitchListTile(
-                  activeThumbColor: AppColors.primary,
-                  title: const Text('Order & Shipping Updates'),
-                  subtitle: const Text(
-                    'Get notified when orders change status',
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    activeThumbColor: AppColors.primary,
+                    title: const Text('Daily Outfit Suggestion'),
+                    subtitle: const Text(
+                      'Receive a fresh AI look every morning',
+                    ),
+                    value: dailyOutfit,
+                    onChanged: (v) => setSheetState(() => dailyOutfit = v),
                   ),
-                  value: orderStatus,
-                  onChanged: (v) => setSheetState(() => orderStatus = v),
-                ),
-                SwitchListTile(
-                  activeThumbColor: AppColors.primary,
-                  title: const Text('New Trend Alerts'),
-                  subtitle: const Text(
-                    'Be notified when seasonal trends launch',
+                  SwitchListTile(
+                    activeThumbColor: AppColors.primary,
+                    title: const Text('Order & Shipping Updates'),
+                    subtitle: const Text(
+                      'Get notified when orders change status',
+                    ),
+                    value: orderStatus,
+                    onChanged: (v) => setSheetState(() => orderStatus = v),
                   ),
-                  value: trendAlerts,
-                  onChanged: (v) => setSheetState(() => trendAlerts = v),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  SwitchListTile(
+                    activeThumbColor: AppColors.primary,
+                    title: const Text('New Trend Alerts'),
+                    subtitle: const Text(
+                      'Be notified when seasonal trends launch',
+                    ),
+                    value: trendAlerts,
+                    onChanged: (v) => setSheetState(() => trendAlerts = v),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () async {
+                        final profile = ref
+                            .read(dashboardViewModelProvider)
+                            .profileData;
+                        await ref
+                            .read(dashboardViewModelProvider.notifier)
+                            .updateProfileData(
+                              profile.copyWith(
+                                notificationsEnabled:
+                                    dailyOutfit || orderStatus || trendAlerts,
+                              ),
+                              persistSilhouette: false,
+                            );
+                        if (context.mounted) Navigator.pop(context);
+                      },
+                      child: const Text(
+                        'Save Notification Settings',
+                        style: TextStyle(fontFamily: AppFonts.bold),
                       ),
                     ),
-                    onPressed: () async {
-                      final profile = ref.read(dashboardViewModelProvider).profileData;
-                      await ref.read(dashboardViewModelProvider.notifier).updateProfileData(
-                        profile.copyWith(
-                          notificationsEnabled: dailyOutfit || orderStatus || trendAlerts,
-                        ),
-                        persistSilhouette: false,
-                      );
-                      if (context.mounted) Navigator.pop(context);
-                    },
-                    child: const Text(
-                      'Save Notification Settings',
-                      style: TextStyle(fontFamily: AppFonts.bold),
-                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
@@ -1082,71 +1136,77 @@ void showDashboardNotificationsSheet(BuildContext context, WidgetRef ref) {
 void _showHelpSupportSheet(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     backgroundColor: AppColors.cardBackground,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (context) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Help & Support',
-              style: TextStyle(
-                color: AppColors.primaryDark,
-                fontSize: 22,
-                fontFamily: AppFonts.bold,
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Help & Support',
+                style: TextStyle(
+                  color: AppColors.primaryDark,
+                  fontSize: 22,
+                  fontFamily: AppFonts.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const ListTile(
-              leading: Icon(
-                Icons.question_answer_outlined,
-                color: AppColors.primary,
+              const SizedBox(height: 16),
+              const ListTile(
+                leading: Icon(
+                  Icons.question_answer_outlined,
+                  color: AppColors.primary,
+                ),
+                title: Text('How does AI Stylist work?'),
+                subtitle: Text(
+                  'FashioMe matches your silhouette, color palette, and wardrobe items using advanced AI algorithms.',
+                ),
               ),
-              title: Text('How does AI Stylist work?'),
-              subtitle: Text(
-                'FashioMe matches your silhouette, color palette, and wardrobe items using advanced AI algorithms.',
+              const ListTile(
+                leading: Icon(
+                  Icons.shopping_bag_outlined,
+                  color: AppColors.primary,
+                ),
+                title: Text('How do I track my order?'),
+                subtitle: Text(
+                  'Go to My Orders under Profile to see live order details and receipt status.',
+                ),
               ),
-            ),
-            const ListTile(
-              leading: Icon(
-                Icons.shopping_bag_outlined,
-                color: AppColors.primary,
+              const ListTile(
+                leading: Icon(Icons.mail_outline, color: AppColors.primary),
+                title: Text('Need more assistance?'),
+                subtitle: Text('Contact us at support@fashiome.com'),
               ),
-              title: Text('How do I track my order?'),
-              subtitle: Text(
-                'Go to My Orders under Profile to see live order details and receipt status.',
-              ),
-            ),
-            const ListTile(
-              leading: Icon(Icons.mail_outline, color: AppColors.primary),
-              title: Text('Need more assistance?'),
-              subtitle: Text('Contact us at support@fashiome.com'),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(fontFamily: AppFonts.bold),
                   ),
                 ),
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(fontFamily: AppFonts.bold),
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     },

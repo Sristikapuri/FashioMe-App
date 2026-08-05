@@ -52,6 +52,16 @@ class ShopOrderItemModel {
       size: size,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'quantity': quantity,
+        'price': price,
+        'imageUrl': imageUrl,
+        'category': category,
+        'color': color,
+        'size': size,
+      };
 }
 
 class ShopOrderModel {
@@ -142,4 +152,23 @@ class ShopOrderModel {
       esewaTransactionId: esewaTransactionId,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'status': status,
+        'items': items.map((i) => i.toJson()).toList(),
+        'subtotal': subtotal,
+        'total': total,
+        'tax': tax,
+        'paymentMethod': paymentMethod,
+        'customerName': customerName,
+        'customerEmail': customerEmail,
+        'phone': phone,
+        'shippingAddress': shippingAddress,
+        'city': city,
+        'postalCode': postalCode,
+        'createdAt': createdAt?.toIso8601String(),
+        'esewaRefId': esewaRefId,
+        'esewaTransactionId': esewaTransactionId,
+      };
 }

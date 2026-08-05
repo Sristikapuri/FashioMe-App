@@ -66,6 +66,21 @@ class ShopItemModel {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'category': category,
+        'size': size,
+        'color': color,
+        'price': price,
+        'discountedPrice': discountedPrice,
+        'stock': stock,
+        'imageUrl': imageUrl,
+        'description': description,
+        'status': status,
+        'gender': gender,
+      };
+
   double get salePrice => discountedPrice ?? price;
 
   double get savings => price > salePrice ? price - salePrice : 0;

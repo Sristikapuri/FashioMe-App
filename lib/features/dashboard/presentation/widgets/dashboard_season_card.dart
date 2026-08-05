@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
 import 'package:fashio_me/features/dashboard/presentation/widgets/dashboard_luxury_card.dart';
@@ -22,7 +23,26 @@ class DashboardSeasonCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(18),
-                child: Image.asset(imagePath, fit: BoxFit.cover),
+                child: imagePath.startsWith('http')
+                    ? CachedNetworkImage(
+                        imageUrl: imagePath,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: const Color(0xFF1A1A24),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: const Color(0xFF1A1A24),
+                          child: const Icon(Icons.image_not_supported, color: Colors.white38, size: 20),
+                        ),
+                      )
+                    : Image.asset(imagePath, fit: BoxFit.cover),
               ),
               Container(
                 decoration: BoxDecoration(

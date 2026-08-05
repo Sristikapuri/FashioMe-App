@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fashio_me/core/services/media/image_picker_service.dart';
 import 'package:fashio_me/core/api/api_client.dart';
+import 'package:fashio_me/core/services/storage/shop_cache_service.dart';
 
 import 'package:fashio_me/features/auth/data/repositories/auth_repository.dart'
     as auth_data;
 import 'package:fashio_me/features/auth/data/datasources/remote/auth_remote_datasource.dart' as auth_remote;
+import 'package:fashio_me/features/auth/data/datasources/local/auth_local_datasource.dart' as auth_local;
+
 import 'package:fashio_me/features/auth/domain/repositories/auth_repository.dart';
 import 'package:fashio_me/features/auth/domain/usecases/complete_onboarding_usecase.dart';
 import 'package:fashio_me/features/auth/domain/usecases/delete_account_usecase.dart';
@@ -75,8 +78,12 @@ import 'package:fashio_me/features/style_archive/domain/usecases/save_style_arch
 import 'package:fashio_me/features/style_archive/domain/usecases/get_style_archive_usecase.dart';
 
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
-  return auth_data.AuthRepository(authDataSource: ref.read(auth_remote.authRemoteDatasourceProvider));
+  return auth_data.AuthRepository(
+    remoteDataSource: ref.read(auth_remote.authRemoteDatasourceProvider),
+    localDataSource: ref.read(auth_local.authLocalDatasourceProvider),
+  );
 });
+
 
 final imagePickerServiceProvider = Provider<ImagePickerService>(
   (ref) => PlatformImagePickerService(),
@@ -211,6 +218,7 @@ final uploadItemPhotoUsecaseProvider = Provider<UploadItemPhotoUsecase>((ref) {
 final shopRepositoryProvider = Provider<IShopRepository>((ref) {
   return shop_data.ShopRepositoryImpl(
     remoteDataSource: ref.read(shopRemoteDataSourceProvider),
+    cache: ref.read(shopCacheServiceProvider),
   );
 });
 

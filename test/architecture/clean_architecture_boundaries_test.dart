@@ -14,8 +14,9 @@ void main() {
   String source(File file) => file.readAsStringSync();
 
   test('domain does not depend on data or presentation', () {
-    final files = dartFiles('lib/features')
-        .where((file) => file.path.contains('/domain/'));
+    final files = dartFiles(
+      'lib/features',
+    ).where((file) => file.path.contains('/domain/'));
 
     for (final file in files) {
       final contents = source(file);
@@ -33,8 +34,9 @@ void main() {
   });
 
   test('presentation view-models do not depend on data implementations', () {
-    final files = dartFiles('lib/features')
-        .where((file) => file.path.contains('/presentation/view_model/'));
+    final files = dartFiles(
+      'lib/features',
+    ).where((file) => file.path.contains('/presentation/view_model/'));
 
     for (final file in files) {
       expect(
@@ -46,8 +48,9 @@ void main() {
   });
 
   test('presentation view-models do not depend on repository contracts', () {
-    final files = dartFiles('lib/features')
-        .where((file) => file.path.contains('/presentation/view_model/'));
+    final files = dartFiles(
+      'lib/features',
+    ).where((file) => file.path.contains('/presentation/view_model/'));
     for (final file in files) {
       expect(
         source(file),
@@ -58,8 +61,9 @@ void main() {
   });
 
   test('feature data repositories implement domain contracts', () {
-    final files = dartFiles('lib/features')
-        .where((file) => file.path.contains('/data/repositories/'));
+    final files = dartFiles(
+      'lib/features',
+    ).where((file) => file.path.contains('/data/repositories/'));
 
     for (final file in files) {
       final contents = source(file);

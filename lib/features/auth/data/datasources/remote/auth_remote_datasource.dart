@@ -106,6 +106,20 @@ class AuthRemoteDatasource implements IAuthDataSource {
     if (data is Map<String, dynamic>) {
       final message = data['responseMessage'] ?? data['message'];
       if (message is String && message.trim().isNotEmpty) {
+        // Also try to append first field-level validation error for clarity
+        final responseData = data['responseData'];
+        if (responseData is Map<String, dynamic>) {
+          final errors = responseData['errors'];
+          if (errors is List && errors.isNotEmpty) {
+            final firstError = errors.first;
+            if (firstError is Map<String, dynamic>) {
+              final fieldMsg = firstError['message'];
+              if (fieldMsg is String && fieldMsg.isNotEmpty) {
+                return fieldMsg;
+              }
+            }
+          }
+        }
         return message.trim();
       }
     }
@@ -114,29 +128,37 @@ class AuthRemoteDatasource implements IAuthDataSource {
 
   String _readErrorMessage(Object error, {required String fallback}) {
     if (error is DioException) {
-      return _extractMessage(error.response?.data, fallback: fallback);
+      final extracted = _extractMessage(error.response?.data, fallback: '');
+      if (extracted.isNotEmpty) return extracted;
+      if (error.message != null && error.message!.isNotEmpty) {
+        return error.message!;
+      }
+    }
+    if (error is Exception) {
+      final msg = error.toString();
+      if (msg.startsWith('Exception: ')) {
+        final trimmed = msg.substring('Exception: '.length).trim();
+        if (trimmed.isNotEmpty) return trimmed;
+      }
+      return msg;
     }
     return fallback;
   }
 
   @override
   Future<bool> register(AuthModel model) async {
-    try {
-      final response = await _apiClient.post(
-        ApiEndpoints.authRegister,
-        data: model.toJson(),
+    final response = await _apiClient.post(
+      ApiEndpoints.authRegister,
+      data: model.toJson(),
+    );
+
+    if (!_isSuccessful(response.data)) {
+      throw Exception(
+        _extractMessage(response.data, fallback: 'Registration failed.'),
       );
-
-      if (!_isSuccessful(response.data)) {
-        throw Exception(
-          _extractMessage(response.data, fallback: 'Registration failed.'),
-        );
-      }
-
-      return true;
-    } catch (e) {
-      throw Exception(_readErrorMessage(e, fallback: 'Registration failed.'));
     }
+
+    return true;
   }
 
   @override
@@ -168,6 +190,7 @@ class AuthRemoteDatasource implements IAuthDataSource {
           gender: user.gender,
           age: user.age,
           role: user.role,
+          profileImage: user.profileImage,
         ),
       );
     }
@@ -196,6 +219,7 @@ class AuthRemoteDatasource implements IAuthDataSource {
       gender: sessionUser.gender,
       age: sessionUser.age,
       role: sessionUser.role,
+      profileImage: sessionUser.profileImage,
     );
   }
 
@@ -235,6 +259,7 @@ class AuthRemoteDatasource implements IAuthDataSource {
             gender: user.gender,
             age: user.age,
             role: user.role,
+            profileImage: user.profileImage,
           ),
         );
       }
@@ -248,6 +273,7 @@ class AuthRemoteDatasource implements IAuthDataSource {
         gender: user.gender,
         age: user.age,
         role: user.role,
+        profileImage: user.profileImage,
       );
     } catch (e) {
       return null;
@@ -400,6 +426,7 @@ class AuthRemoteDatasource implements IAuthDataSource {
             gender: user.gender,
             age: user.age,
             role: user.role,
+            profileImage: user.profileImage,
           ),
         );
       }
@@ -413,6 +440,7 @@ class AuthRemoteDatasource implements IAuthDataSource {
         gender: user.gender,
         age: user.age,
         role: user.role,
+        profileImage: user.profileImage,
       );
     } catch (e) {
       return null;

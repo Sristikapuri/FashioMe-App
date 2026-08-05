@@ -1,8 +1,8 @@
+import 'package:fashio_me/core/services/network/backend_discovery_service.dart';
 import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
   ApiEndpoints._();
-
 
   static const String configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
@@ -10,6 +10,11 @@ class ApiEndpoints {
   );
 
   static String get baseUrl {
+    // 1. Runtime-discovered URL (set by BackendDiscoveryService on Android)
+    final override = ApiConfig.overrideBaseUrl;
+    if (override != null && override.isNotEmpty) return override;
+
+    // 2. Compile-time override via --dart-define=API_BASE_URL=...
     if (configuredBaseUrl.isNotEmpty) {
       return configuredBaseUrl;
     }
@@ -20,7 +25,10 @@ class ApiEndpoints {
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://10.0.2.2:8089/api/v1';
+        // Default to real Mac Wi-Fi IP (192.168.1.200) instead of .local domain.
+        // Android DNS cannot resolve .local natively, causing Dio connection hangs.
+        // Once BackendDiscoveryService runs, ApiConfig.overrideBaseUrl takes over.
+        return 'http://192.168.1.200:8089/api/v1';
       case TargetPlatform.iOS:
       case TargetPlatform.macOS:
       case TargetPlatform.linux:
@@ -30,8 +38,8 @@ class ApiEndpoints {
     }
   }
 
-  static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
+  static const Duration connectionTimeout = Duration(seconds: 5);
+  static const Duration receiveTimeout = Duration(seconds: 5);
 
   // =========== Auth Endpoints ===========
   static const String authRegister = '/auth/register';
@@ -42,21 +50,16 @@ class ApiEndpoints {
   static const String authUpdate = '/auth/update';
   static const String authDelete = '/auth/delete';
 
-
   static const String users = '/users';
   static String userById(String id) => '/users/$id';
   static const String userStyleArchive = '/users/style-archive';
 
-
   static const String itemUploadPhoto = '/upload/upload-photo';
 
- 
   static const String onboardingStatus = '/onboarding/status';
   static const String onboardingComplete = '/onboarding/complete';
 
-
   static const String silhouetteProfile = '/silhouette/profile';
-
 
   static const String homeDashboard = '/home/dashboard';
   static const String homeTrends = '/home/trends';
@@ -78,6 +81,10 @@ class ApiEndpoints {
   static String cancelOrder(String id) => '/orders/$id/cancel';
   static const String esewaPaymentUrl = '/esewa/payment-url';
   static const String esewaVerify = '/esewa/verify';
+  static const String khaltiPaymentUrl = '/khalti/payment-url';
+  static const String khaltiVerify = '/khalti/verify';
+  static const String stripePaymentIntent = '/stripe/payment-intent';
+  static const String stripeVerify = '/stripe/verify';
 
   static String get origin {
     final uri = Uri.parse(baseUrl);

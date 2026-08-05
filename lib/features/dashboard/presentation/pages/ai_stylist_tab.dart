@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
+import 'package:fashio_me/core/services/sensors/sensor_settings.dart';
+import 'package:fashio_me/core/services/sensors/shake_detector_service.dart';
 import 'package:fashio_me/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:fashio_me/features/dashboard/presentation/state/dashboard_state.dart';
 import 'package:fashio_me/features/dashboard/presentation/widgets/dashboard_chat_bubble.dart';
@@ -45,8 +49,97 @@ class AiStylistTab extends ConsumerStatefulWidget {
 class _AiStylistTabState extends ConsumerState<AiStylistTab> {
   final TextEditingController _messageController = TextEditingController();
 
+  // ── Shake-to-refresh ──────────────────────────────────────────────────────
+  late final ShakeDetectorService _shakeService;
+  StreamSubscription<void>? _shakeSubscription;
+  ProviderSubscription<bool>? _sensorToggleSubscription;
+  bool _isRegeneratingFromShake = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _shakeService = ref.read(shakeDetectorServiceProvider);
+    // Respect the user's sensor-gestures preference (Profile → Settings).
+    _setSensorEnabled(ref.read(sensorGesturesEnabledProvider));
+    _sensorToggleSubscription = ref.listenManual<bool>(
+      sensorGesturesEnabledProvider,
+      (previous, enabled) {
+        if (previous == enabled) return;
+        _setSensorEnabled(enabled);
+      },
+    );
+  }
+
+  void _setSensorEnabled(bool enabled) {
+    if (enabled) {
+      _startShakeListener();
+    } else {
+      _stopShakeListener();
+    }
+  }
+
+  void _startShakeListener() {
+    if (_shakeSubscription != null) return;
+    _shakeService.start();
+    _shakeSubscription = _shakeService.shakeStream.listen((_) {
+      _onShakeDetected();
+    });
+  }
+
+  void _stopShakeListener() {
+    _shakeSubscription?.cancel();
+    _shakeSubscription = null;
+    _shakeService.stop();
+  }
+
+  Future<void> _onShakeDetected() async {
+    // Prevent overlapping calls while a generation is in flight.
+    if (_isRegeneratingFromShake) return;
+    if (widget.state.isUploading) return;
+    // Do not regenerate if another page is on top (e.g. CartPage, ShopDetailPage).
+    if (!mounted) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    _isRegeneratingFromShake = true;
+    try {
+      if (!mounted) return;
+      // Clear the chat history when the user shakes so the fresh outfit
+      // recommendation starts a clean conversation.
+      ref.read(dashboardViewModelProvider.notifier).clearChatMessages();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Shake detected — generating a new outfit! ✦'),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      await ref.read(dashboardViewModelProvider.notifier).generateHomeRecommendation(
+        occasion:
+            '${widget.selectedEvent} in ${widget.selectedWeather} with a ${widget.selectedVibe} vibe',
+        syncCurrentRecommendation: true,
+        source: widget.selectedSource,
+      );
+    } finally {
+      _isRegeneratingFromShake = false;
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   @override
   void dispose() {
+    _stopShakeListener();
+    _sensorToggleSubscription?.close();
     _messageController.dispose();
     super.dispose();
   }
@@ -215,6 +308,24 @@ class _AiStylistTabState extends ConsumerState<AiStylistTab> {
                   );
                 },
         ),
+        if (ref.watch(sensorGesturesEnabledProvider))
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.vibration, size: 13, color: DashboardPalette.mutedText),
+                SizedBox(width: 4),
+                Text(
+                  'Shake your phone to generate a new outfit',
+                  style: TextStyle(
+                    color: DashboardPalette.mutedText,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
         const SizedBox(height: 24),
         DashboardFeaturedRecommendationCard(
           item: state.currentRecommendation,
@@ -244,7 +355,13 @@ class _AiStylistTabState extends ConsumerState<AiStylistTab> {
           },
         ),
         const SizedBox(height: 24),
-        const DashboardSectionTitle(title: 'AI Assistant'),
+        DashboardSectionTitle(
+          title: 'AI Assistant',
+          actionLabel: state.chatMessages.isNotEmpty ? 'Clear Chat' : null,
+          onAction: state.chatMessages.isNotEmpty
+              ? () => ref.read(dashboardViewModelProvider.notifier).clearChatMessages()
+              : null,
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,

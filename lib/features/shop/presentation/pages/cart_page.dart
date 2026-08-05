@@ -1,10 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 import 'package:fashio_me/app/routes/app_routes.dart';
 import 'package:fashio_me/app/theme/app_colors.dart';
-import 'package:fashio_me/core/services/deep_link/deep_link_service.dart';
 import 'package:fashio_me/features/shop/domain/entities/shop_item.dart';
 import 'package:fashio_me/features/shop/presentation/pages/order_history_page.dart';
 import 'package:fashio_me/features/shop/presentation/pages/shop_detail_page.dart';
@@ -43,196 +43,41 @@ class _CartPageState extends ConsumerState<CartPage> {
     super.dispose();
   }
 
-  Future<bool?> _openEsewaAndCheckStatus({
+  /// Shows an embedded Stripe CardField inside a Flutter dialog so that
+  /// keyboard focus is handled by Flutter — eliminating the native Android
+  /// PaymentSheet focus bug where the card-number field won't accept input.
+  Future<bool> _payWithStripe({
     required String orderId,
     required double totalAmount,
-    required String paymentUrl,
+    required String name,
+    required String email,
   }) async {
-    final launched = await launchUrl(
-      Uri.parse(paymentUrl),
-      mode: LaunchMode.externalApplication,
+    final notifier = ref.read(shopViewModelProvider.notifier);
+
+    // 1. Create a PaymentIntent on the backend.
+    final intentData = await notifier.createStripePaymentIntent(
+      amount: totalAmount,
+      orderId: orderId,
     );
-    if (!launched) {
-      throw StateError('Could not open the eSewa payment page.');
-    }
-    if (!mounted) return null;
+    final clientSecret = intentData['clientSecret']!;
 
-    final verifying = ValueNotifier<bool>(false);
-    final dialogError = ValueNotifier<String>('');
-    // Guards against a deep link arriving after the dialog already closed
-    // (e.g. "Not now" was tapped, then a delayed callback fires) from
-    // popping the wrong route — CartPage itself, not the dialog.
-    var dialogOpen = true;
+    // 2. Show the embedded card dialog (Flutter-rendered, not native sheet).
+    if (!mounted) return false;
+    final paid = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _StripeCardDialog(
+        clientSecret: clientSecret,
+        amount: totalAmount,
+        name: name,
+        email: email,
+      ),
+    );
+    if (paid != true) return false;
 
-    Future<void> runVerification() async {
-      if (!dialogOpen || !mounted || verifying.value) return;
-      verifying.value = true;
-      dialogError.value = '';
-      try {
-        final success = await ref
-            .read(shopViewModelProvider.notifier)
-            .verifyEsewaPayment(
-              amount: totalAmount,
-              orderId: orderId,
-              productCode: 'EPAYTEST',
-            );
-        if (!dialogOpen || !mounted) return;
-        if (success) {
-          dialogOpen = false;
-          Navigator.of(context).pop(true);
-        } else {
-          verifying.value = false;
-          dialogError.value =
-              'Payment is not complete yet. Finish eSewa payment and try again.';
-        }
-      } catch (e) {
-        if (!dialogOpen || !mounted) return;
-        verifying.value = false;
-        dialogError.value = 'Verification failed: ${e.toString()}';
-      }
-    }
-
-    final deepLinkService = ref.read(deepLinkServiceProvider);
-    deepLinkService.start();
-    final linkSubscription = deepLinkService.linkStream.listen((uri) {
-      if (uri.host != 'esewa-payment') return;
-      final linkOrderId = uri.queryParameters['orderId'];
-      if (linkOrderId != null && linkOrderId != orderId) return;
-
-      final status = uri.queryParameters['status'];
-      if (status == 'success') {
-        runVerification();
-      } else if (status == 'failed' && dialogOpen && mounted) {
-        dialogOpen = false;
-        Navigator.of(context).pop(false);
-      }
-    });
-
-    try {
-      return await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) {
-          return AnimatedBuilder(
-            animation: Listenable.merge([verifying, dialogError]),
-            builder: (dialogContext, _) {
-              return AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                title: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF60BB46),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'e',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'eSewa Gateway',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                  ],
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Order ID: $orderId',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Amount: \$${totalAmount.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                        color: Color(0xFF60BB46),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (dialogError.value.isNotEmpty) ...[
-                      Text(
-                        dialogError.value,
-                        style: const TextStyle(color: AppColors.error),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    if (verifying.value)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation(
-                              Color(0xFF60BB46),
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      const Text(
-                        "Complete the payment in the eSewa page that opened. "
-                        "We'll detect it automatically — or check manually below.",
-                        style: TextStyle(fontSize: 13, height: 1.4),
-                      ),
-                  ],
-                ),
-                actions: [
-                  if (!verifying.value) ...[
-                    TextButton(
-                      onPressed: () {
-                        dialogOpen = false;
-                        Navigator.of(dialogContext).pop(false);
-                      },
-                      child: const Text(
-                        'Not now',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                    ),
-                    OutlinedButton(
-                      onPressed: () async {
-                        await launchUrl(
-                          Uri.parse(paymentUrl),
-                          mode: LaunchMode.externalApplication,
-                        );
-                      },
-                      child: const Text('Open eSewa'),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF60BB46),
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: runVerification,
-                      child: const Text('Check payment'),
-                    ),
-                  ],
-                ],
-              );
-            },
-          );
-        },
-      );
-    } finally {
-      dialogOpen = false;
-      await linkSubscription.cancel();
-      deepLinkService.stop();
-      verifying.dispose();
-      dialogError.dispose();
-    }
+    // 3. Verify with backend.
+    final verified = await notifier.verifyStripePayment(orderId: orderId);
+    return verified;
   }
 
   Future<void> _placeOrder() async {
@@ -283,22 +128,30 @@ class _CartPageState extends ConsumerState<CartPage> {
         paymentMethod: _paymentMethod,
       );
 
-      if (_paymentMethod == 'esewa') {
-        final paymentUrl = await notifier.getEsewaPaymentUrl(
-          amount: totalAmount,
-          orderId: orderId,
-          productCode: 'EPAYTEST',
-        );
-
-        final success = await _openEsewaAndCheckStatus(
-          orderId: orderId,
-          totalAmount: totalAmount,
-          paymentUrl: paymentUrl,
-        );
-        if (success != true) {
+      if (_paymentMethod == 'stripe') {
+        bool success = false;
+        try {
+          success = await _payWithStripe(
+            orderId: orderId,
+            totalAmount: totalAmount,
+            name: name,
+            email: email,
+          );
+        } on StripeException catch (e) {
+          if (!mounted) return;
+          // User cancelled — inform them the order is pending.
+          notifier.setError(
+            'Order $orderId was created and is awaiting Stripe payment. '
+            'You can check its status from order history. '
+            '(${e.error.localizedMessage ?? e.error.code.name})',
+          );
+          return;
+        }
+        if (!success) {
           if (!mounted) return;
           notifier.setError(
-            'Order $orderId was created and is awaiting eSewa payment. You can check its status from order history.',
+            'Order $orderId was created but payment could not be confirmed. '
+            'You can check its status from order history.',
           );
           return;
         }
@@ -312,8 +165,8 @@ class _CartPageState extends ConsumerState<CartPage> {
         builder: (dialogContext) => AlertDialog(
           title: const Text('Order successful'),
           content: Text(
-            _paymentMethod == 'esewa'
-                ? 'Your payment was confirmed and your order is being processed.'
+          _paymentMethod == 'stripe'
+                ? 'Your payment was confirmed via Stripe and your order is being processed.'
                 : 'Your order was placed successfully and is being processed.',
           ),
           actions: [
@@ -521,13 +374,22 @@ class _CartPageState extends ConsumerState<CartPage> {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              Expanded(
+                               Expanded(
                                 child: ChoiceChip(
-                                  label: const Center(child: Text('eSewa')),
-                                  selected: _paymentMethod == 'esewa',
-                                  selectedColor: const Color(0xFF60BB46),
+                                  label: const Center(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.credit_card, size: 14),
+                                        SizedBox(width: 4),
+                                        Text('Stripe'),
+                                      ],
+                                    ),
+                                  ),
+                                  selected: _paymentMethod == 'stripe',
+                                  selectedColor: const Color(0xFF635BFF),
                                   labelStyle: TextStyle(
-                                    color: _paymentMethod == 'esewa'
+                                    color: _paymentMethod == 'stripe'
                                         ? Colors.white
                                         : AppColors.textPrimary,
                                     fontWeight: FontWeight.bold,
@@ -535,7 +397,7 @@ class _CartPageState extends ConsumerState<CartPage> {
                                   onSelected: (selected) {
                                     if (selected) {
                                       setState(() {
-                                        _paymentMethod = 'esewa';
+                                        _paymentMethod = 'stripe';
                                       });
                                     }
                                   },
@@ -600,8 +462,8 @@ class _CartPageState extends ConsumerState<CartPage> {
                             child: Text(
                               _placingOrder
                                   ? 'Processing...'
-                                  : _paymentMethod == 'esewa'
-                                  ? 'Pay with eSewa'
+                                  : _paymentMethod == 'stripe'
+                                  ? 'Pay with Stripe'
                                   : 'Place Order (COD)',
                             ),
                           ),
@@ -654,12 +516,15 @@ class _CartCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: Image.network(
-                item.imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: item.imageUrl,
                 width: 72,
                 height: 72,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Container(
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                errorWidget: (context, url, error) => Container(
                   width: 72,
                   height: 72,
                   color: AppColors.surfaceMuted,
@@ -790,3 +655,230 @@ class CartDetailStubPage extends StatelessWidget {
     );
   }
 }
+
+/// Flutter-native card payment dialog using Stripe's [CardField] widget.
+/// Because this runs entirely inside Flutter's widget tree, keyboard events
+/// are dispatched by Flutter itself — avoiding the native Android
+/// PaymentSheet bug where the card-number field silently ignores input.
+class _StripeCardDialog extends StatefulWidget {
+  const _StripeCardDialog({
+    required this.clientSecret,
+    required this.amount,
+    required this.name,
+    required this.email,
+  });
+
+  final String clientSecret;
+  final double amount;
+  final String name;
+  final String email;
+
+  @override
+  State<_StripeCardDialog> createState() => _StripeCardDialogState();
+}
+
+class _StripeCardDialogState extends State<_StripeCardDialog> {
+  CardFieldInputDetails? _cardDetails;
+  bool _paying = false;
+  String? _error;
+
+  Future<void> _pay() async {
+    if (_cardDetails == null || !(_cardDetails!.complete)) {
+      setState(() => _error = 'Please enter complete card details.');
+      return;
+    }
+    setState(() {
+      _paying = true;
+      _error = null;
+    });
+    try {
+      final result = await Stripe.instance.confirmPayment(
+        paymentIntentClientSecret: widget.clientSecret,
+        data: PaymentMethodParams.card(
+          paymentMethodData: PaymentMethodData(
+            billingDetails: BillingDetails(
+              name: widget.name,
+              email: widget.email,
+            ),
+          ),
+        ),
+      );
+      if (!mounted) return;
+      if (result.status == PaymentIntentsStatus.Succeeded) {
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() {
+          _paying = false;
+          _error = 'Payment failed. Status: ${result.status.name}';
+        });
+      }
+    } on StripeException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _paying = false;
+        _error = e.error.localizedMessage ?? e.error.code.name;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _paying = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final amountDisplay =
+        'NPR ${widget.amount.toStringAsFixed(2)}';
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ──────────────────────────────────────────────────
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.credit_card,
+                      color: AppColors.primary, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pay with Card',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        amountDisplay,
+                        style: TextStyle(
+                            fontSize: 14, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: _paying ? null : () => Navigator.of(context).pop(false),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // ── Stripe CardField ────────────────────────────────────────
+            const Text(
+              'Card Details',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            CardField(
+              autofocus: true,
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: Colors.grey.shade300, width: 1.5),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              ),
+              onCardChanged: (details) {
+                setState(() => _cardDetails = details);
+              },
+            ),
+
+            // ── Error message ───────────────────────────────────────────
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                      Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade600, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: TextStyle(
+                            color: Colors.red.shade700, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 20),
+
+            // ── Pay button ──────────────────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _paying ? null : _pay,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
+                ),
+                child: _paying
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white),
+                      )
+                    : Text(
+                        'Pay $amountDisplay',
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Center(
+              child: Text(
+                '🔒 Secured by Stripe',
+                style:
+                    TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

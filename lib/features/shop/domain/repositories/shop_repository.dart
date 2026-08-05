@@ -38,6 +38,20 @@ abstract interface class IShopRepository {
     required String productCode,
   });
 
+  Future<String> getKhaltiPaymentUrl({
+    required double amount,
+    required String orderId,
+  });
+
+  Future<bool> verifyKhaltiPayment({required String orderId});
+
+  Future<Map<String, String>> createStripePaymentIntent({
+    required double amount,
+    required String orderId,
+  });
+
+  Future<bool> verifyStripePayment({required String orderId});
+
   Future<List<ShopOrder>> fetchMyOrders();
 
   Future<ShopOrder> fetchOrderById(String id);
