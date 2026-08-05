@@ -222,10 +222,8 @@ class AuthRepository implements IAuthRepository {
 
 
       if (_authDataSource.hasCompletedOnboarding()) {
-
-        return const Right('silhouette');
+        return const Right('login');
       }
-
 
       return const Right('onboarding');
     } catch (e) {

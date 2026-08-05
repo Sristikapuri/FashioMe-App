@@ -61,12 +61,24 @@ class _ShopPageState extends ConsumerState<ShopPage> {
     if (userGender == 'female' || userGender == 'male') {
       ref.read(shopViewModelProvider.notifier).setGender(userGender!);
     }
-    if (ref.read(sensorGesturesEnabledProvider)) {
+    _setSensorListenersEnabled(ref.read(sensorGesturesEnabledProvider));
+    ref.listen<bool>(sensorGesturesEnabledProvider, (previous, enabled) {
+      if (previous == enabled) return;
+      _setSensorListenersEnabled(enabled);
+    });
+  }
+
+  void _setSensorListenersEnabled(bool enabled) {
+    if (enabled) {
       _startSensorListeners();
+    } else {
+      _stopSensorListeners();
     }
   }
 
   void _startSensorListeners() {
+    if (_shakeSubscription != null || _tiltSubscription != null) return;
+
     final shakeService = ref.read(shakeDetectorServiceProvider);
     shakeService.start();
     _shakeSubscription = shakeService.shakeStream.listen((_) {
@@ -78,6 +90,15 @@ class _ShopPageState extends ConsumerState<ShopPage> {
     _tiltSubscription = tiltService.tiltStream.listen((direction) {
       _onTiltDetected(direction);
     });
+  }
+
+  void _stopSensorListeners() {
+    _shakeSubscription?.cancel();
+    _shakeSubscription = null;
+    _tiltSubscription?.cancel();
+    _tiltSubscription = null;
+    ref.read(shakeDetectorServiceProvider).stop();
+    ref.read(tiltDetectorServiceProvider).stop();
   }
 
   Future<void> _onShakeDetected() async {
@@ -104,10 +125,7 @@ class _ShopPageState extends ConsumerState<ShopPage> {
   @override
   void dispose() {
     _searchController.dispose();
-    _shakeSubscription?.cancel();
-    _tiltSubscription?.cancel();
-    ref.read(shakeDetectorServiceProvider).stop();
-    ref.read(tiltDetectorServiceProvider).stop();
+    _stopSensorListeners();
     super.dispose();
   }
 

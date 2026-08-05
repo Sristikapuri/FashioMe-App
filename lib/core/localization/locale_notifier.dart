@@ -8,6 +8,8 @@ import 'package:fashio_me/core/providers/shared_prefs_provider.dart';
 const supportedAppLocales = [Locale('en'), Locale('ne')];
 
 const _prefsKey = 'app_locale_code';
+const _languageSelectionVersionKey = 'language_selection_version';
+const _currentLanguageSelectionVersion = 1;
 
 final localeProvider = NotifierProvider<LocaleNotifier, Locale>(
   LocaleNotifier.new,
@@ -24,9 +26,12 @@ class LocaleNotifier extends Notifier<Locale> {
   Future<void> setLocale(Locale locale) async {
     if (!supportedAppLocales.contains(locale)) return;
     state = locale;
-    await ref
-        .read(sharedPreferencesProvider)
-        .setString(_prefsKey, locale.languageCode);
+    final preferences = ref.read(sharedPreferencesProvider);
+    await preferences.setString(_prefsKey, locale.languageCode);
+    await preferences.setInt(
+      _languageSelectionVersionKey,
+      _currentLanguageSelectionVersion,
+    );
   }
 
   bool get isNepali => state.languageCode == 'ne';
@@ -38,5 +43,6 @@ class LocaleNotifier extends Notifier<Locale> {
   /// [state] just holding the English fallback). Used to show the one-time
   /// language picker before the first login/signup screen.
   bool get hasChosenLocale =>
-      ref.read(sharedPreferencesProvider).containsKey(_prefsKey);
+      ref.read(sharedPreferencesProvider).getInt(_languageSelectionVersionKey) ==
+          _currentLanguageSelectionVersion;
 }
