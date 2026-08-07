@@ -314,11 +314,13 @@ class AuthRepository implements IAuthRepository {
           // If offline or network timeout, DO NOT log out — stay authenticated offline!
           return const Right('dashboard');
         }
-        return const Right('dashboard');
+        // Token is invalid, clear local session
+        await _localDataSource.logout();
       }
 
-      // Check remote logged in flag as fallback
-      if (_remoteDataSource.isLoggedIn()) return const Right('dashboard');
+      if (_localDataSource.hasCompletedOnboarding()) {
+        return const Right('login');
+      }
 
       return const Right('onboarding');
     } catch (_) {
@@ -326,5 +328,4 @@ class AuthRepository implements IAuthRepository {
     }
   }
 }
-
 
